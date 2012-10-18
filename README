@@ -1,0 +1,15 @@
+#########################################
+
+rnaseq_count_matrix.py
+
+Find all count files (from HTSeq or DEXSeq) matching pattern entered by user (there should be one count file
+per sample) and create a matrix with one row for each gene and one column for each sample
+
+Usage: /opt/bin/python/ rnaseq_count_matrix.py rootDir patternToSearch outputFileName
+
+
+Example: 
+
+    /opt/bin/python rnaseq_count_matrix.py /ifs/res/liang/RNASeq/Proj2983_MassagueJ "*htseq.count*" Proj2983_MassagueJ_htseq.count_allSamples.txt
+
+##########################################
