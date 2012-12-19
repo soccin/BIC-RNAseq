@@ -22,8 +22,12 @@ def findFiles(rootDir,pattern):
     """
     filepaths = []
     for path, dirs, files in os.walk(os.path.abspath(rootDir)):
-        for file in fnmatch.filter(files, pattern):
-            filepaths.append(os.path.join(path,file))
+        for dir in dirs:
+            if fnmatch.filter(files, pattern):
+                for file in fnmatch.filter(files, pattern):
+                    filepaths.append(os.path.join(path,file))
+            else:
+                print>>sys.stderr, "WARNING: No files matching pattern %s found in %s" %(pattern, dir)
 
     return filepaths
 
@@ -82,18 +86,21 @@ def makeCountMatrix(args):
         print>>sys.stderr, "\nCombining the following files:\n"
         for file in files:
             print>>sys.stderr, file
-            samp = getSampleID(file)
-            allSamps.append(samp)
+            if os.stat(file)[6]==0: ## file is empty
+                print>>sys.stderr, "WARNING: This file is empty!"
+            else:
+                samp = getSampleID(file)
+                allSamps.append(samp)
      
-            with open(file,'r') as fl:
-                for line in fl:
-                    gn,count = line.split()
-                    if not matrix.has_key(gn):
-                        matrix[gn] = {}
-                    if matrix[gn].has_key(samp):
-                        print>>sys.stderr, "ERROR: gene",gn,"already has sample",samp
-                    else:
-                        matrix[gn][samp] = count
+                with open(file,'r') as fl:
+                    for line in fl:
+                        gn,count = line.split()
+                        if not matrix.has_key(gn):
+                            matrix[gn] = {}
+                        if matrix[gn].has_key(samp):
+                            print>>sys.stderr, "ERROR: gene",gn,"already has sample",samp
+                        else:
+                            matrix[gn][samp] = count
 
         printMatrix(matrix,allSamps,outFile)            
 
