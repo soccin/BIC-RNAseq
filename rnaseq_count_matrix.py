@@ -22,12 +22,12 @@ def findFiles(rootDir,pattern):
     """
     filepaths = []
     for path, dirs, files in os.walk(os.path.abspath(rootDir)):
-        for dir in dirs:
-            if fnmatch.filter(files, pattern):
-                for file in fnmatch.filter(files, pattern):
-                    filepaths.append(os.path.join(path,file))
-            else:
-                print>>sys.stderr, "WARNING: No files matching pattern %s found in %s" %(pattern, dir)
+        if fnmatch.filter(files, pattern):
+            for file in fnmatch.filter(files, pattern):
+                filepaths.append(os.path.join(path,file))
+        else:
+            if "Proj" in path.split("/")[-1] and "-" in path.split("/")[-1]:
+                print>>sys.stderr, "WARNING: No files matching pattern %s found in %s" %(pattern, path)
 
     return filepaths
 
@@ -94,6 +94,7 @@ def makeCountMatrix(args):
      
                 with open(file,'r') as fl:
                     for line in fl:
+                        line = line.strip()
                         gn,count = line.split()
                         if not matrix.has_key(gn):
                             matrix[gn] = {}
