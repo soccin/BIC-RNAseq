@@ -3,7 +3,7 @@
 usage <- function(){
     
     usage.str = "\nUsage: Rscript RunDE.R 
-    \"bin=['Required: directory containing source R code']\"
+    \"bin='[Required: directory containing source R code]'\"
     \"proj.id='[Required: 4-digit project ID created by GCL]'\"
     \"output.dir='[Required: absolute path to output directory]'\"
     \"counts.file='[Required: absolute path to htseq counts file]'\"
@@ -92,8 +92,8 @@ if (!file.exists(key.file)){
 #################
 #source("/home/byrne/RNAseqPipe/trunk/bin/tools.R") 
 #source("/home/byrne/RNAseqPipe/trunk/bin/run_DESeq.R") 
-source(paste(bin,"tools.R",sep="/")
-source(paste(bin,"run_DESeq.R",sep="/")
+source(paste(bin,"tools.R",sep="/"))
+source(paste(bin,"run_DESeq.R",sep="/"))
 
 sink("/dev/null")
 library("DESeq")
