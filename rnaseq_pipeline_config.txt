@@ -1,0 +1,8 @@
+STAR			/opt/common/star/STAR_2.3.0e
+PICARD			/opt/common/picard/picard-tools-1.104
+CUFFLINKS		/opt/common/cufflinks/cufflinks-2.0.2
+HTSEQ			/opt/common/htseq/v0.5.3p3
+DEXSEQ			/opt/common/dexseq/v1
+VARSCAN                 /opt/common/varscan/v2.3.6
+SAMTOOLS                /opt/common/samtools/samtools-0.1.19
+CHIMERASCAN		/opt/common/chimerascan/chimerascan-0.4.5/chimerascan
