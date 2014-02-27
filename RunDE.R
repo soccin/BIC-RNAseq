@@ -90,8 +90,6 @@ if (!file.exists(key.file)){
 #################
 ## organizing Rayas script4DEanalysis.R here
 #################
-#source("/home/byrne/RNAseqPipe/trunk/bin/tools.R") 
-#source("/home/byrne/RNAseqPipe/trunk/bin/run_DESeq.R") 
 source(paste(bin,"tools.R",sep="/"))
 source(paste(bin,"run_DESeq.R",sep="/"))
 
@@ -116,8 +114,14 @@ counts.dat=matrix2numeric(HTSeq.dat)
 
 ### remove samples that are of no interest in this analysis ###
 ### reorder columns based on order of sample names in key file
-#keys = as.matrix(read.delim(key.file,header=T,strip.white=T,sep="\t"))
 keys = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
+
+### sample IDs in matrix file may contains invalid characters,
+### most often a "-". When the matrix file is read, the headers
+### are automatically converted to valid column names. Do the same
+### here for sample IDs in the key file so they they match up
+### with the matrix correctly. 
+keys[,1] = make.names(keys[,1])
 
 counts.dat = counts.dat[,keys[,1]]
 conds = keys[,2]
@@ -136,7 +140,7 @@ sink()
 dat=2^counts.log.norm.dat
 if (exists("gns")){
     dat=as.matrix(cbind(rownames(dat),gns,dat))
-    colnames(dat)[1]="ID"
+    colnames(dat)[1]="GeneID"
     colnames(dat)[2]="GeneSymbol"
 } else {
     dat=as.matrix(cbind(rownames(dat),dat))
@@ -176,7 +180,7 @@ cat("writing DESeq scaled counts...\n")
 dat=2^counts.log.dat
 if (exists("gns")){
     dat=as.matrix(cbind(rownames(dat),idsAndGns,dat))
-    colnames(dat)[1]="ID"
+    colnames(dat)[1]="GeneID"
     colnames(dat)[2]="GeneSymbol"
 } else {
     gns = c()
