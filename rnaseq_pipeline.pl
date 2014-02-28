@@ -23,7 +23,7 @@ use FindBin qw($Bin);
 ### PICARD                  /opt/common/picard/picard-tools-1.104
 ### NOTE: MUST GIVE FULL PATH TO CONFIG FILE
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions);
 
 $pre = 'TEMP';
 GetOptions ('map=s' => \$map,
@@ -37,6 +37,11 @@ GetOptions ('map=s' => \$map,
 	    'htseq' => \$htseq,
 	    'deseq' => \$deseq,
 	    'chimerascan' => \$chimerascan,
+	    'star' => \$star,
+	    'mapsplice' => \$mapsplice,
+	    'defuse' => \$defuse,
+	    'fusioncatcher' => \$fusioncatcher,
+	    'allfusions' => \$allfusions,
             'species=s' => \$species);
 
 if(!$map || !$species || $help){
@@ -49,7 +54,7 @@ if(!$map || !$species || $help){
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (default: /opt/bin)
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B
-	* ANALYSES SUPPORTED: cufflinks (-cufflinks), htseq (=htseq), dexseq (-dexseq), deseq (-deseq; must specify samplekey and comparisons), chimerascan (-chimerascan)
+	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
 
 HELP
 exit;
@@ -67,23 +72,33 @@ my $GTF = '';
 my $DEXSEQ_GTF = '';
 my $CHIMERASCAN_INDEX = '';
 my $geneNameConversion = '';
+my $starDB = '';
+my $chrSplits = '';
+my $BOWTIE_INDEX = '';
 if($species =~ /human|hg19/i){
     $species = 'hg19';
     $GTF = "$Bin/data/gencode.v18.annotation.gtf";
     $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
     $CHIMERASCAN_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/chimerascan/';
+    $starDB = '/ifs/data/bio/assemblies/H.sapiens/hg19/star';
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
+    $BOWTIE_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie/hg19_bowtie';
+    $chrSplits = '/ifs/data/bio/assemblies/H.sapiens/hg19/chromosomes';
 }
 elsif($species =~ /mouse|mm9/i){
     $species = 'mm9';
     $GTF = "$Bin/data//Mus_musculus.NCBIM37.67_ENSEMBL.gtf";
     $DEXSEQ_GTF = "$Bin/data/Mus_musculus.NCBIM37.67_ENSEMBL.dexseq.gtf";
+    $starDB = '/ifs/data/bio/assemblies/M.musculus/mm9/star';
     $geneNameConversion = "$Bin/data/mm9Ensembl67IDToGeneName.txt";
+    $BOWTIE_INDEX = '/ifs/data/bio/assemblies/M.musculus/mm9/bowtie/mm9_bowtie';
+    $chrSplits = '/ifs/data/bio/assemblies/M.musculus/mm9/chromosomes';
 }
 elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $species = 'hybrid';
     $GTF = "$Bin/data/gencode.v18.annotation.gtf";
     $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
+    $starDB = '/ifs/data/mpirun/genomes/human/hg19_mm9_hybrid/star';
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
 }
 
@@ -93,9 +108,25 @@ my $HTSEQ = '/opt/bin';
 my $DEXSEQ = '/opt/bin';
 my $PICARD = '/opt/bin';
 my $CHIMERASCAN = '/opt/bin';
+my $MAPSPLICE = '/opt/bin';
+my $STAR = '/opt/bin';
+my $DEFUSE = '/opt/bin';
+my $FUSIONCATCHER = '/opt/bin';
 
 ### Check that all programs are available
 &verifyConfig($config);
+
+if($allfusions){
+    $chimerascan = 1;
+    $star = 1;
+    $mapsplice = 1;
+    $defuse = 1;
+    $fusioncatcher = 1;
+}
+
+if($chimerascan || $star || $mapsplice || $defuse || $fusioncatcher){
+    $detectFusions = 1;
+}
 
 if($deseq){
     if(!-e $comparisons || !-e $samplekey){
@@ -222,6 +253,7 @@ foreach my $sample (keys %samp_libs_run){
     my @R1 = ();
     my @R2 = ();
     my $readsFlag = 0;
+    my @fusions = ();
     foreach my $lib (keys %{$samp_libs_run{$sample}}){
 	foreach my $run (keys %{$samp_libs_run{$sample}{$lib}}){
 	    if($htseq || $dexseq || $cufflinks){
@@ -232,9 +264,9 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	    push @filteredBams, "I=$sample/$lib/$run/$sample\_$lib\_$run\_FILTERED.bam";
 	    
-	    if($chimerascan){
-		if(!-d "chimerascan"){
-		    `mkdir chimerascan`;
+	    if($detectFusions){
+		if(!-d "fusion"){
+		    `mkdir fusion`;
 		}
 
 		open(READS, "$sample/$lib/$run/files_$sample\_$lib\_$run") || die "Can't open $sample/$lib/$run/files_$sample\_$lib\_$run $!";
@@ -273,27 +305,93 @@ foreach my $sample (keys %samp_libs_run){
 	}
     }
 
-    if($chimerascan && $readsFlag == 0){
+    if($detectFusions && $readsFlag == 0){
 	if($species !~ /hg19|human/i){
-	    print "CHIMERASCAN ISN'T SUPPORTED FOR $species; CURRENTLY ONLY SUPPORT FOR hg19";
+	    print "FUSION CALLING ISN'T SUPPORTED FOR $species; CURRENTLY ONLY SUPPORT FOR hg19";
 	    next;
 	}
 	
 	my $r1_files = join(" ", @R1);
 	my $r2_files = join(" ", @R2);
 	
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/cat $r1_files ">$sample/$sample\_R1.fastq.gz"`;
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/cat $r2_files ">$sample/$sample\_R2.fastq.gz"`;
+	#`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r1_files ">$sample/$sample\_R1.fastq"`;
+	#`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r2_files ">$sample/$sample\_R2.fastq"`;
 	
-	if(!-d "chimerascan/$sample"){
-	    `mkdir chimerascan/$sample`;
+	if($chimerascan){
+	    if(!-d "fusion/chimerascan"){
+		`mkdir fusion/chimerascan`;
+	    }
+	    if(!-d "fusion/chimerascan/$sample"){
+		`mkdir fusion/chimerascan/$sample`;
+	    }
+	    
+	    ### NOTE: CHIMERASCAN FAILS WHEN A READ PAIR IS OF DIFFERENT LENGTHS
+	    ###       e.g. WHEN WE CLIP AND TRIM VARIABLE LENGTHS FROM
+	    ###       SO HAVE TO USE UNPROCESSED READS
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 12 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $sample/$sample\_R1.fastq $sample/$sample\_R2.fastq fusion/chimerascan/$sample/`;
+
+	    push @fusions, "--chimerascan fusion/chimerascan/$sample/chimeras.bedpe";
 	}
-	
-	### NOTE: CHIMERASCAN FAILS WHEN A READ PAIR IS OF DIFFERENT LENGTHS
-	###       e.g. WHEN WE CLIP AND TRIM VARIABLE LENGTHS FROM
-	###       SO HAVE TO USE UNPROCESSED READS
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=7G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=/ifs/data/mpirun/data/rnaSeq/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $sample/$sample\_R1.fastq.gz $sample/$sample\_R2.fastq.gz chimerascan/$sample/`;
+
+	if($star){
+	    if(!-d "fusion/star"){
+		`mkdir fusion/star`;
+	    }
+	    if(!-d "fusion/star/$sample"){
+		`mkdir fusion/star/$sample`;
+	    }
+
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CHIMERA_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $sample/$sample\_R1.fastq $sample/$sample\_R2.fastq --runThreadN 12 --outFileNamePrefix fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
+
+	    push @fusions, "--star fusion/star/$sample/$sample\_STAR_Chimeric.out.junction";
+	}
+
+	if($mapsplice){
+	    if(!-d "fusion/mapsplice"){
+		`mkdir fusion/mapsplice`;
+	    }
+	    if(!-d "fusion/mapsplice/$sample"){
+		`mkdir fusion/mapsplice/$sample`;
+	    }
+
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MAPSPLICE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD /opt/bin/python $MAPSPLICE/mapsplice.py -p 12 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o fusion/mapsplice/$sample -1 $sample/$sample\_R1.fastq -2 $sample/$sample\_R2.fastq --gene-gtf $GTF`;
+
+	    push @fusions, "--mapsplice fusion/mapsplice/$sample/fusions_well_annotated.txt";
+	}
+
+	if($defuse){
+	    if(!-d "fusion/defuse"){
+		`mkdir fusion/defuse`;
+	    }
+	    if(!-d "fusion/defuse/$sample"){
+		`mkdir fusion/defuse/$sample`;
+	    }
+
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output fusion/defuse/$sample --parallel 12 --1fastq $sample/$sample\_R1.fastq --2fastq $sample/$sample\_R2.fastq`;
+
+	    push @fusions, "--defuse fusion/defuse/$sample/results.filtered.tsv";
+
+	}
+
+	if($fusioncatcher){
+	    if(!-d "fusion/fusioncatcher"){
+		`mkdir fusion/fusioncatcher`;
+	    }
+	    if(!-d "fusion/fusioncatcher/$sample"){
+		`mkdir fusion/fusioncatcher/$sample`;
+	    }
+
+	    ### NOTE: DUE TO PYTHON MODULE COMPATIBILITY ISSUES ON NODES
+	    ###       HAVE TO USE DIFFERENT VERSION OF PYTHON
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=7G /ifs/data/mpirun/analysis/solexa/Proj_3970_TEST/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 -i $sample/$sample\_R1.fastq,$sample/$sample\_R2.fastq -o fusion/fusioncatcher/$sample -p 12`;
+
+	    push @fusions, "--fusioncatcher fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
+
+	}
     }
+
+    my $allFusions = join(" ", @fusions);
+    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MERGE_FUSION_$sample -hold_jid $pre\_$uID\_CHIMERASCAN_$sample,$pre\_$uID\_STAR_CHIMERA_$sample,$pre\_$uID\_MAPSPLICE_$sample,$pre\_$uID\_DEFUSE_$sample,$pre\_$uID\_FC_$sample -pe alloc 1 -l virtual_free=1G $Bin/MergeFusion $allFusions --out $pre\_merged_fusions.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
     
     if($cufflinks){
 	if(!-d "cufflinks"){
@@ -399,6 +497,30 @@ sub verifyConfig{
 	    if(!-e "$conf[1]/samtools"){
 		die "CAN'T FIND samtools IN $conf[1] $!";
 	    }
+	}
+	elsif($conf[0] =~ /star/i){
+	    if(!-e "$conf[1]/STAR"){
+		die "CAN'T FIND STAR IN $conf[1] $!";
+	    }
+	    $STAR = $conf[1];
+	}
+	elsif($conf[0] =~ /mapsplice/i){
+	    if(!-e "$conf[1]/mapsplice.py"){
+		die "CAN'T FIND mapsplice.py IN $conf[1] $!";
+	    }
+	    $MAPSPLICE = $conf[1];
+	}
+	elsif($conf[0] =~ /defuse/i){
+	    if(!-e "$conf[1]/scripts/defuse.pl"){
+		die "CAN'T FIND scripts/defuse.pl IN $conf[1] $!";
+	    }
+	    $DEFUSE = $conf[1];
+	}
+	elsif($conf[0] =~ /fusioncatcher/i){
+	    if(!-e "$conf[1]/bin/fusioncatcher"){
+		die "CAN'T FIND bin/fusioncatcher IN $conf[1] $!";
+	    }
+	    $FUSIONCATCHER = $conf[1];
 	}
     }
     close CONFIG;
