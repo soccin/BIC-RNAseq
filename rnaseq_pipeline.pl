@@ -383,7 +383,7 @@ foreach my $sample (keys %samp_libs_run){
 
 	    ### NOTE: DUE TO PYTHON MODULE COMPATIBILITY ISSUES ON NODES
 	    ###       HAVE TO USE DIFFERENT VERSION OF PYTHON
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=7G /ifs/data/mpirun/analysis/solexa/Proj_3970_TEST/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 -i $sample/$sample\_R1.fastq,$sample/$sample\_R2.fastq -o fusion/fusioncatcher/$sample -p 12`;
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=7G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 -i $sample/$sample\_R1.fastq,$sample/$sample\_R2.fastq -o fusion/fusioncatcher/$sample -p 12`;
 
 	    push @fusions, "--fusioncatcher fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
 
