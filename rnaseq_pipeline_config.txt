@@ -8,3 +8,4 @@ CHIMERASCAN		/opt/common/chimerascan/chimerascan-0.4.5/chimerascan
 MAPSPLICE		/opt/common/mapsplice/MapSplice-v2.1.6
 DEFUSE			/opt/common/defuse/defuse-0.6.1
 FUSIONCATCHER		/opt/common/fusioncatcher/fusioncatcher_v0.99
+TOPHAT			/opt/common/tophat/tophat-2.0.9.Linux_x86_64
