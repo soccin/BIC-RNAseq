@@ -16,7 +16,7 @@ if [ -f ~/.bashrc ] ; then
     . ~/.bashrc
 fi
 
-export PATH=/home/mpirun/tools:/home/mpirun/bin:/opt/bin:$PATH
+export PATH=/opt/common/bowtie2/bowtie2-2.1.0:/home/mpirun/tools:/home/mpirun/bin:/opt/bin:$PATH
 export LD_LIBRARY_PATH=/opt/lib64:/opt/lib:/ifs/data/socci/opt/lib:/home/socci/Work/SeqAna/opt/lib:$LD_LIBRARY_PATH
 export SAMTOOLS_ROOT=/home/mpirun/bin/samtools
 
