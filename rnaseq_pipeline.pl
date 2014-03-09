@@ -305,7 +305,7 @@ foreach my $sample (keys %samp_libs_run){
 	if(!-d "tophat2/$sample"){
 	    `/bin/mkdir -p tophat2/$sample`;
 	}
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 12 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o tophat2/$sample BOWTIE2_INDEX $r1_gz_files $r2_gz_files`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 12 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o tophat2/$sample $BOWTIE2_INDEX $r1_gz_files $r2_gz_files`;
     }
 
     
