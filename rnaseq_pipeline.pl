@@ -133,7 +133,7 @@ my $TOPHAT = '/opt/bin';
 
 if($allfusions){
     $chimerascan = 1;
-    $star = 1;
+    $star_fusion = 1;
     $mapsplice = 1;
     $defuse = 1;
     $fusioncatcher = 1;
