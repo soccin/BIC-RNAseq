@@ -111,7 +111,7 @@ while (<IN>){
 	sleep(15);
 	
 	$qsubZcatCheck1 = `/common/sge/bin/lx24-amd64/qstat -j $pre\_$uID\_ZCAT_$nameR1[0]`;
-	$qsubZcatCheck2 = `/common/sge/bin/lx24-amd64/qstat -j $pre\_$uID\_ZZCAT_$nameR2[0]`;
+	$qsubZcatCheck2 = `/common/sge/bin/lx24-amd64/qstat -j $pre\_$uID\_ZCAT_$nameR2[0]`;
    }
 
     ### skipping if either fastq is empty
