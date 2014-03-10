@@ -85,6 +85,7 @@ my $chrSplits = '';
 my $BOWTIE_INDEX = '';
 my $BOWTIE2_INDEX = '';
 my $TRANS_INDEX = '';
+my $REF_SEQ = '';
 
 if($species =~ /human|hg19/i){
     $species = 'hg19';
@@ -275,7 +276,7 @@ foreach my $sample (keys %samp_libs_run){
 
     if($readsFlag == 1){
 	my @currentTime = &getTime();
-	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSKIPPING SAMPLE $sample ANALYSIS BECAUSE CAN'T LOCATE $sample/$lib/$run/$sample\_$lib\_$run\_R1.fastq && $sample/$lib/$run/$sample\_$lib\_$run\_R2.fastq\n";
+	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSKIPPING SAMPLE $sample ANALYSIS BECAUSE CAN'T LOCATE ALL LISTED READS";
 	next;
     }
 
@@ -441,7 +442,6 @@ foreach my $sample (keys %samp_libs_run){
     
     if($htseq || $dexseq){
 	if($star){
-	    
 	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$sample/$sample\_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
 	}
 	
@@ -466,7 +466,6 @@ foreach my $sample (keys %samp_libs_run){
 		}
 		
 		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $sample/tophat2/accepted_hits_queryname_sorted.sam $GTF > htseq_tophat2/$sample.htseq_count"`;
-		
 	    }
 	}
 	
