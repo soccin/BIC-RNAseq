@@ -305,7 +305,7 @@ foreach my $sample (keys %samp_libs_run){
 	if(!-d "tophat2/$sample"){
 	    `/bin/mkdir -p tophat2/$sample`;
 	}
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 12 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o tophat2/$sample $BOWTIE2_INDEX $r1_gz_files $r2_gz_files`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 6 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o tophat2/$sample $BOWTIE2_INDEX $r1_gz_files $r2_gz_files`;
     }
 
     
@@ -334,7 +334,7 @@ foreach my $sample (keys %samp_libs_run){
 		### NOTE: CHIMERASCAN FAILS WHEN A READ PAIR IS OF DIFFERENT LENGTHS
 		###       e.g. WHEN WE CLIP AND TRIM VARIABLE LENGTHS FROM
 		###       SO HAVE TO USE UNPROCESSED READS
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=1G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 12 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $sample/$sample\_R1.fastq $sample/$sample\_R2.fastq fusion/chimerascan/$sample/`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=1G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $sample/$sample\_R1.fastq $sample/$sample\_R2.fastq fusion/chimerascan/$sample/`;
 		
 		push @fusions, "--chimerascan fusion/chimerascan/$sample/chimeras.bedpe";
 	    }
@@ -350,7 +350,7 @@ foreach my $sample (keys %samp_libs_run){
 		$inReads .= " $sample/$sample\_R2.fastq";
 	    }
 
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CHIMERA_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CHIMERA_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
 
 	    push @fusions, "--star fusion/star/$sample/$sample\_STAR_Chimeric.out.junction";
 	}
@@ -365,7 +365,7 @@ foreach my $sample (keys %samp_libs_run){
 		$inReads .= " -2 $sample/$sample\_R2.fastq"
 	    }
 
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MAPSPLICE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD /opt/bin/python $MAPSPLICE/mapsplice.py -p 12 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o fusion/mapsplice/$sample $inReads --gene-gtf $GTF`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MAPSPLICE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD /opt/bin/python $MAPSPLICE/mapsplice.py -p 6 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o fusion/mapsplice/$sample $inReads --gene-gtf $GTF`;
 
 	    push @fusions, "--mapsplice fusion/mapsplice/$sample/fusions_well_annotated.txt";
 	}
@@ -377,7 +377,7 @@ foreach my $sample (keys %samp_libs_run){
 		    `/bin/mkdir -p fusion/defuse/$sample`;
 		}
 				
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 12 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output fusion/defuse/$sample --parallel 12 --1fastq $sample/$sample\_R1.fastq --2fastq $sample/$sample\_R2.fastq`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output fusion/defuse/$sample --parallel 6 --1fastq $sample/$sample\_R1.fastq --2fastq $sample/$sample\_R2.fastq`;
 		
 		push @fusions, "--defuse fusion/defuse/$sample/results.filtered.tsv";
 	    }
@@ -395,7 +395,7 @@ foreach my $sample (keys %samp_libs_run){
 
 	    ### NOTE: DUE TO PYTHON MODULE COMPATIBILITY ISSUES ON NODES
 	    ###       HAVE TO USE DIFFERENT VERSION OF PYTHON
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 4 -l virtual_free=3G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o fusion/fusioncatcher/$sample -p 4`;
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o fusion/fusioncatcher/$sample -p 6`;
 
 	    push @fusions, "--fusioncatcher fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
 
