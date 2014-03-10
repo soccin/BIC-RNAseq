@@ -258,6 +258,9 @@ foreach my $sample (keys %samp_libs_run){
 		chomp;
 		    
 		my @readPair = split(/\s+/, $_);
+		
+		### NOTE: JUST CHECKING TO SEE IF IT EXISTS
+		###       HOWEVER DOES NOT GURANTEE THAT IT'S NON-EMPTY
 		if(-e "$sample/$lib/$run/$readPair[0]" && -e "$sample/$lib/$run/$readPair[1]"){
 		    push @R1, "$sample/$lib/$run/$readPair[0]";
 		    push @R2, "$sample/$lib/$run/$readPair[1]";
@@ -419,7 +422,7 @@ foreach my $sample (keys %samp_libs_run){
 	my $mergeFusions = join(" ", @fusions);
 	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MERGE_FUSION_$sample -hold_jid $pre\_$uID\_CHIMERASCAN_$sample,$pre\_$uID\_STAR_CHIMERA_$sample,$pre\_$uID\_MAPSPLICE_$sample,$pre\_$uID\_DEFUSE_$sample,$pre\_$uID\_FC_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/MergeFusion $mergeFusions --out $pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
     }
-
+    
     if($cufflinks){
 	if($star){
 	    if(!-d "cufflinks/$sample"){
@@ -434,26 +437,26 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT2 -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 5 -l virtual_free=2G -q lau.q $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o cufflinks/$sample $sample/tophat2/accepted_hits.bam`;
 	}
-
+    }
     
     if($htseq || $dexseq){
 	if($star){
-
+	    
 	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$sample/$sample\_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
 	}
-
+	
 	if($tophat){
 	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=$sample/tophat2/accepted_hits.bam OUTPUT=$sample/tophat2/accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
 	}
-    
+	
 	sleep(5);
-    
+	
 	if($htseq){
 	    if($star){
 		if(!-d "htseq"){
 		    `/bin/mkdir -p htseq`;
 		}
-	    
+		
 		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $sample/$sample\_queryname_sorted.sam $GTF > htseq/$sample.htseq_count"`;
 	    }
 	    
@@ -463,19 +466,19 @@ foreach my $sample (keys %samp_libs_run){
 		}
 		
 		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $sample/tophat2/accepted_hits_queryname_sorted.sam $GTF > htseq_tophat2/$sample.htseq_count"`;
-
+		
 	    }
 	}
-
+	
 	if($dexseq){
 	    if($star){
 		if(!-d "dexseq"){
 		    `/bin/mkdir -p dexseq`;
 		}
-	    
+		
 		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $sample/$sample\_queryname_sorted.sam dexseq/$sample.dexseq_count`;
 	    }
-
+	    
 	    if($tophat){
 		if(!-d "dexseq_tophat2"){
 		    `/bin/mkdir -p dexseq_tophat2`;
@@ -535,6 +538,8 @@ if($deseq){
 	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT2 -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/R-2.15.0/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"output.dir='$curDir/DESeq_tophat2'\\\"\" \"\\\"counts.file='$curDir/htseq_tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
     }
 }
+close LOG;
+
 
 sub verifyConfig{
     my $paths = shift;
