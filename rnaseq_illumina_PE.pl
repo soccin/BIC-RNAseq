@@ -102,18 +102,7 @@ while (<IN>){
 
     sleep(5);
 
-    my $qsubZcatCheck1 = `/common/sge/bin/lx24-amd64/qstat -j $pre\_$uID\_ZCAT_$nameR1[0]`;
-    my $qsubZcatCheck2 = `/common/sge/bin/lx24-amd64/qstat -j $pre\_$uID\_ZCAT_$nameR2[0]`;
-    
-    while($qsubZcatCheck1 || $qsubZcatCheck2){
-	
-	print "$pre\_$uID\_ZCAT_$nameR1[0] and/or $pre\_$uID\_ZCAT_$nameR2[0] is still running; will check again in 15 seconds...\n";
-	sleep(15);
-	
-	$qsubZcatCheck1 = `/common/sge/bin/lx24-amd64/qstat -j $pre\_$uID\_ZCAT_$nameR1[0]`;
-	$qsubZcatCheck2 = `/common/sge/bin/lx24-amd64/qstat -j $pre\_$uID\_ZCAT_$nameR2[0]`;
-   }
-
+    `$Bin/qSYNC $pre\_$uID\_ZCAT_$nameR1[0],$pre\_$uID\_ZCAT_$nameR2[0]`;                                        
     ### skipping if either fastq is empty
     if(!-s "$count/$nameR1[0]" || !-s "$count/$nameR2[0]"){
 	print "$count/$nameR1[0] and/or $count/$nameR1[0] is empty\n";
