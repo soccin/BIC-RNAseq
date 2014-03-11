@@ -313,7 +313,7 @@ foreach my $sample (keys %samp_libs_run){
 	    `/bin/mkdir -p $sample/star2passGG`;
 	    sleep(5);
 	
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_GG2_$sample -hold_jid $pre\_$uID\_STAR_1PASS_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --runMode genomeGenerate --genomeDir $sample/star2passGG -genomeFastaFiles $REF_SEQ --sjdbFileChrStartEnd $sample/$sample\_STAR_1PASS_SJ.out.tab --sjdbOverhang $MIN_READ_LENGTH --runThreadN 12`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_GG2_$sample -hold_jid $pre\_$uID\_STAR_1PASS_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --runMode genomeGenerate --genomeDir $sample/star2passGG --genomeFastaFiles $REF_SEQ --sjdbFileChrStartEnd $sample/$sample\_STAR_1PASS_SJ.out.tab --sjdbOverhang $MIN_READ_LENGTH --runThreadN 12`;
 	    
 	    sleep(5);
 	    
