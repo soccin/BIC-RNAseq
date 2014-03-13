@@ -436,7 +436,7 @@ foreach my $sample (keys %samp_libs_run){
 	    if(!-d "cufflinks_tophat2/$sample"){
 		`/bin/mkdir -p cufflinks_tophat2/$sample`;
 	    }
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT2 -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 5 -l virtual_free=2G -q lau.q $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o cufflinks/$sample $sample/tophat2/accepted_hits.bam`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT2 -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 5 -l virtual_free=2G -q lau.q $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o cufflinks/$sample tophat2/$sample/accepted_hits.bam`;
 	}
     }
     
@@ -446,7 +446,7 @@ foreach my $sample (keys %samp_libs_run){
 	}
 	
 	if($tophat){
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=$sample/tophat2/accepted_hits.bam OUTPUT=$sample/tophat2/accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=tophat2/$sample/accepted_hits.bam OUTPUT=tophat2/$sample/accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
 	}
 	
 	sleep(5);
@@ -465,7 +465,7 @@ foreach my $sample (keys %samp_libs_run){
 		    `/bin/mkdir -p htseq_tophat2`;
 		}
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $sample/tophat2/accepted_hits_queryname_sorted.sam $GTF > htseq_tophat2/$sample.htseq_count"`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon tophat2/$sample/accepted_hits_queryname_sorted.sam $GTF > htseq_tophat2/$sample.htseq_count"`;
 	    }
 	}
 	
@@ -483,7 +483,7 @@ foreach my $sample (keys %samp_libs_run){
 		    `/bin/mkdir -p dexseq_tophat2`;
 		}
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $sample/tophat2/accepted_hits_queryname_sorted.sam dexseq_tophat2/$sample.dexseq_count`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF tophat2/$sample/accepted_hits_queryname_sorted.sam dexseq_tophat2/$sample.dexseq_count`;
 	    }
 	}
     }
