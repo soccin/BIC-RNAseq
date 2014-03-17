@@ -150,9 +150,21 @@ if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
     $detectFusions = 1;
 }
 
+if($deseq || $dexseq || $htseq){
+    if(!$star && !$tophat){
+	print "MUST RUN STAR OR TOPHAT TO RUN COUNTS AND/OR DIFFERENTIAL EXPRESSION ANALYSIS";
+	die;
+    }
+}
+
 if($deseq){
     if(!-e $comparisons || !-e $samplekey){
 	print "MUST PROVIDE SOMPARISONS AND SAMPLEKEY FILES";
+	die;
+    }
+
+    if(!$htseq){
+	print "MUST RUN HTSEQ TO RUN DESEQ\n";
 	die;
     }
 }
