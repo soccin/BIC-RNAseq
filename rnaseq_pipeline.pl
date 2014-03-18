@@ -54,14 +54,14 @@ GetOptions ('map=s' => \$map,
 if(!$map || !$species || $help){
     print <<HELP;
 
-    USAGE: ./rnaseq_pipeline/exome_pipeline.pl -map MAP -species SPECIES -pre PRE -config CONFIG
-	* MAP: file listing sample information for processing (REQUIRED)
+    USAGE: ./rnaseq_pipeline/exome_pipeline.pl -map MAP -species SPECIES -pre PRE -config CONFIG -samplekey SAMPLEKEY -comparisons COMPARISONS
+	* MAP: file listing sample mapping information for processing (REQUIRED)
 	* SPECIES: only hg19 and mm9 and human-mouse hybrid (hybrid) currently supported (REQUIRED)
 	* PRE: output prefix (default: TEMP)
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (default: /opt/bin)
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B
-	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat)
+	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
 
 HELP
@@ -135,6 +135,22 @@ my $TOPHAT = '/opt/bin';
 ### THIS VALUE IS USED IN CREATING JUNCTION IS 2ND PASS OF STAR
 my $MIN_READ_LENGTH = 50;
 
+my $curDir = `pwd`;
+chomp $curDir;
+my $cd = $curDir;
+$cd =~ s/\//_/g;
+
+my $uID = `/usr/bin/id -u -n`;
+chomp $uID;
+
+my %samp_libs_run = ();
+my $slr_count = 0;
+my %samp_pair = ();
+
+open(LOG, ">$cd\_rnaseq_pipeline.log") or die "can't write to output log";
+my @currentTime = &getTime();
+print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSTARTING RNASEQ PIPELINE FOR $pre\n";
+
 ### Check that all programs are available
 &verifyConfig($config);
 
@@ -152,20 +168,20 @@ if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
 
 if($deseq || $dexseq || $htseq){
     if(!$star && !$tophat){
-	print "MUST RUN STAR OR TOPHAT TO RUN COUNTS AND/OR DIFFERENTIAL EXPRESSION ANALYSIS";
-	die;
+	$star = 1;
+
+	my @currentTime = &getTime();
+	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNER INDICATED SO DEFAULTING TO USING STAR\n";
     }
 }
 
 if($deseq){
     if(!-e $comparisons || !-e $samplekey){
-	print "MUST PROVIDE SOMPARISONS AND SAMPLEKEY FILES";
-	die;
+	die "MUST PROVIDE SOMPARISONS AND SAMPLEKEY FILES";
     }
 
     if(!$htseq){
-	print "MUST RUN HTSEQ TO RUN DESEQ\n";
-	die;
+	die "MUST RUN HTSEQ TO RUN DESEQ\n";
     }
 }
 
@@ -181,19 +197,7 @@ while(<MA>){
 }
 close MA;
 
-my $curDir = `pwd`;
-chomp $curDir;
-my $cd = $curDir;
-$cd =~ s/\//_/g;
 
-my $uID = `/usr/bin/id -u -n`;
-chomp $uID;
-
-my %samp_libs_run = ();
-my $slr_count = 0;
-my %samp_pair = ();
-
-open(LOG, ">$cd\_rnaseq_pipeline.log") or die "can't write to output log";
 open(IN, "$map") or die "Can't open $map $!";
 while(<IN>){
     chomp;
@@ -207,9 +211,10 @@ while(<IN>){
     ### the lib, sample, and run id isn't a unique identifier
     if($samp_libs_run{$data[1]}{$data[0]}{$data[2]}){
 	$slr_count++;
-	print LOG "WARNING: $data[1]\t$data[0]\t$data[2] isn't unique;";
+my @currentTime = &getTime();
+	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tWARNING: $data[1]\t$data[0]\t$data[2] ISN'T UNIQUE; ";
 	$data[2] = "$data[2]\_$slr_count";
-	print LOG "writing instead to $data[1]\/$data[0]\/$data[2]\n";
+	print LOG "WRITING INSTEAD TO $data[1]\/$data[0]\/$data[2]\n";
     }
 
     ###if(-e "$data[1]/$data[0]/$data[2]/FINISHED_$data[1]\_$data[0]\_$data[2]"){
@@ -342,7 +347,8 @@ foreach my $sample (keys %samp_libs_run){
 
     if($detectFusions){
 	if($species !~ /hg19|human/i){
-	    print "FUSION CALLING ISN'T SUPPORTED FOR $species; CURRENTLY ONLY SUPPORT FOR hg19";
+	my @currentTime = &getTime();
+	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSKIPPING FUSION CALLING FOR SAMPLE $sample BECAUSE IT ISN'T SUPPORTED FOR $species; CURRENTLY ONLY SUPPORT FOR hg19";
 	    next;
 	}
 	
