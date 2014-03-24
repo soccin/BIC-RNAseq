@@ -635,3 +635,31 @@ sub verifyConfig{
     }
     close CONFIG;
 }
+
+sub getTime(){
+
+    my @timeData = localtime();
+
+    if($timeData[0] < 10){
+	$timeData[0] = "0" . $timeData[0];
+    }
+    if($timeData[1] < 10){
+	$timeData[1] = "0" . $timeData[1];
+    }
+    if($timeData[2] < 10){
+	$timeData[2] = "0" . $timeData[2];
+    }
+    if($timeData[3] < 10){
+	$timeData[3] = "0" . $timeData[3];
+    }
+    
+    my $month = $timeData[4] + 1;
+    $timeData[4] += 1;
+    if($timeData[4] < 10){
+	$timeData[4] = "0" . $timeData[4];
+    }
+    
+    $timeData[5] += 1900;
+
+    return(@timeData);
+}
