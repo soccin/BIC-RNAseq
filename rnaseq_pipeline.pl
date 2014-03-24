@@ -171,17 +171,17 @@ if($deseq || $dexseq || $htseq){
 	$star = 1;
 
 	my @currentTime = &getTime();
-	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNER INDICATED SO DEFAULTING TO USING STAR\n";
+	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNER SPECIFIED SO DEFAULTING TO USING STAR\n";
     }
 }
 
 if($deseq){
     if(!-e $comparisons || !-e $samplekey){
-	die "MUST PROVIDE SOMPARISONS AND SAMPLEKEY FILES";
+	die "MUST PROVIDE SOMPARISONS AND SAMPLEKEY FILES IN ORDER TO RUN DESEQ";
     }
 
     if(!$htseq){
-	die "MUST RUN HTSEQ TO RUN DESEQ\n";
+	die "MUST RUN HTSEQ IN ORDER TO RUN DESEQ\n";
     }
 }
 
@@ -196,7 +196,6 @@ while(<MA>){
     }
 }
 close MA;
-
 
 open(IN, "$map") or die "Can't open $map $!";
 while(<IN>){
@@ -264,6 +263,7 @@ my @currentTime = &getTime();
     close OUT;
     chdir $curDir;
 }
+close IN;
 
 foreach my $sample (keys %samp_libs_run){
     my @R1 = ();
@@ -460,7 +460,7 @@ foreach my $sample (keys %samp_libs_run){
     
     if($htseq || $dexseq){
 	if($star){
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$sample/$sample\_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$sample/$sample\_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID USE_THREADING=true`;
 	}
 	
 	if($tophat){
