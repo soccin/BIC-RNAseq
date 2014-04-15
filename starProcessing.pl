@@ -23,7 +23,7 @@ while(my $line = <IN>){
     }
 
     my @data = split(/\t/, $line);
-    if(abs($data[8]) >= 2**31 - 1 || length($data[9]) != length($data[10]) || scalar(@data) < 11){
+    if((abs($data[8]) >= 2**31 - 1) || (length($data[9]) != length($data[10])) || (scalar(@data) < 11)){
 	next;
     }
 
