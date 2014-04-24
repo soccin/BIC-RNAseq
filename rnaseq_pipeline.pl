@@ -35,7 +35,7 @@ GetOptions ('map=s' => \$map,
 	    'config=s' => \$config,
 	    'samplekey=s' => \$samplekey,
 	    'comparisons=s' => \$comparisons,
-	    'help' => \$help,
+	    'h|help' => \$help,
 	    'star' => \$star,
 	    'pass1' => \$pass1,
 	    'tophat' => \$tophat,
@@ -49,18 +49,19 @@ GetOptions ('map=s' => \$map,
 	    'defuse' => \$defuse,
 	    'fusioncatcher' => \$fusioncatcher,
 	    'allfusions' => \$allfusions,
-            'species=s' => \$species);
+            'species=s' => \$species) or exit(1);
 
-if(!$map || !$species || $help){
+
+if(!$map || !$species || !$config || $help){
     print <<HELP;
 
-    USAGE: ./rnaseq_pipeline/exome_pipeline.pl -map MAP -species SPECIES -pre PRE -config CONFIG -samplekey SAMPLEKEY -comparisons COMPARISONS
+    USAGE: ./rnaseq_pipeline.pl -map MAP -species SPECIES -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS
 	* MAP: file listing sample mapping information for processing (REQUIRED)
 	* SPECIES: only hg19 and mm9 and human-mouse hybrid (hybrid) currently supported (REQUIRED)
+	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
 	* PRE: output prefix (default: TEMP)
-	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (default: /opt/bin)
-	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B
-	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B
+	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
+	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
 
@@ -75,6 +76,72 @@ if($pre =~ /^\d+/){
 if($species !~ /human|hg19|mouse|mm9|hybrid/i){
     die "Species must be human (hg19) or mouse (mm9) or human-mouse hybrid (hybrid)";
 }
+
+### dumb reconstruction of command line
+my $commandLine = "$Bin/rnaseq_pipeline.pl";
+if($pre){
+    $commandLine .= " -pre $pre";
+}
+if($map){
+    $commandLine .= " -map $map";
+}
+if($config){
+    $commandLine .= " -config $config";
+}
+if($samplekey){
+    $commandLine .= " -samplekey $samplekey";
+}
+if($comparisons){
+    $commandLine .= " -comparisons $comparisons";
+}
+if($star){
+    $commandLine .= " -star";
+}
+if($pass1){
+    $commandLine .= " -pass1";
+}
+if($tophat){
+    $commandLine .= " -tophat";
+}
+if($cufflinks){
+    $commandLine .= " -cufflinks";
+}
+if($dexseq){
+    $commandLine .= " -dexseq";
+}
+if($htseq){
+    $commandLine .= " -htseq";
+}
+if($deseq){
+    $commandLine .= " -deseq";
+}
+if($chimerascan){
+    $commandLine .= " -chimerascan";
+}
+if($star_fusion){
+    $commandLine .= " -star_fusion";
+}
+if($mapsplice){
+    $commandLine .= " -mapsplice";
+}
+if($defuse){
+    $commandLine .= " -defuse";
+}
+if($fusioncatcher){
+    $commandLine .= " -fusioncatcher";
+}
+if($allfusions){
+    $commandLine .= " -allfusions";
+}
+if($species){
+    $commandLine .= " -species";
+}
+
+my $numArgs = $#ARGV + 1;
+foreach my $argnum (0 .. $#ARGV) {
+    $commandLine .= " $ARGV[$argnum]";
+}
+
 
 my $GTF = '';
 my $DEXSEQ_GTF = '';
@@ -150,6 +217,7 @@ my %samp_pair = ();
 open(LOG, ">$cd\_rnaseq_pipeline.log") or die "can't write to output log";
 my @currentTime = &getTime();
 print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSTARTING RNASEQ PIPELINE FOR $pre\n";
+print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tCOMMAND LINE: $commandLine\n";
 
 ### Check that all programs are available
 &verifyConfig($config);
@@ -166,22 +234,25 @@ if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
     $detectFusions = 1;
 }
 
-if($deseq || $dexseq || $htseq){
+
+if($comparisons || $samplekey){
+    if(-e $comparisons && -e $samplekey){
+	### GOING TO ASSUME THAT YOU WANT TO RUN DESEQ IF COMPARISONS & SAMPLEKEY FILE PROVIDED
+	### IN ORDER TO RUN DESEQ, MUST ALSO RUN HTSEQ
+	$deseq = 1;
+	$htseq = 1;
+    }
+    else{
+	die "COMPARISONS FILE $comparisons AND/OR SAMPLEKEY FILE $samplekey DON'T EXIST\nMUST PROVIDE BOTH COMPARISONS AND SAMPLEKEY FILES IN ORDER TO RUN DESEQ\n";
+    }
+}   
+
+if($deseq || $dexseq || $htseq || $cufflinks){
     if(!$star && !$tophat){
 	$star = 1;
 
 	my @currentTime = &getTime();
 	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNER SPECIFIED SO DEFAULTING TO USING STAR\n";
-    }
-}
-
-if($deseq){
-    if(!-e $comparisons || !-e $samplekey){
-	die "MUST PROVIDE SOMPARISONS AND SAMPLEKEY FILES IN ORDER TO RUN DESEQ";
-    }
-
-    if(!$htseq){
-	die "MUST RUN HTSEQ IN ORDER TO RUN DESEQ\n";
     }
 }
 
