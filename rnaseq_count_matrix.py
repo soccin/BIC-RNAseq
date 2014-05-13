@@ -56,7 +56,7 @@ def printMatrix(matrix,allSamps,id_idx,outFile):
     """
 
     if id_idx:
-        header = "ID\tGeneSymbol\t" + "\t".join(allSamps)
+        header = "GeneID\tGeneSymbol\t" + "\t".join(allSamps)
     else:
         header = "GeneSymbol\t" + "\t".join(allSamps)
     with open(outFile,'w') as out:
