@@ -577,7 +577,7 @@ foreach my $sample (keys %samp_libs_run){
 	}
     }
 }
-
+sleep(5);
 if($htseq){
     if($star){
 	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_HTSEQ_STAR -hold_jid $pre\_$uID\_HT_STAR -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/htseq '*.htseq_count' $curDir/htseq/$pre\_htseq_all_samples.txt $geneNameConversion`;
