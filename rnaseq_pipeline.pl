@@ -134,7 +134,7 @@ if($allfusions){
     $commandLine .= " -allfusions";
 }
 if($species){
-    $commandLine .= " -species";
+    $commandLine .= " -species $species";
 }
 
 my $numArgs = $#ARGV + 1;
