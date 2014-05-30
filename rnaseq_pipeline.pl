@@ -417,102 +417,101 @@ foreach my $sample (keys %samp_libs_run){
     }
 
     if($detectFusions){
-	if($species !~ /hg19|human/i){
-	my @currentTime = &getTime();
-	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSKIPPING FUSION CALLING FOR SAMPLE $sample BECAUSE IT ISN'T SUPPORTED FOR $species; CURRENTLY ONLY SUPPORT FOR hg19";
-	    next;
-	}
-	
-	my @fusions = ();
-	my $r1_files = join(" ", @R1);
-	my $r2_files = join(" ", @R2);
+	if($species =~ /hg19|human/i){	
+	    my @fusions = ();
+	    my $r1_files = join(" ", @R1);
+	    my $r2_files = join(" ", @R2);
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r1_files ">$sample/$sample\_R1.fastq"`;
-	if($samp_pair{$sample} eq "PE"){
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r2_files ">$sample/$sample\_R2.fastq"`;
-	}
-	
-	if($chimerascan){
-	    ### NOTE: CHIMERASCAN ONLY WORKS FOR PE READS
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r1_files ">$sample/$sample\_R1.fastq"`;
 	    if($samp_pair{$sample} eq "PE"){
-		if(!-d "fusion/chimerascan/$sample"){
-		    `/bin/mkdir -p fusion/chimerascan/$sample`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r2_files ">$sample/$sample\_R2.fastq"`;
+	    }
+	
+	    if($chimerascan){
+		### NOTE: CHIMERASCAN ONLY WORKS FOR PE READS
+		if($samp_pair{$sample} eq "PE"){
+		    if(!-d "fusion/chimerascan/$sample"){
+			`/bin/mkdir -p fusion/chimerascan/$sample`;
+		    }
+		
+		    ### NOTE: CHIMERASCAN FAILS WHEN A READ PAIR IS OF DIFFERENT LENGTHS
+		    ###       e.g. WHEN WE CLIP AND TRIM VARIABLE LENGTHS FROM
+		    ###       SO HAVE TO USE UNPROCESSED READS
+		    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=1G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $sample/$sample\_R1.fastq $sample/$sample\_R2.fastq fusion/chimerascan/$sample/`;
+		
+		    push @fusions, "--chimerascan fusion/chimerascan/$sample/chimeras.bedpe";
+		}
+	    }
+
+	    if($star_fusion){
+		if(!-d "fusion/star/$sample"){
+		    `/bin/mkdir -p fusion/star/$sample`;
 		}
 		
-		### NOTE: CHIMERASCAN FAILS WHEN A READ PAIR IS OF DIFFERENT LENGTHS
-		###       e.g. WHEN WE CLIP AND TRIM VARIABLE LENGTHS FROM
-		###       SO HAVE TO USE UNPROCESSED READS
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=1G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $sample/$sample\_R1.fastq $sample/$sample\_R2.fastq fusion/chimerascan/$sample/`;
-		
-		push @fusions, "--chimerascan fusion/chimerascan/$sample/chimeras.bedpe";
-	    }
-	}
-
-	if($star_fusion){
-	    if(!-d "fusion/star/$sample"){
-		`/bin/mkdir -p fusion/star/$sample`;
-	    }
-
-	    my $inReads = "$sample/$sample\_R1.fastq";	
-	    if($samp_pair{$sample} eq "PE"){
-		$inReads .= " $sample/$sample\_R2.fastq";
-	    }
-
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CHIMERA_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
-
-	    push @fusions, "--star fusion/star/$sample/$sample\_STAR_Chimeric.out.junction";
-	}
-
-	if($mapsplice){
-	    if(!-d "fusion/mapsplice/$sample"){
-		`/bin/mkdir -p fusion/mapsplice/$sample`;
-	    }
-
-	    my $inReads = "-1 $sample/$sample\_R1.fastq";	
-	    if($samp_pair{$sample} eq "PE"){
-		$inReads .= " -2 $sample/$sample\_R2.fastq"
-	    }
-
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MAPSPLICE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD /opt/bin/python $MAPSPLICE/mapsplice.py -p 6 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o fusion/mapsplice/$sample $inReads --gene-gtf $GTF`;
-
-	    push @fusions, "--mapsplice fusion/mapsplice/$sample/fusions_well_annotated.txt";
-	}
-
-	if($defuse){
-	    ### NOTE: DEFUSE ONLY WORKS FOR PE READS
-	    if($samp_pair{$sample} eq "PE"){
-		if(!-d "fusion/defuse/$sample"){
-		    `/bin/mkdir -p fusion/defuse/$sample`;
+		my $inReads = "$sample/$sample\_R1.fastq";	
+		if($samp_pair{$sample} eq "PE"){
+		    $inReads .= " $sample/$sample\_R2.fastq";
 		}
+
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CHIMERA_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
+
+		push @fusions, "--star fusion/star/$sample/$sample\_STAR_Chimeric.out.junction";
+	    }
+
+	    if($mapsplice){
+		if(!-d "fusion/mapsplice/$sample"){
+		    `/bin/mkdir -p fusion/mapsplice/$sample`;
+		}
+
+		my $inReads = "-1 $sample/$sample\_R1.fastq";	
+		if($samp_pair{$sample} eq "PE"){
+		    $inReads .= " -2 $sample/$sample\_R2.fastq"
+		}
+
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MAPSPLICE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD /opt/bin/python $MAPSPLICE/mapsplice.py -p 6 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o fusion/mapsplice/$sample $inReads --gene-gtf $GTF`;
+
+		push @fusions, "--mapsplice fusion/mapsplice/$sample/fusions_well_annotated.txt";
+	    }
+
+	    if($defuse){
+		### NOTE: DEFUSE ONLY WORKS FOR PE READS
+		if($samp_pair{$sample} eq "PE"){
+		    if(!-d "fusion/defuse/$sample"){
+			`/bin/mkdir -p fusion/defuse/$sample`;
+		    }
 				
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output fusion/defuse/$sample --parallel 6 --1fastq $sample/$sample\_R1.fastq --2fastq $sample/$sample\_R2.fastq`;
+		    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output fusion/defuse/$sample --parallel 6 --1fastq $sample/$sample\_R1.fastq --2fastq $sample/$sample\_R2.fastq`;
 		
-		push @fusions, "--defuse fusion/defuse/$sample/results.filtered.tsv";
+		    push @fusions, "--defuse fusion/defuse/$sample/results.filtered.tsv";
+		}
 	    }
+
+	    if($fusioncatcher){
+		if(!-d "fusion/fusioncatcher/$sample"){
+		    `/bin/mkdir -p fusion/fusioncatcher/$sample`;
+		}
+
+		my $inReads = "-i $sample/$sample\_R1.fastq";	
+		if($samp_pair{$sample} eq "PE"){
+		    $inReads .= ",$sample/$sample\_R2.fastq"
+		}
+
+		### NOTE: DUE TO PYTHON MODULE COMPATIBILITY ISSUES ON NODES
+		###       HAVE TO USE DIFFERENT VERSION OF PYTHON
+		`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o fusion/fusioncatcher/$sample -p 6`;
+
+		push @fusions, "--fusioncatcher fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
+
+	    }
+
+	    my $mergeFusions = join(" ", @fusions);
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MERGE_FUSION_$sample -hold_jid $pre\_$uID\_CHIMERASCAN_$sample,$pre\_$uID\_STAR_CHIMERA_$sample,$pre\_$uID\_MAPSPLICE_$sample,$pre\_$uID\_DEFUSE_$sample,$pre\_$uID\_FC_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/MergeFusion $mergeFusions --out $pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
 	}
-
-	if($fusioncatcher){
-	    if(!-d "fusion/fusioncatcher/$sample"){
-		`/bin/mkdir -p fusion/fusioncatcher/$sample`;
-	    }
-
-	    my $inReads = "-i $sample/$sample\_R1.fastq";	
-	    if($samp_pair{$sample} eq "PE"){
-		$inReads .= ",$sample/$sample\_R2.fastq"
-	    }
-
-	    ### NOTE: DUE TO PYTHON MODULE COMPATIBILITY ISSUES ON NODES
-	    ###       HAVE TO USE DIFFERENT VERSION OF PYTHON
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o fusion/fusioncatcher/$sample -p 6`;
-
-	    push @fusions, "--fusioncatcher fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
-
+	else{
+	    my @currentTime = &getTime();
+	    print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSKIPPING FUSION CALLING FOR SAMPLE $sample BECAUSE IT ISN'T SUPPORTED FOR $species; CURRENTLY ONLY SUPPORT FOR hg19";
 	}
-
-	my $mergeFusions = join(" ", @fusions);
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MERGE_FUSION_$sample -hold_jid $pre\_$uID\_CHIMERASCAN_$sample,$pre\_$uID\_STAR_CHIMERA_$sample,$pre\_$uID\_MAPSPLICE_$sample,$pre\_$uID\_DEFUSE_$sample,$pre\_$uID\_FC_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/MergeFusion $mergeFusions --out $pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
     }
-    
     if($cufflinks){
 	if($star){
 	    if(!-d "cufflinks/$sample"){
