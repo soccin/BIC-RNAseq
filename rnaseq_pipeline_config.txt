@@ -1,6 +1,6 @@
 STAR			/opt/common/star/STAR_2.3.0e
 PICARD			/opt/common/picard/picard-tools-1.104
-CUFFLINKS		/opt/common/cufflinks/cufflinks-2.0.2
+CUFFLINKS		/opt/common/cufflinks/cufflinks-2.2.1.Linux_x86_64
 HTSEQ			/opt/common/htseq/v0.5.3p3
 DEXSEQ			/opt/common/dexseq/v1
 SAMTOOLS                /opt/common/samtools/samtools-0.1.19
