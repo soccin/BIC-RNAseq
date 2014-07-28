@@ -1,4 +1,7 @@
 ## Nick's functions ###
+
+
+
 `cc` <-
 function(...) {
     paste(...,sep='_')
@@ -104,16 +107,52 @@ points(x,y,...)
 
 }
 
+
+`pastec` <-
+function(...) {
+    paste(...,sep='')
+}
+
 ### my functions ###
+
+gr<-function(pattern, x)
+	return(grep(pattern,x,value=T))
+
+
 rr<-function(dat,header = FALSE, sep = "", skip = 0)
        return(as.matrix(read.delim(dat,header=header,sep=sep,skip=skip)))
 
-read.counts<-function(dat,header = FALSE, sep = "", skip = 0)
+read.counts<-function(file.name,header = FALSE, sep = "", skip = 0,col.gns=NULL)
 {
-	tmp=rr(dat,header = header, sep = sep, skip = skip)
-	tmp=make.rownames(tmp)
-	return(matrix2numeric(tmp))
+	counts.dat=rr(file.name,header = header, sep = sep, skip = skip)
+    if(col.gns==1 | col.gns==2)
+    	counts.dat=counts.dat[,-col.gns]
+    		
+	counts.dat=make.rownames(counts.dat)
+	counts.dat=removeBadF(counts.dat)
+	return(matrix2numeric(counts.dat))
 }
+
+read.counts.gen.dat<-function(file.name,header = FALSE, sep = "", skip = 0,col.gns=2)
+{
+	counts.dat=rr(file.name,header = header, sep = sep, skip = skip)
+	gns.dat=counts.dat[,1:2]
+	rownames(gns.dat)=gns.dat[,1]
+	counts.dat=counts.dat[,-col.gns] #remove genesymbol names
+	counts.dat=make.rownames(counts.dat)
+	counts.dat=removeBadF(counts.dat)
+	counts.dat=matrix2numeric(counts.dat)
+	return(list(counts.dat=counts.dat,gns.dat=gns.dat))
+}
+
+
+
+read.key<-function(key.file,header=T,sep="\t")
+{
+	key=as.matrix(read.csv(key.file,header=header,sep=sep))
+	rownames(key)=key[,1]
+    return(key)
+}    
 
 
 pdf.hclust<-function(dat,file.name="tmp.pdf",title="",width=26,height=16,lwd=3,cex.main=3,cex.lab=3,cex=3,xlab="",ylab="")
@@ -189,6 +228,33 @@ rbind2mat<-function(mat1,mat2)
 
 
 
+
+standardize.proc<-function(dat)
+{
+	dat2=sweep(dat,1,apply(dat,1,mean),"-") 
+	#make sure the mean per gene across all samples is 0
+
+   sd <- apply(as.matrix(dat2), 1, sd)
+   dat3 <- dat2
+   for(i in 1:nrow(dat2))
+   		dat3[i,] <- dat2[i,]/sd[i]
+   	
+      return(dat3)
+}
+
+rss <- function(pred,Y){
+ error <- (Y - pred)^2
+ c(Construction = sqrt(sum(error)/length(Y)))
+ }
+
+# rss <- function(pred,Y){
+ # error <- (Y - pred)^2
+ # c(Construction = sqrt(sum(error)/length(Y)),
+ # Validation= sqrt(sum(error[-test])/(length(Y)-length(test))))
+ # }
+
+q13<-function(v,na.rm = TRUE)
+return(quantile(v,na.rm = TRUE)[4]-quantile(v,na.rm = TRUE)[2])
 
 
 ## take a matrix, where columns correspond to samples and rows to value of each species
@@ -372,10 +438,10 @@ function() {
 
 add.str<-function(x, str)
 {
-	tmp=NULL
+	tmp=""
 for(i in 1:length(x))
 {
-	  tmp=c(tmp, paste(x[i], str, sep=""))
+	  tmp=paste(tmp,x[i], str, sep="")
 }
 return(tmp)
 	

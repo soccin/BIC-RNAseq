@@ -42,7 +42,7 @@ ng=NULL
 ans=NULL
 res=NULL
 
-cat(c("length(gns)",length(gns),"\n"))
+#cat(c("length(gns)",length(gns),"\n"))
 
 ###start###
 res = nbinomTest(cds, condA, condB)
@@ -51,7 +51,7 @@ res = nbinomTest(cds, condA, condB)
 save(res,file="resTest.Rdata")
 
 
-cat(c("dim(res)",dim(res),"\n"))
+#cat(c("dim(res)",dim(res),"\n"))
 
 rownames(res)=res[,1]
 if (length(gns)>0){
@@ -59,8 +59,8 @@ if (length(gns)>0){
     res = cbind(res,gns)
     colnames(res)[length(colnames(res))] = "GeneSymbol"
 }
-cat(c("colnames(res)",colnames(res),"\n"))
-cat(c("dim(res)",dim(res),"\n"))
+#cat(c("colnames(res)",colnames(res),"\n"))
+#cat(c("dim(res)",dim(res),"\n"))
 res=res[which(!is.nan(res[,6])),]
 
 ng = rownames(res)[which(res$padj <= q.cut & abs(res$log2FoldChange)>=log2(fc.cut))]
@@ -70,7 +70,7 @@ counts.scaled=counts(cds,norm=T)
 ### just adding genes that have zero counts in one condition and greater than count.cut/mean(sizeFactors) in another condition BUT not significant p-value as DESeq get it wrong here... ###
 if(zeroaddQ)
 {
-print("adding zero counts with non-significant p-values? ")
+#print("adding zero counts with non-significant p-values? ")
 jj1=rownames(res)[which(res[,"baseMeanA"]==0 & res[,"baseMeanB"]>=count.cut/mean(norm.factors))]
 jj2=rownames(res)[which(res[,"baseMeanB"]==0 & res[,"baseMeanA"]>=count.cut/mean(norm.factors))]
 ng=unique(c(ng,jj1,jj2))
@@ -78,7 +78,7 @@ ng=unique(c(ng,jj1,jj2))
 
 if(length(ng)>0)
 {
-	print(paste("there are", length(ng), "differentially expressed genes"))
+	#print(paste("there are", length(ng), "differentially expressed genes"))
 	resSig=res[ng,]
 	 
 	jj=unique(rownames(resSig)[which(resSig[,"baseMeanA"]>= count.cut/mean(norm.factors) | resSig[,"baseMeanB"]>= count.cut/mean(norm.factors))])
@@ -90,7 +90,7 @@ if(length(ng)>0)
 
 }	
 
-print("moving on...")
+#print("moving on...")
 if(length(ng)==0){
 		cat("\n===================================================\n")
 		cat("Nothing passes the significant cutoff of",q.cut,"\n")
@@ -100,7 +100,7 @@ if(length(ng)==0){
         cat("with max number of counts", m, "\n")
 		cat("\n\n")
 	} else {
-		print("getting ans ready")
+		#print("getting ans ready")
                 if ("GeneSymbol" %in% colnames(resSig)){
                     ans=resSig[ng,c("id","GeneSymbol","padj", "log2FoldChange","baseMeanA","baseMeanB")]
                     colnames(ans)=c("ID","GeneSymbol", "P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
@@ -118,7 +118,7 @@ if(length(ng)==0){
 }
 
 ### getting FC and p-values for all genes ###
-print("getting FC and p-values for all genes")
+#print("getting FC and p-values for all genes")
 if ("GeneSymbol" %in% colnames(res)){
     res=res[,c("id","GeneSymbol","pval","padj", "log2FoldChange","baseMeanA","baseMeanB")]
     colnames(res)=c("ID","GeneSymbol", "pval","P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
@@ -145,13 +145,14 @@ return(Res)
 
 run.DESeq<-function(counts.dat, conds, condA, condB, q.cut=0.05, fc.cut=2, count.cut=10,zeroaddQ=F, libsizeQ=F,percentile="100%",fitType="parametric",orderPvalQ=T,method="per-condition",sharingMode="maximum",gns=c())
 {
+
 cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,fitType=fitType,method=method,sharingMode=sharingMode)
 #vsd = getVarianceStabilizedData(cds)
 #dists=dist(t(vsd))
 
 Res=run.nbinomTest(cds=cds, conds=conds, condA=condA, condB=condB, q.cut=q.cut, fc.cut=fc.cut, count.cut=count.cut,zeroaddQ=zeroaddQ,libsizeQ=libsizeQ,percentile=percentile,fitType=fitType,gns=gns)
 
-print("run.nbinomTest done...")
+#print("run.nbinomTest done...")
 ### done with run.nbinomTest() ###
 ###################################
 ### Deal with results for ALL genes ! ###
@@ -176,7 +177,7 @@ Res$all.res=all.res
 
 #################################
 ### deal with results for DE genes ... ###
-print("dealing with FC for DE genes... ")
+#print("dealing with FC for DE genes... ")
 rr=Res$ans
 if(!is.null(rr))
 {

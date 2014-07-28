@@ -27,7 +27,7 @@ use FindBin qw($Bin);
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD);
 
 $pre = 'TEMP';
 GetOptions ('map=s' => \$map,
@@ -49,7 +49,9 @@ GetOptions ('map=s' => \$map,
 	    'defuse' => \$defuse,
 	    'fusioncatcher' => \$fusioncatcher,
 	    'allfusions' => \$allfusions,
-            'species=s' => \$species) or exit(1);
+            'species=s' => \$species,
+            'lncrna' => \$lncrna,
+            'lincrna_BROAD' => \$lincrna_BROAD) or exit(1);
 
 
 if(!$map || !$species || !$config || $help){
@@ -64,7 +66,7 @@ if(!$map || !$species || !$config || $help){
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
-
+        * OPTIONS: lncRNA analysis (-lncrna) runs all analyses based on lncRNA GTF (hg19 only); lincrna_BROAD analysis (-lincrna_BROAD) runs all analyses based on gencode+lincRNA gtf (hg19 only)
 HELP
 exit;
 }
@@ -136,6 +138,12 @@ if($allfusions){
 if($species){
     $commandLine .= " -species $species";
 }
+if($lncrna){
+    $commandLine .= " -lncrna";
+}
+if($lncrna_BROAD){
+    $commandLine .= " -lncrna_BROAD";
+}
 
 my $numArgs = $#ARGV + 1;
 foreach my $argnum (0 .. $#ARGV) {
@@ -157,15 +165,28 @@ my $REF_SEQ = '';
 if($species =~ /human|hg19/i){
     $species = 'hg19';
     $REF_SEQ = '/ifs/data/bio/assemblies/H.sapiens/hg19/hg19.fasta';
-    $GTF = "$Bin/data/gencode.v18.annotation.gtf";
     $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
     $CHIMERASCAN_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/chimerascan/';
-    $starDB = '/ifs/data/bio/assemblies/H.sapiens/hg19/star';
-    $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
     $BOWTIE_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie/hg19_bowtie';
     $BOWTIE2_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie2/hg19_bowtie2';
     $chrSplits = '/ifs/data/bio/assemblies/H.sapiens/hg19/chromosomes';
-    $TRANS_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie2/transcriptome/gencode18';
+
+    if($lncrna){
+        $GTF = "$Bin/data/lncipedia.gtf";
+        $starDB = '/ifs/data/bio/assemblies/H.sapiens/hg19/star/LNCipedia';
+        $geneNameConversion = '';
+        $TRANS_INDEX = '';
+    } elsif($lincrna_BROAD){
+        $GTF = "$Bin/data/gencode.v18+lincRNA_Unique.gtf";
+        $starDB = '/ifs/data/bio/assemblies/H.sapiens/hg19/star/lincRNA_BROAD';
+        $geneNameConversion = "$Bin/data/hg19_gencode_id_to_gene_symbol.txt";
+        $TRANS_INDEX = '';
+    } else {
+        $GTF = "$Bin/data/gencode.v18.annotation.gtf";
+        $starDB = '/ifs/data/bio/assemblies/H.sapiens/hg19/star';
+        $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
+        $TRANS_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie2/transcriptome/gencode18';
+    }
 }
 elsif($species =~ /mouse|mm9/i){
     $species = 'mm9';
@@ -379,7 +400,7 @@ foreach my $sample (keys %samp_libs_run){
 	if($samp_pair{$sample} eq "PE"){
 	    $inReads .= " $r2_gz_files";
 	}
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 6 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o tophat2/$sample $BOWTIE2_INDEX $inReads`;
+	#`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 6 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o tophat2/$sample $BOWTIE2_INDEX $inReads`;
     }
 
     my $starOut = '';    
@@ -616,13 +637,13 @@ if($deseq){
 	if(!-d "DESeq"){
 	    `/bin/mkdir -p DESeq`;
 	}
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/R-2.15.0/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"output.dir='$curDir/DESeq'\\\"\" \"\\\"counts.file='$curDir/htseq/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/R-2.15.0/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"output.dir='$curDir/DESeq'\\\"\" \"\\\"counts.file='$curDir/htseq/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
     }
     if($tophat){
 	if(!-d "DESeq_tophat2"){
 	    `/bin/mkdir -p DESeq_tophat2`;
 	}
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT2 -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/R-2.15.0/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"output.dir='$curDir/DESeq_tophat2'\\\"\" \"\\\"counts.file='$curDir/htseq_tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT2 -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/R-2.15.0/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"output.dir='$curDir/DESeq_tophat2'\\\"\" \"\\\"counts.file='$curDir/htseq_tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
     }
 }
 close LOG;
