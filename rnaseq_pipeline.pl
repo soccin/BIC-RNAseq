@@ -141,8 +141,8 @@ if($species){
 if($lncrna){
     $commandLine .= " -lncrna";
 }
-if($lncrna_BROAD){
-    $commandLine .= " -lncrna_BROAD";
+if($lincrna_BROAD){
+    $commandLine .= " -lincrna_BROAD";
 }
 
 my $numArgs = $#ARGV + 1;
