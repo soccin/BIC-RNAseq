@@ -189,14 +189,17 @@ run.gene.set.analysis <- function(species,bin,deseq.res.dir,min.gns.nu=5,max.gns
         gs.names.list=c("mouse_c1.gmt","mouse_c2.gmt","mouse_c3.gmt","mouse_c4.gmt","mouse_c5.gmt")
     }
 
+
     pd=getwd()
     setwd(deseq.res.dir)
     fls=grep("ALL",dir(),value=T)
+    AllGSARes = list()
     for (gs in gs.names.list){
         gs.name = remove.sub(gs,"\\.gmt",part2take=1)
         gsc = loadGSC(paste(gmt.dir,gs,sep="/"))
 
         for(fl in fls){
+            comp.name=remove.sub(fl,"ALLResDESeq_",part2take=2)
             res=as.matrix(read.csv(fl,sep="\t"))
             res=res[,-1] #remove ensemble IDs ###
             res=make.rownames(res)
@@ -209,6 +212,7 @@ run.gene.set.analysis <- function(species,bin,deseq.res.dir,min.gns.nu=5,max.gns
             setwd(paste(pd,gsa.dir,sep="/"))
             res.gs=c("GeneSets","Pval","Direction")
             gsaRes <- runGSA(fc,geneSetStat="mean",gsc=gsc,gsSizeLim=c(min.gns.nu,max.gns.nu),nPerm=nPerm)
+            AllGSARes[[comp.name]][[gs.name]] = gsaRes
             tab.res=processgsaRes(gsaRes,pval.cutoff=pval.cutoff,fc2keep=fc2keep,frac2keep=frac2keep,fcQ=fcQ)
             file.name=paste("GeneSet_Dn_",remove.sub(remove.sub(fl, "ALLResDESeq_",part2take=2),"_Genes",part2take=1),"_",gs.name,".xls",sep="")
             write.dat(tab.res$gsa.tab.dn,file.name=file.name)
@@ -218,6 +222,8 @@ run.gene.set.analysis <- function(species,bin,deseq.res.dir,min.gns.nu=5,max.gns
             setwd(deseq.res.dir)
         }
     }
+    setwd(paste(pd,gsa.dir,sep="/"))
+    save(AllGSARes,file="AllGSARes.Rdata",compress=T)
 
     setwd(pd)
     return

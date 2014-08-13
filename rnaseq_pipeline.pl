@@ -66,7 +66,7 @@ if(!$map || !$species || !$config || $help){
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
-        * OPTIONS: lncRNA analysis (-lncrna) runs all analyses based on lncRNA GTF (hg19 only); lincrna_BROAD analysis (-lincrna_BROAD) runs all analyses based on gencode+lincRNA gtf (hg19 only)
+        * OPTIONS: lncRNA analysis (-lncrna) runs all analyses based on lncRNA GTF (hg19 only); 
 HELP
 exit;
 }
@@ -141,9 +141,6 @@ if($species){
 if($lncrna){
     $commandLine .= " -lncrna";
 }
-if($lincrna_BROAD){
-    $commandLine .= " -lincrna_BROAD";
-}
 
 my $numArgs = $#ARGV + 1;
 foreach my $argnum (0 .. $#ARGV) {
@@ -175,11 +172,6 @@ if($species =~ /human|hg19/i){
         $GTF = "$Bin/data/lncipedia.gtf";
         $starDB = '/ifs/data/bio/assemblies/H.sapiens/hg19/star/LNCipedia';
         $geneNameConversion = '';
-        $TRANS_INDEX = '';
-    } elsif($lincrna_BROAD){
-        $GTF = "$Bin/data/gencode.v18+lincRNA_Unique.gtf";
-        $starDB = '/ifs/data/bio/assemblies/H.sapiens/hg19/star/lincRNA_BROAD';
-        $geneNameConversion = "$Bin/data/hg19_gencode_id_to_gene_symbol.txt";
         $TRANS_INDEX = '';
     } else {
         $GTF = "$Bin/data/gencode.v18.annotation.gtf";

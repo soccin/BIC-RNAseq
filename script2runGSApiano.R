@@ -30,15 +30,15 @@ getGeneSets<-function(gsaRes,gsa.tab,fc2keep=log2(1.5),frac2keep=2,dir="Up",fcQ=
 		tmp[nn,ncol(gsa.tab)+1]=gn.names.str
 		tmp[nn,ncol(gsa.tab)+2]=gn.names.fc.str
 
-    	## Add a condition that at least half of the genes have to have 
-    	## FC >= log2(1.5) ! 
-    	if(dir=="Dn")
-	    	jj=length(which(fc<= -fc2keep))
-	    if(dir=="Up")
-	    	jj=length(which(fc>= fc2keep))
+        	## Add a condition that at least half of the genes have to have 
+        	## FC >= log2(1.5) ! 
+    	        if(dir=="Dn")
+	    	    jj=length(which(fc<= -fc2keep))
+	        if(dir=="Up")
+	    	    jj=length(which(fc>= fc2keep))
 
-    	if(jj <= length(fc)/frac2keep)
-	       	geneSets2remove=c(geneSets2remove,nn)    	
+    	        if(jj <= length(fc)/frac2keep)
+	       	    geneSets2remove=c(geneSets2remove,nn)    	
 	}
 	if(length(geneSets2remove)>=1 & fcQ)
 			tmp=tmp[-geneSets2remove,]
@@ -69,12 +69,12 @@ processgsaRes<-function(gsaRes,pval.cutoff=0.01,fc2keep=log2(1.5),frac2keep=2,fc
                         } else {
 			    tmpDn=as.matrix(tmp[indxDn,colsDn])
                         }
-			if(length(colsDn)>=2)
 		    	tmpDn=as.matrix(tmpDn[order(abs(as.numeric(tmpDn[,"Stat (dist.dir)"])),decreasing=T),])
-	                        if(length(indxDn) == 1){
-                                    tmpDn = t(tmpDn)
-                                }
-	   			gsa.tab.dn=getGeneSets(gsaRes,gsa.tab=tmpDn,fc2keep=fc2keep,frac2keep=frac2keep,dir="Dn",fcQ=fcQ)
+	                if(length(indxDn) == 1){
+                            tmpDn = t(tmpDn)
+                        }
+	   		gsa.tab.dn=getGeneSets(gsaRes,gsa.tab=tmpDn,fc2keep=fc2keep,frac2keep=frac2keep,dir="Dn",fcQ=fcQ)
+
 		}
 		if(length(indxUp)>=1)
 		{
@@ -83,7 +83,6 @@ processgsaRes<-function(gsaRes,pval.cutoff=0.01,fc2keep=log2(1.5),frac2keep=2,fc
                         } else {
 			    tmpUp=as.matrix(tmp[indxUp,colsUp])
                         }
-	    	if(length(colsUp)>=2)
 	    		tmpUp=as.matrix(tmpUp[order(abs(as.numeric(tmpUp[,"Stat (dist.dir)"])),decreasing=T),])
    			if(length(indxUp) == 1){
                             tmpUp = t(tmpUp)
