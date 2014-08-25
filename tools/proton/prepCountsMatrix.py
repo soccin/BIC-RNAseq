@@ -29,7 +29,10 @@ with open(gtfFile,'r') as gtf:
             try:
                 gnID = infoDict['gene_id'].replace("\"","").replace(";","").split(".")[0]
                 gnNM = infoDict['gene_name'].replace("\"","").replace(";","")
-                gnTP = infoDict['gene_type'].replace("\"","").replace(";","")
+                if 'gene_type' in infoDict:
+                    gnTP = infoDict['gene_type'].replace("\"","").replace(";","")
+                elif 'gene_biotype' in infoDict:
+                    gnTP = infoDict['gene_biotype'].replace("\"","").replace(";","")
                 if not gnID in key:
                     key[gnID] = [gnNM,gnTP]
                 elif not [gnNM,gnTP] == key[gnID]:
