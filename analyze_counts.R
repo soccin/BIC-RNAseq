@@ -16,16 +16,17 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     cat("    Reformatting raw counts...\n")
     HTSeq.dat=rr(counts.file,header=T)
     HTSeq.dat=make.rownames(HTSeq.dat)
+    gns = NULL
     if ("GeneSymbol" %in% colnames(HTSeq.dat)){
-        samps = colnames(HTSeq.dat)[-1]
         gns = HTSeq.dat[,1]
         idsAndGns = as.matrix(gns)
         rownames(idsAndGns) = rownames(HTSeq.dat)
         HTSeq.dat = HTSeq.dat[,-1]
-    } else {
-        samps = colnames(HTSeq.dat)
-        gns=NULL
+        if (!is.null(key)){
+            HTSeq.dat = HTSeq.dat[,key[,1]]
+        }
     }
+    samps = colnames(HTSeq.dat)
 
     counts.dat=matrix2numeric(HTSeq.dat)
 
