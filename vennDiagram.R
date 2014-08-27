@@ -1,36 +1,57 @@
 load("All_Results.RData")
 
-##################################
-###       MANUAL CONFIG        ###
+## results of ALL comparisons that have been run are stored
+## in a list called "AllRes"
 
-## figure out the order of comparisons in 
-## AllRes (done manually for now)
-Ren713vsA1A1803 = AllRes[[1]]$ans
-A1A6421vsA1A1803 = AllRes[[2]]$ans
-Ren713vsA1A6421 = AllRes[[3]]$ans
+## first just print to screen the order of comparisons to find the
+## indexes of the comparisons to be included in the venn diagram
+## COPY AND PASTE this for loop only:
+for (x in 1:length(AllRes)){
+   cat(c(x,": ",colnames(AllRes[[x]]$ans)[grep("log2",colnames(AllRes[[x]]$ans))],"\n"))
+}
 
-## name your three-way comparison
-comp = "Ren713_vs_A1A1803___vs___Ren713_vs_A1A6421"
-out.dir=comp
-venn.file = paste("venn",comp,".pdf",sep="")
+###################################
+#######  EDIT THIS SECTION  #######
+
+## assign results of each individual comparison
+## to its own variable (with a name indicative of what the comparison
+## is)
+
+## use the indexes of each comparison of interest you just found
+## and assign the results of those comparisons to meaningful
+## variable names (i.e., change these variable names and indexes
+## according to what was printed by the loop above)
+gfpVSpd1 = AllRes[[1]]$ans
+pd1VSdn = AllRes[[2]]$ans
+gfpVSdn = AllRes[[3]]$ans
+
+## name your comparison of comparisons
+comp = "GFP_plus_vs_PD1_plus___vs___GFP_plus_vs_double_neg___vs___PD1_plus_vs_double_neg"
 
 ## assign human-readable names to each comparison
-## IMPORTANT: MAKE SURE THESE NAMES ARE IN THE SAME ORDER
-## AS THEY ARE IN all.dat (below)
-comp.names=c("Ren_713_vs_A1A_1803","Ren_713_vs_A1A_6421")
+comp.names=c("GFP_plus_vs_PD1_plus","GFP_plus_vs_double_neg","PD1_plus_vs_double_neg")
 
-## list of results of each of the three pairwise comparisons
+## create a list of results of each of the pairwise comparisons
 ## IMPORTANT: MUST BE IN THE SAME ORDER AS COMP.NAMES ABOVE
 all.dat = list()
-all.dat[[1]] = Ren713vsA1A1803
-all.dat[[2]] = Ren713vsA1A6421
+all.dat[[1]] = gfpVSpd1
+all.dat[[2]] = gfpVSdn
+all.dat[[3]] = pd1VSdn
 
-#################################
+###### END SECTION TO BE EDITED #####
+#####################################
 
+
+#######################################
 ### COPY AND PASTE EVERYTHING BELOW ###
 
+
 ## create output directory
+out.dir = comp
 dir.create(out.dir)
+
+## name the pdf file
+venn.file = paste("venn",comp,".pdf",sep="")
 
 ## get a unique list of genes that are UP/DOWN in 
 ## one or more of the three comparisons
@@ -61,42 +82,80 @@ pdf(paste(out.dir,"/",venn.file,sep=""),width=25,height=15)
 vennDiagram(res,include=c("up","down"),counts.col=c("red","blue"),lwd=2,cex=1.5)
 dev.off()
 
-### write lists of genes UP/DOWN in ALL three comparisons
-ids_DOWN_all_comparisons = rownames(res)[which(res[,1]==-1 & res[,2]==-1)]
-gns = all.dat[[1]][which(all.dat[[1]][,"ID"] %in% ids_DOWN_all_comparisons),"GeneSymbol"]
-write.table(gns,file=paste(out.dir,"/","genes_DOWN_in_",paste(colnames(res),collapse="_AND_"),".txt",sep=""),quote=F,row.names=F,col.names=F)
+make.multi.comp.matrix <- function(ids,all.dat,compsToExclude=NULL){
 
-ids_UP_all_comparisons = rownames(res)[which(res[,1]==1 & res[,2]==1)]
-gns = all.dat[[1]][which(all.dat[[1]][,"ID"] %in% ids_UP_all_comparisons),"GeneSymbol"]
-write.table(gns,file=paste(out.dir,"/","genes_UP_in_",paste(colnames(res),collapse="_AND_"),".txt",sep=""),quote=F,row.names=F,col.names=F)
+    u = 1
+    if(!is.null(compsToExclude) && compsToExclude==1){
+        u = 2
+    } 
 
-## write lists of genes that are uniquely UP/DOWN in each condition
-for (i in 1:length(colnames(res))){
+    gns = as.vector(all.dat[[u]][ids,"GeneSymbol"])
+    final.dat = matrix(NA,nrow=length(ids),ncol=2*length(all.dat)+2)
+    rownames(final.dat) = ids
+    colnames(final.dat)  = rep("tmp",2*length(all.dat)+2)
 
-    ## write lists of genes that are uniquely UP/DOWN in each condition
-    uniquely_up = rownames(res)[intersect(which(res[,i]==1),which(apply(as.matrix(res[,-i]),1,function(x)!1 %in% x)))]
-    gns = all.dat[[i]][which(all.dat[[i]][,"ID"] %in% uniquely_up),"GeneSymbol"]
-    write.table(gns,file=paste(out.dir,"/","genes_UP_in_",colnames(res)[i],"_ONLY",".txt",sep=""),quote=F,row.names=F,col.names=F)
+    for(i in 1:length(all.dat)){
+        dat.to.write = as.matrix(all.dat[[i]][ids,-grep("Mean|ID|GeneSymbol",colnames(all.dat[[i]]))])
+        colnames(dat.to.write)[1] = paste("P.adj",comp.names[i],sep="__")
+        final.dat[,c(i*2-1,i*2)] = dat.to.write
+        colnames(final.dat)[c(i*2-1,i*2)] = colnames(dat.to.write)
+    }
 
-    uniquely_down = rownames(res)[intersect(which(res[,i]==-1),which(apply(as.matrix(res[,-i]),1,function(x)!-1 %in% x)))]
-    gns = all.dat[[i]][which(all.dat[[i]][,"ID"] %in% uniquely_down),"GeneSymbol"]
-    write.table(gns,file=paste(out.dir,"/","genes_DOWN_in_",colnames(res)[i],"_ONLY",".txt",sep=""),quote=F,row.names=F,col.names=F)
+    if(is.null(compsToExclude)){
+        fc.to.avg = colnames(final.dat)[grep("log2",colnames(final.dat))]
+        fdr.to.avg = colnames(final.dat)[grep("adj",colnames(final.dat))]
+    } else {
+        fc.to.avg = colnames(final.dat)[grep("log2",colnames(final.dat))][-compsToExclude]
+        fdr.to.avg = colnames(final.dat)[grep("adj",colnames(final.dat))][-compsToExclude]
+    }
 
-    if (length(colnames(res)) > 2){
-        ## write lists of genes that are up/down in the other two comparisons but not the current one
-        if (i==length(colnames(res))){ n=1 }
-        else { n=length(colnames(res)) }
-
-        uniquely_not_up = rownames(res)[intersect(which(res[,i]!=1),which(apply(as.matrix(res[,-i]),1,sum)==(length(colnames(res))-1)))]
-        gns = all.dat[[n]][which(all.dat[[n]][,"ID"] %in% uniquely_not_up),"GeneSymbol"]
-        write.table(gns,file=paste(out.dir,"/","genes_UP_in_",paste(colnames(res)[-i],collapse="__AND__"),"__NOT__",colnames(res)[i],".txt",sep=""),quote=F,row.names=F,col.names=F)
-
-        uniquely_not_down = rownames(res)[intersect(which(res[,i]!=-1),which(apply(as.matrix(res[,-i]),1,sum)==((length(colnames(res))-1)*-1)))]
-        gns = all.dat[[n]][which(all.dat[[n]][,"ID"] %in% uniquely_not_down),"GeneSymbol"]
-        write.table(gns,file=paste(out.dir,"/","genes_DOWN_in_",paste(colnames(res)[-i],collapse="__AND__"),"__NOT__",colnames(res)[i],".txt",sep=""),quote=F,row.names=F,col.names=F)
-
-
+    meanFC = apply(final.dat[,fc.to.avg],1,mean)
+    meanFDR = apply(final.dat[,fdr.to.avg],1,mean)
+    final.dat = cbind(gns,final.dat)
+    final.dat[,ncol(final.dat)-1] = meanFDR
+    final.dat[,ncol(final.dat)] = meanFC
+    final.dat = final.dat[order(meanFDR),]
+    colnames(final.dat)[c(ncol(final.dat)-1,ncol(final.dat))]=c("meanFDR_common_comps","meanFC_common_comps")
+    final.dat = cbind(rownames(final.dat),final.dat)
+    colnames(final.dat)[1]="ID"
+    return(final.dat)
 }
 
+dirs = c("UP","DOWN")
 
+for(dir in dirs){
+
+    if(dir=="UP") x=1 else x=-1
+    
+    ### write data for genes that are UP/DOWN in BOTH comparisons
+
+    ids_all_comparisons = rownames(res)[which(rowSums(res)==x*ncol(res))]
+
+    final.dat = make.multi.comp.matrix(ids_all_comparisons,all.dat)
+    colnames(final.dat)[c(ncol(final.dat)-1,ncol(final.dat))]=c("meanFDR","meanFC")
+    file.name = paste("genes_",dir,"_in_",paste(colnames(res),collapse="_AND_"),".txt",sep="")
+    write.table(final.dat,file=paste(out.dir,"/",file.name,sep=""),quote=F,row.names=F,col.names=T,sep="\t")
+
+
+    ### write data for genes that are uniquely UP/DOWN in one comparison
+    for (i in 1:length(colnames(res))){
+
+        ## write lists of genes that are uniquely UP/DOWN in each condition
+        uniquely_in_dir = rownames(res)[intersect(which(res[,i]==x),which(apply(as.matrix(res[,-i]),1,function(z)!x %in% z)))]
+        final.dat = all.dat[[i]][uniquely_in_dir,-grep("Mean",colnames(all.dat[[i]]))]
+        file.name=paste("genes_",dir,"_in_",colnames(res)[i],"_ONLY",".txt",sep="")
+        write.table(final.dat,file=paste(out.dir,"/",file.name,sep=""),quote=F,row.names=F,col.names=T,sep="\t")
+
+        if (length(colnames(res)) > 2){
+            ## write lists of genes that are up/down in the other two comparisons but not the current one
+            if (i==length(colnames(res))) n=1  else n=length(colnames(res)) 
+
+            uniquely_not_in_dir = rownames(res)[intersect(which(res[,i]!=x),which(apply(as.matrix(res[,-i]),1,sum)==((length(colnames(res))-1)*x)))]
+            final.dat = make.multi.comp.matrix(uniquely_not_in_dir,all.dat,compsToExclude=i)
+            file.name=paste("genes_",dir,"_in_",paste(colnames(res)[-i],collapse="__AND__"),"__NOT__",colnames(res)[i],".txt",sep="")
+            write.table(final.dat,file=paste(out.dir,"/",file.name,sep=""),quote=F,row.names=F,col.names=T,sep="\t")
+
+         }
+    }
+}
 
