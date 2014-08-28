@@ -3,52 +3,37 @@ load("All_Results.RData")
 ## results of ALL comparisons that have been run are stored
 ## in a list called "AllRes"
 
-## first just print to screen the order of comparisons to find the
-## indexes of the comparisons to be included in the venn diagram
-## COPY AND PASTE this for loop only:
+all.dat = list()
+comp.names = c()
+
+cat("\n")
 for (x in 1:length(AllRes)){
-   cat(c(x,": ",colnames(AllRes[[x]]$ans)[grep("log2",colnames(AllRes[[x]]$ans))],"\n"))
+   name = colnames(AllRes[[x]]$ans)[grep("log2",colnames(AllRes[[x]]$ans))]
+   name = sub("log2[","",name,fixed=TRUE)
+   name = sub("]","",name,fixed=TRUE)
+   name = sub("/","_vs_",name,fixed=TRUE)
+   comp.names = c(comp.names,name)
+   cat(c(x,": ",name,"\n"))
 }
 
-###################################
-#######  EDIT THIS SECTION  #######
+cat("\nEnter the indices of the comparisons to be included in the venn diagram, separated by spaces\n")
+cat("\n")
+con <- file("stdin")
+x <- readLines(con,n=1,warn=FALSE)
+close(con)
+cat("\n")
 
-## assign results of each individual comparison
-## to its own variable (with a name indicative of what the comparison
-## is)
+comp.idxs = as.numeric(unlist(strsplit(x, "\\s+")))
 
-## use the indexes of each comparison of interest you just found
-## and assign the results of those comparisons to meaningful
-## variable names (i.e., change these variable names and indexes
-## according to what was printed by the loop above)
-gfpVSpd1 = AllRes[[1]]$ans
-pd1VSdn = AllRes[[2]]$ans
-gfpVSdn = AllRes[[3]]$ans
-
-## name your comparison of comparisons
-comp = "GFP_plus_vs_PD1_plus___vs___GFP_plus_vs_double_neg___vs___PD1_plus_vs_double_neg"
-
-## assign human-readable names to each comparison
-comp.names=c("GFP_plus_vs_PD1_plus","GFP_plus_vs_double_neg","PD1_plus_vs_double_neg")
-
-## create a list of results of each of the pairwise comparisons
-## IMPORTANT: MUST BE IN THE SAME ORDER AS COMP.NAMES ABOVE
-all.dat = list()
-all.dat[[1]] = gfpVSpd1
-all.dat[[2]] = gfpVSdn
-all.dat[[3]] = pd1VSdn
-
-###### END SECTION TO BE EDITED #####
-#####################################
-
-
-#######################################
-### COPY AND PASTE EVERYTHING BELOW ###
-
+for (i in 1:length(comp.idxs)){
+    all.dat[[i]] = AllRes[[comp.idxs[i]]]$ans
+}
+comp.names = comp.names[comp.idxs]
+comp = paste(comp.names,collapse="___vs___")
 
 ## create output directory
 out.dir = comp
-dir.create(out.dir)
+dir.create(out.dir,showWarnings=FALSE)
 
 ## name the pdf file
 venn.file = paste("venn",comp,".pdf",sep="")
@@ -77,10 +62,10 @@ for (x in 1:length(all.dat)){
 }
 
 ## generate venn diagram based on matrix
-library(limma)
+suppressPackageStartupMessages(library(limma))
 pdf(paste(out.dir,"/",venn.file,sep=""),width=25,height=15)
 vennDiagram(res,include=c("up","down"),counts.col=c("red","blue"),lwd=2,cex=1.5)
-dev.off()
+tmp<- capture.output(dev.off())
 
 make.multi.comp.matrix <- function(ids,all.dat,compsToExclude=NULL){
 
@@ -95,7 +80,7 @@ make.multi.comp.matrix <- function(ids,all.dat,compsToExclude=NULL){
     colnames(final.dat)  = rep("tmp",2*length(all.dat)+2)
 
     for(i in 1:length(all.dat)){
-        dat.to.write = as.matrix(all.dat[[i]][ids,-grep("Mean|ID|GeneSymbol",colnames(all.dat[[i]]))])
+        dat.to.write = as.matrix(all.dat[[i]][ids,-grep("Mean_at_cond|^ID$|^GeneSymbol$",colnames(all.dat[[i]]))])
         colnames(dat.to.write)[1] = paste("P.adj",comp.names[i],sep="__")
         final.dat[,c(i*2-1,i*2)] = dat.to.write
         colnames(final.dat)[c(i*2-1,i*2)] = colnames(dat.to.write)
@@ -109,12 +94,19 @@ make.multi.comp.matrix <- function(ids,all.dat,compsToExclude=NULL){
         fdr.to.avg = colnames(final.dat)[grep("adj",colnames(final.dat))][-compsToExclude]
     }
 
-    meanFC = apply(final.dat[,fc.to.avg],1,mean)
-    meanFDR = apply(final.dat[,fdr.to.avg],1,mean)
+    if(dim(final.dat)[1] == 1){
+        meanFC = apply(t(final.dat[,fc.to.avg]),1,mean)
+        meanFDR = apply(t(final.dat[,fdr.to.avg]),1,mean)
+    } else {
+        meanFC = apply(final.dat[,fc.to.avg],1,mean)
+        meanFDR = apply(final.dat[,fdr.to.avg],1,mean)
+    }
     final.dat = cbind(gns,final.dat)
     final.dat[,ncol(final.dat)-1] = meanFDR
     final.dat[,ncol(final.dat)] = meanFC
-    final.dat = final.dat[order(meanFDR),]
+    if (dim(final.dat)[1] > 1){
+        final.dat = final.dat[order(meanFDR),]
+    }
     colnames(final.dat)[c(ncol(final.dat)-1,ncol(final.dat))]=c("meanFDR_common_comps","meanFC_common_comps")
     final.dat = cbind(rownames(final.dat),final.dat)
     colnames(final.dat)[1]="ID"
@@ -158,4 +150,4 @@ for(dir in dirs){
          }
     }
 }
-
+cat("Done!\n\n\n")
