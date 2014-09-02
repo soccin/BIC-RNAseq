@@ -4,8 +4,6 @@ usage <- function(){
 
     usage.str = "\nUsage: Rscript RunDE.R 
     \"bin='[Required: directory containing source R code]'\"
-    \"proj.id='[Required: 4-digit project ID created by GCL]'\"
-    \"output.dir='[Required: absolute path to output directory]'\"
     \"counts.file='[Required: absolute path to htseq counts file]'\"
 
     \"key.file='[Required for differential expression analysis: absolute path to key file]'\"
@@ -15,10 +13,12 @@ usage <- function(){
              build does not matter, as long as it is clearly human or mouse'\"
     
     \"diff.exp=[Optional (default=TRUE): run differential expression analysis]\"
-    \"GSA=[Optional (default=TRUE): run gene set analysis]\"
+    \"GSA=[Optional (default=TRUE): run gene set analysis; if running GSA but not DESeq, BE SURE TO SET diff.exp.dir (see below) to point
+              to existing DESeq results directory.]\"
     \"counts.dir=[Optional (default='$PWD/htseq')]\"
     \"clustering.dir=[Optional (default='$PWD/clustering')]\"
-    \"diff.exp.dir=[Optional (default='$PWD/DESeq')]\"
+    \"diff.exp.dir=[Optional (default='$PWD/DESeq')]: if running DESeq, this is where output will go; if NOT running DESeq, this is
+              wherever DESeq results already exist. Must be correct in order for GSA to run properly.\"
     \"gsa.dir=[Optional (default='$PWD/GSA')]\"
 
     \"no.replicates=[Optional (default=F): T|F, automatically sets fitType, method, and sharingMode to accommodate comparison
@@ -82,10 +82,6 @@ for(i in 1:length(args)){
 ## validate input
 if(!exists("bin")){
     cat("Error: Please specify a bin directory. See usage for details\n")
-    q()
-}
-if(!exists("output.dir")){
-    cat("Error: Please specify an output directory. See usage for details\n")
     q()
 }
 if (!exists("counts.file")){
