@@ -1,4 +1,4 @@
-normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method=method,bin=bin,key=NULL,norm.quantile=FALSE){
+normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method=method,fitType=fitType,bin=bin,key=NULL,norm.quantile=FALSE){
 
     source(paste(bin,"tools.R",sep="/"))
     source(paste(bin,"run_DESeq.R",sep="/"))
@@ -22,19 +22,26 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
         idsAndGns = as.matrix(gns)
         rownames(idsAndGns) = rownames(HTSeq.dat)
         HTSeq.dat = HTSeq.dat[,-1]
-        if (!is.null(key)){
-            HTSeq.dat = HTSeq.dat[,key[,1]]
-        }
     }
+
+    if(!is.null(key)){
+        HTSeq.dat = HTSeq.dat[,key[,1]]
+    }
+
+    print(colnames(HTSeq.dat))
+    print(dim(HTSeq.dat))
     samps = colnames(HTSeq.dat)
 
     counts.dat=matrix2numeric(HTSeq.dat)
+    print(colnames(counts.dat))
+    print(dim(counts.dat))
 
     ## if no conditions given, create a vector of one mock 
     ## condition needed for make.cds  
     if(is.null(conds)){
         conds=rep('s',length(samps))
     }
+    print(as.factor(conds))
 
     ########################################
     ## write scaled data using DESeq method
