@@ -28,26 +28,28 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
         HTSeq.dat = HTSeq.dat[,key[,1]]
     }
 
-    print(colnames(HTSeq.dat))
-    print(dim(HTSeq.dat))
     samps = colnames(HTSeq.dat)
-
     counts.dat=matrix2numeric(HTSeq.dat)
-    print(colnames(counts.dat))
-    print(dim(counts.dat))
 
     ## if no conditions given, create a vector of one mock 
     ## condition needed for make.cds  
     if(is.null(conds)){
         conds=rep('s',length(samps))
     }
-    print(as.factor(conds))
 
     ########################################
     ## write scaled data using DESeq method
     ########################################
     cat("    Making CDS...\n")
-    cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method=method)
+
+    cds <- tryCatch({
+        cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method=method)
+        }, error = function(err){
+            warning(paste("method='",method,"' did not work.. trying method='pooled'",sep=""))
+            cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method='pooled')
+            return(cds)
+        }
+    )
 
     cat("    Getting DESeq scaled counts...\n")
     counts.scaled=counts(cds,norm=T)
