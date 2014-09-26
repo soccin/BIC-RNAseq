@@ -38,7 +38,7 @@ usage <- function(){
     cat(usage.str)
 }
 
-cat(c("\n++++++++++++++++ BIC RNA-Seq Differential Expression Analysis ++++++++++++++++\n\n"))
+cat(c("\n++++++++++++++++ BIC RNA-Seq Counts Analysis ++++++++++++++++\n\n"))
 
 pd = getwd()
 
