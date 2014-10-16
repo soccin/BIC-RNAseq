@@ -15,9 +15,9 @@ usage <- function(){
     \"diff.exp=[Optional (default=TRUE): run differential expression analysis]\"
     \"GSA=[Optional (default=TRUE): run gene set analysis; if running GSA but not DESeq, BE SURE TO SET diff.exp.dir (see below) to point
               to existing DESeq results directory.]\"
-    \"counts.dir=[Optional (default='$PWD/htseq')]\"
+    \"counts.dir=[Optional (default='$PWD/counts_gene')]\"
     \"clustering.dir=[Optional (default='$PWD/clustering')]\"
-    \"diff.exp.dir=[Optional (default='$PWD/DESeq')]: if running DESeq, this is where output will go; if NOT running DESeq, this is
+    \"diff.exp.dir=[Optional (default='$PWD/differentialExpression_gene')]: if running DESeq, this is where output will go; if NOT running DESeq, this is
               wherever DESeq results already exist. Must be correct in order for GSA to run properly.\"
     \"gsa.dir=[Optional (default='$PWD/GSA')]\"
 
@@ -43,9 +43,9 @@ cat(c("\n++++++++++++++++ BIC RNA-Seq Counts Analysis ++++++++++++++++\n\n"))
 pd = getwd()
 
 ## defaults
-counts.dir="htseq"
+counts.dir="counts_gene"
 clustering.dir="clustering"
-diff.exp.dir="DESeq"
+diff.exp.dir="differentialExpresssion_gene"
 gsa.dir="GSA"
 q.cut = 0.05
 lfc = 1   #0.57#log2(fc.cut)
