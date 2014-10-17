@@ -127,7 +127,7 @@ if (exists("key.file")){
 ## normalize data (always)
 ############################
 setwd(pd)
-dir.create(counts.dir,showWarnings=FALSE)
+dir.create(counts.dir,showWarnings=FALSE,mode="0755")
 cat("Normalizing raw counts...\n")
 counts=normalize.counts(counts.file=counts.file,
                         output.dir=counts.dir,
@@ -144,7 +144,7 @@ cat("    Done!\n\n")
 ## cluster samples (always)
 ############################
 setwd(pd)
-dir.create(clustering.dir,showWarnings=FALSE)
+dir.create(clustering.dir,showWarnings=FALSE,mode="0755")
 if(exists("counts") && !is.null(counts) && !is.null(counts$scaled)){
     cat("Clustering all samples...\n")
     cluster.samples(counts.scaled=counts$scaled,
@@ -163,7 +163,7 @@ if(exists("counts") && !is.null(counts) && !is.null(counts$scaled)){
 if(diff.exp){
     if(exists("comps") && !is.null(comps) && !is.null(key)){
         setwd(pd)
-        dir.create(diff.exp.dir,showWarnings=FALSE)
+        dir.create(diff.exp.dir,showWarnings=FALSE,mode="0755")
         cat("Running differential expression analysis...\n")
         run.diff.exp(counts.raw=counts$raw,
                      comps=comps,
@@ -193,7 +193,7 @@ if(diff.exp){
 if(GSA){
     if(exists("species") && !is.null(species)){
         setwd(pd)
-        dir.create(gsa.dir,showWarnings=FALSE)
+        dir.create(gsa.dir,showWarnings=FALSE,mode="0755")
         deseq.res.dir=paste(pd,diff.exp.dir,sep="/")
         cat("Running gene set analysis...\n")
         run.gene.set.analysis(species=species,
