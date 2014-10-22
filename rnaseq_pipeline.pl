@@ -27,9 +27,10 @@ use FindBin qw($Bin);
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output);
 
 $pre = 'TEMP';
+$output = "results";
 GetOptions ('map=s' => \$map,
 	    'pre=s' => \$pre,
 	    'config=s' => \$config,
@@ -38,7 +39,7 @@ GetOptions ('map=s' => \$map,
 	    'h|help' => \$help,
 	    'star' => \$star,
 	    'pass1' => \$pass1,
-	    'tophat' => \$tophat,
+	    'tophat|tophat2' => \$tophat,
 	    'cufflinks' => \$cufflinks,
 	    'dexseq' => \$dexseq,
 	    'htseq' => \$htseq,
@@ -51,6 +52,7 @@ GetOptions ('map=s' => \$map,
 	    'allfusions' => \$allfusions,
             'species=s' => \$species,
             'lncrna' => \$lncrna,
+ 	    'output|out|o=s' => \$output,
             'lincrna_BROAD' => \$lincrna_BROAD) or exit(1);
 
 
@@ -66,6 +68,7 @@ if(!$map || !$species || !$config || $help){
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
+	* OUTPUT: output results directory (default: results)
         * OPTIONS: lncRNA analysis (-lncrna) runs all analyses based on lncRNA GTF (hg19 only); 
 HELP
 exit;
@@ -146,7 +149,6 @@ my $numArgs = $#ARGV + 1;
 foreach my $argnum (0 .. $#ARGV) {
     $commandLine .= " $ARGV[$argnum]";
 }
-
 
 my $GTF = '';
 my $DEXSEQ_GTF = '';
@@ -281,6 +283,10 @@ while(<MA>){
 }
 close MA;
 
+`/bin/mkdir -m 775 -p $output/intFiles`; 
+`/bin/mkdir -m 775 -p $output/progress`;
+`/bin/mkdir -m 775 -p $output/alignments`;
+
 open(IN, "$map") or die "Can't open $map $!";
 while(<IN>){
     chomp;
@@ -305,21 +311,13 @@ my @currentTime = &getTime();
 	###next;
     ###}
 
-    if(!-d "$data[1]"){
-	`mkdir $data[1]`;
-    }
-    if(!-d "$data[1]/$data[0]"){
-	`mkdir $data[1]/$data[0]`;
-    }
-    if(!-d "$data[1]/$data[0]/$data[2]"){
-	`mkdir $data[1]/$data[0]/$data[2]`;
-    }
+    `/bin/mkdir -m 775 -p $output/intFiles/$data[1]/$data[0]/$data[2]`;
 
     $samp_libs_run{$data[1]}{$data[0]}{$data[2]} = 1;
 
-    `ln -s $data[3]/* $data[1]/$data[0]/$data[2]/`;
+    `ln -s $data[3]/* $output/intFiles/$data[1]/$data[0]/$data[2]/`;
 
-    chdir "$data[1]/$data[0]/$data[2]";
+    chdir "$output/intFiles/$data[1]/$data[0]/$data[2]";
 
     opendir(workDir, "./");
     my @unsorted = readdir workDir;
@@ -355,7 +353,7 @@ foreach my $sample (keys %samp_libs_run){
     my $readsFlag = 0;
     foreach my $lib (keys %{$samp_libs_run{$sample}}){
 	foreach my $run (keys %{$samp_libs_run{$sample}{$lib}}){	    
-	    open(READS, "$sample/$lib/$run/files_$sample\_$lib\_$run") || die "Can't open $sample/$lib/$run/files_$sample\_$lib\_$run $!";
+	    open(READS, "$output/intFiles/$sample/$lib/$run/files_$sample\_$lib\_$run") || die "Can't open $output/intFiles/$sample/$lib/$run/files_$sample\_$lib\_$run $!";
 	    while(<READS>){
 		chomp;
 		    
@@ -363,9 +361,9 @@ foreach my $sample (keys %samp_libs_run){
 		
 		### NOTE: JUST CHECKING TO SEE IF IT EXISTS
 		###       HOWEVER DOES NOT GURANTEE THAT IT'S NON-EMPTY
-		if(-e "$sample/$lib/$run/$readPair[0]" && -e "$sample/$lib/$run/$readPair[1]"){
-		    push @R1, "$sample/$lib/$run/$readPair[0]";
-		    push @R2, "$sample/$lib/$run/$readPair[1]";
+		if(-e "$output/intFiles/$sample/$lib/$run/$readPair[0]" && -e "$output/intFiles/$sample/$lib/$run/$readPair[1]"){
+		    push @R1, "$output/intFiles/$sample/$lib/$run/$readPair[0]";
+		    push @R2, "$output/intFiles/$sample/$lib/$run/$readPair[1]";
 		}
 		else{
 		    $readsFlag = 1;
@@ -384,15 +382,14 @@ foreach my $sample (keys %samp_libs_run){
     my $r1_gz_files = join(",", @R1);
     my $r2_gz_files = join(",", @R2);
     if($tophat){
-	if(!-d "tophat2/$sample"){
-	    `/bin/mkdir -p tophat2/$sample`;
-	}
+	`/bin/mkdir -m 775 -p $output/alignments/tophat2/$sample`;
 
 	my $inReads = "$r1_gz_files";	
 	if($samp_pair{$sample} eq "PE"){
 	    $inReads .= " $r2_gz_files";
 	}
-	#`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 6 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o tophat2/$sample $BOWTIE2_INDEX $inReads`;
+	
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 6 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o $output/alignments/tophat2/$sample $BOWTIE2_INDEX $inReads`;
     }
 
     my $starOut = '';    
@@ -402,31 +399,31 @@ foreach my $sample (keys %samp_libs_run){
 	    $inReads .= " $r2_gz_files";
 	}
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_1PASS_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $sample/$sample\_STAR_1PASS_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_1PASS_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_1PASS_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
 	if($pass1){
 	    sleep(5);
 	    
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_SP_$sample -hold_jid $pre\_$uID\_STAR_1PASS_$sample -pe alloc 1 -l virtual_free=2G -q lau.q $Bin/qCMD $Bin/starProcessing.pl $sample/$sample\_STAR_1PASS_Aligned.out.sam`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_SP_$sample -hold_jid $pre\_$uID\_STAR_1PASS_$sample -pe alloc 1 -l virtual_free=2G $Bin/qCMD $Bin/starProcessing.pl $output/intFiles/$sample/$sample\_STAR_1PASS_Aligned.out.sam`;
 	    
-	    $starOut = "$sample/$sample\_STAR_1PASS_Aligned.out.sam_filtered.sam";
+	    $starOut = "$output/intFiles/$sample/$sample\_STAR_1PASS_Aligned.out.sam_filtered.sam";
 	}
 	else{
-	    `/bin/mkdir -p $sample/star2passGG`;
+	    `/bin/mkdir -m 775 -p $output/intFiles/$sample/star2passGG`;
 	    sleep(5);
 	
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_GG2_$sample -hold_jid $pre\_$uID\_STAR_1PASS_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --runMode genomeGenerate --genomeDir $sample/star2passGG --genomeFastaFiles $REF_SEQ --sjdbFileChrStartEnd $sample/$sample\_STAR_1PASS_SJ.out.tab --sjdbOverhang $MIN_READ_LENGTH --runThreadN 12`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_GG2_$sample -hold_jid $pre\_$uID\_STAR_1PASS_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --runMode genomeGenerate --genomeDir $output/intFiles/$sample/star2passGG --genomeFastaFiles $REF_SEQ --sjdbFileChrStartEnd $output/intFiles/$sample/$sample\_STAR_1PASS_SJ.out.tab --sjdbOverhang $MIN_READ_LENGTH --runThreadN 12`;
 	    
 	    sleep(5);
 	    
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_2PASS_$sample -hold_jid $pre\_$uID\_STAR_GG2_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $sample/star2passGG --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $sample/$sample\_STAR_2PASS_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_2PASS_$sample -hold_jid $pre\_$uID\_STAR_GG2_$sample -pe alloc 12 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $output/intFiles/$sample/star2passGG --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_2PASS_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
 	    
 	    sleep(5);
 	    
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_SP_$sample -hold_jid $pre\_$uID\_STAR_2PASS_$sample -pe alloc 1 -l virtual_free=2G -q lau.q $Bin/qCMD $Bin/starProcessing.pl $sample/$sample\_STAR_2PASS_Aligned.out.sam`;
-	    $starOut = "$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.sam";
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_SP_$sample -hold_jid $pre\_$uID\_STAR_2PASS_$sample -pe alloc 1 -l virtual_free=2G $Bin/qCMD $Bin/starProcessing.pl $output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam`;
+	    $starOut = "$output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.sam";
 	}
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$sample/$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/alignments/$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
     }
 
     if($detectFusions){
@@ -435,90 +432,80 @@ foreach my $sample (keys %samp_libs_run){
 	    my $r1_files = join(" ", @R1);
 	    my $r2_files = join(" ", @R2);
 
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r1_files ">$sample/$sample\_R1.fastq"`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD /bin/zcat $r1_files ">$output/intFiles/$sample/$sample\_R1.fastq"`;
 	    if($samp_pair{$sample} eq "PE"){
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /bin/zcat $r2_files ">$sample/$sample\_R2.fastq"`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CAT_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD /bin/zcat $r2_files ">$output/intFiles/$sample/$sample\_R2.fastq"`;
 	    }
 	
 	    if($chimerascan){
 		### NOTE: CHIMERASCAN ONLY WORKS FOR PE READS
 		if($samp_pair{$sample} eq "PE"){
-		    if(!-d "fusion/chimerascan/$sample"){
-			`/bin/mkdir -p fusion/chimerascan/$sample`;
-		    }
+		    `/bin/mkdir -m 775 -p $output/fusion/chimerascan/$sample`;
 		
 		    ### NOTE: CHIMERASCAN FAILS WHEN A READ PAIR IS OF DIFFERENT LENGTHS
 		    ###       e.g. WHEN WE CLIP AND TRIM VARIABLE LENGTHS FROM
 		    ###       SO HAVE TO USE UNPROCESSED READS
-		    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=1G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $sample/$sample\_R1.fastq $sample/$sample\_R2.fastq fusion/chimerascan/$sample/`;
+		    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CHIMERASCAN_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=1G $Bin/qCMD /opt/bin/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $output/intFiles/$sample/$sample\_R1.fastq $output/intFiles/$sample/$sample\_R2.fastq $output/fusion/chimerascan/$sample/`;
 		
-		    push @fusions, "--chimerascan fusion/chimerascan/$sample/chimeras.bedpe";
+		    push @fusions, "--chimerascan $output/fusion/chimerascan/$sample/chimeras.bedpe";
 		}
 	    }
 
 	    if($star_fusion){
-		if(!-d "fusion/star/$sample"){
-		    `/bin/mkdir -p fusion/star/$sample`;
-		}
+		`/bin/mkdir -m 775 -p $output/fusion/star/$sample`;
 		
-		my $inReads = "$sample/$sample\_R1.fastq";	
+		my $inReads = "$output/intFiles/$sample/$sample\_R1.fastq";	
 		if($samp_pair{$sample} eq "PE"){
-		    $inReads .= " $sample/$sample\_R2.fastq";
+		    $inReads .= " $output/intFiles/$sample/$sample\_R2.fastq";
 		}
 
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CHIMERA_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CHIMERA_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=3G $Bin/qCMD $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix $output/fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
 
-		push @fusions, "--star fusion/star/$sample/$sample\_STAR_Chimeric.out.junction";
+		push @fusions, "--star $output/fusion/star/$sample/$sample\_STAR_Chimeric.out.junction";
 	    }
 
 	    if($mapsplice){
-		if(!-d "fusion/mapsplice/$sample"){
-		    `/bin/mkdir -p fusion/mapsplice/$sample`;
-		}
+		`/bin/mkdir -m 775 -p $output/fusion/mapsplice/$sample`;
 
-		my $inReads = "-1 $sample/$sample\_R1.fastq";	
+		my $inReads = "-1 $output/intFiles/$sample/$sample\_R1.fastq";	
 		if($samp_pair{$sample} eq "PE"){
-		    $inReads .= " -2 $sample/$sample\_R2.fastq"
+		    $inReads .= " -2 $output/intFiles/$sample/$sample\_R2.fastq"
 		}
 
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MAPSPLICE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD /opt/bin/python $MAPSPLICE/mapsplice.py -p 6 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o fusion/mapsplice/$sample $inReads --gene-gtf $GTF`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MAPSPLICE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD /opt/bin/python $MAPSPLICE/mapsplice.py -p 6 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o $output/fusion/mapsplice/$sample $inReads --gene-gtf $GTF`;
 
-		push @fusions, "--mapsplice fusion/mapsplice/$sample/fusions_well_annotated.txt";
+		push @fusions, "--mapsplice $output/fusion/mapsplice/$sample/fusions_well_annotated.txt";
 	    }
 
 	    if($defuse){
 		### NOTE: DEFUSE ONLY WORKS FOR PE READS
 		if($samp_pair{$sample} eq "PE"){
-		    if(!-d "fusion/defuse/$sample"){
-			`/bin/mkdir -p fusion/defuse/$sample`;
-		    }
+		    `/bin/mkdir -m 775 -p $output/fusion/defuse/$sample`;
 				
-		    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output fusion/defuse/$sample --parallel 6 --1fastq $sample/$sample\_R1.fastq --2fastq $sample/$sample\_R2.fastq`;
+		    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output $output/fusion/defuse/$sample --parallel 6 --1fastq $output/intFiles/$sample/$sample\_R1.fastq --2fastq $output/intFiles/$sample/$sample\_R2.fastq`;
 		
-		    push @fusions, "--defuse fusion/defuse/$sample/results.filtered.tsv";
+		    push @fusions, "--defuse $output/fusion/defuse/$sample/results.filtered.tsv";
 		}
 	    }
 
 	    if($fusioncatcher){
-		if(!-d "fusion/fusioncatcher/$sample"){
-		    `/bin/mkdir -p fusion/fusioncatcher/$sample`;
-		}
+		`/bin/mkdir -m 775 -p $output/fusion/fusioncatcher/$sample`;
 
-		my $inReads = "-i $sample/$sample\_R1.fastq";	
+		my $inReads = "-i $output/intFiles/$sample/$sample\_R1.fastq";	
 		if($samp_pair{$sample} eq "PE"){
-		    $inReads .= ",$sample/$sample\_R2.fastq"
+		    $inReads .= ",$output/intFiles/$sample/$sample\_R2.fastq"
 		}
 
 		### NOTE: DUE TO PYTHON MODULE COMPATIBILITY ISSUES ON NODES
 		###       HAVE TO USE DIFFERENT VERSION OF PYTHON
-		`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o fusion/fusioncatcher/$sample -p 6`;
+		`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o $output/fusion/fusioncatcher/$sample -p 6`;
 
-		push @fusions, "--fusioncatcher fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
+		push @fusions, "--fusioncatcher $output/fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
 
 	    }
 
 	    my $mergeFusions = join(" ", @fusions);
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MERGE_FUSION_$sample -hold_jid $pre\_$uID\_CHIMERASCAN_$sample,$pre\_$uID\_STAR_CHIMERA_$sample,$pre\_$uID\_MAPSPLICE_$sample,$pre\_$uID\_DEFUSE_$sample,$pre\_$uID\_FC_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/MergeFusion $mergeFusions --out $pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MERGE_FUSION_$sample -hold_jid $pre\_$uID\_CHIMERASCAN_$sample,$pre\_$uID\_STAR_CHIMERA_$sample,$pre\_$uID\_MAPSPLICE_$sample,$pre\_$uID\_DEFUSE_$sample,$pre\_$uID\_FC_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/MergeFusion $mergeFusions --out $output/fusion/$pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
 	}
 	else{
 	    my @currentTime = &getTime();
@@ -527,85 +514,74 @@ foreach my $sample (keys %samp_libs_run){
     }
     if($cufflinks){
 	if($star){
-	    if(!-d "cufflinks/$sample"){
-		`/bin/mkdir -p cufflinks/$sample`;
-	    }
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_STAR -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 5 -l virtual_free=2G -q lau.q $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o cufflinks/$sample $sample/$sample\.bam`;
+	    `/bin/mkdir -m 775 -p $output/cufflinks/$sample`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_STAR -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/alignments/$sample\.bam`;
 	}
 	
 	if($tophat){
-	    if(!-d "cufflinks_tophat2/$sample"){
-		`/bin/mkdir -p cufflinks_tophat2/$sample`;
-	    }
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT2 -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 5 -l virtual_free=2G -q lau.q $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o cufflinks/$sample tophat2/$sample/accepted_hits.bam`;
+	    `/bin/mkdir -m 775 -p $output/cufflinks/tophat2/$sample`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT2 -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/tophat2/$sample $output/alignments/tophat2/$sample/accepted_hits.bam`;
 	}
     }
     
     if($htseq || $dexseq){
 	if($star){
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$sample/$sample\_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID USE_THREADING=true`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=48G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID USE_THREADING=true`;
 	}
 	
 	if($tophat){
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=7G -q lau.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=tophat2/$sample/accepted_hits.bam OUTPUT=tophat2/$sample/accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=48G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=$output/alignments/tophat2/$sample/accepted_hits.bam OUTPUT=$output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
 	}
 	
 	sleep(5);
 	
 	if($htseq){
 	    if($star){
-		if(!-d "htseq"){
-		    `/bin/mkdir -p htseq`;
-		}
+		`/bin/mkdir -m 775 -p $output/counts_gene`;
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $sample/$sample\_queryname_sorted.sam $GTF > htseq/$sample.htseq_count"`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam $GTF > $output/counts_gene/$sample.htseq_count"`;
 	    }
 	    
 	    if($tophat){
-		if(!-d "htseq_tophat2"){
-		    `/bin/mkdir -p htseq_tophat2`;
-		}
+		`/bin/mkdir -m 775 -p $output/counts_gene/tophat2`;
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon tophat2/$sample/accepted_hits_queryname_sorted.sam $GTF > htseq_tophat2/$sample.htseq_count"`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $GTF > $output/counts_gene/tophat2/$sample.htseq_count"`;
 	    }
 	}
 	
 	if($dexseq){
 	    if($star){
-		if(!-d "dexseq"){
-		    `/bin/mkdir -p dexseq`;
-		}
+		`/bin/mkdir -m 775 -p $output/counts_exon`;
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $sample/$sample\_queryname_sorted.sam dexseq/$sample.dexseq_count`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam $output/counts_exon/$sample.dexseq_count`;
 	    }
 	    
 	    if($tophat){
-		if(!-d "dexseq_tophat2"){
-		    `/bin/mkdir -p dexseq_tophat2`;
-		}
+		`/bin/mkdir -m 775 -p $output/counts_exon/tophat2`;
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF tophat2/$sample/accepted_hits_queryname_sorted.sam dexseq_tophat2/$sample.dexseq_count`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $output/counts_exon/tophat2/$sample.dexseq_count`;
 	    }
 	}
     }
 }
+
 sleep(5);
 if($htseq){
     if($star){
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_HTSEQ_STAR -hold_jid $pre\_$uID\_HT_STAR -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/htseq '*.htseq_count' $curDir/htseq/$pre\_htseq_all_samples.txt $geneNameConversion`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_HTSEQ_STAR -hold_jid $pre\_$uID\_HT_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_gene '*.htseq_count' $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt $geneNameConversion`;
     }
 
     if($tophat){
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -hold_jid $pre\_$uID\_HT_TOPHAT2 -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/htseq_tophat2 '*.htseq_count' $curDir/htseq_tophat2/$pre\_htseq_all_samples.txt $geneNameConversion`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -hold_jid $pre\_$uID\_HT_TOPHAT2 -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_gene/tophat2 '*.htseq_count' $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt $geneNameConversion`;
     }
 }
 if($dexseq){
     if($star){
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_DEX_STAR -hold_jid $pre\_$uID\_DEX_STAR -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/dexseq '*.dexseq_count' $curDir/dexseq/$pre\_dexseq_all_samples.txt $geneNameConversion`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_DEX_STAR -hold_jid $pre\_$uID\_DEX_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_exon '*.dexseq_count' $curDir/$output/counts_exon/$pre\_dexseq_all_samples.txt $geneNameConversion`;
     }
 
     if($tophat){
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_DEX_TOPHAT2 -hold_jid $pre\_$uID\_DEX_TOPHAT2 -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/dexseq_tophat2 '*.dexseq_count' $curDir/dexseq_tophat2/$pre\_dexseq_all_samples.txt $geneNameConversion`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_DEX_TOPHAT2 -hold_jid $pre\_$uID\_DEX_TOPHAT2 -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_exon/tophat2 '*.dexseq_count' $curDir/$output/counts_exon/tophat2/$pre\_dexseq_all_samples.txt $geneNameConversion`;
     }
 }
 ### SAMPLE COMMAND
@@ -626,16 +602,16 @@ if($deseq){
     my $cmpStr = join(",", @comps);
     
     if($star){
-	if(!-d "DESeq"){
-	    `/bin/mkdir -p DESeq`;
-	}
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"output.dir='$curDir/DESeq'\\\"\" \"\\\"counts.file='$curDir/htseq/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
+	`/bin/mkdir -m 775 -p $output/differentialExpression_gene`;
+	`/bin/mkdir -m 775 -p $output/clustering`;
+	`/bin/mkdir -m 775 -p $output/gsa`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$curDir/$output/differentialExpression_gene'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$curDir/$output/counts_gene'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering'\\\"\" \"\\\"gsa.dir='$curDir/$output/gsa'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
     }
     if($tophat){
-	if(!-d "DESeq_tophat2"){
-	    `/bin/mkdir -p DESeq_tophat2`;
-	}
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT2 -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -pe alloc 1 -l virtual_free=1G -q lau.q $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"output.dir='$curDir/DESeq_tophat2'\\\"\" \"\\\"counts.file='$curDir/htseq_tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
+	`/bin/mkdir -m 775 -p $output/differentialExpression_gene/tophat2`;
+	`/bin/mkdir -m 775 -p $output/clustering/tophat2`;
+	`/bin/mkdir -m 775 -p $output/gsa/tophat2`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT2 -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$curDir/$output/differentialExpression_gene/tophat2'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$curDir/$output/counts_gene/tophat2'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering/tophat2'\\\"\" \"\\\"gsa.dir='$curDir/$output/gsa/tophat2'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
     }
 }
 close LOG;
