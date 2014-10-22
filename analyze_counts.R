@@ -172,7 +172,7 @@ run.diff.exp <- function(counts.raw,comps,key,output.dir,gns=NULL,q.cut=0.5,lfc=
 }
 
 
-run.gene.set.analysis <- function(species,bin,deseq.res.dir,min.gns.nu=5,max.gns.nu=1000,pval.cutoff=0.1,nPerm=1e4,fcQ=T,fc2keep=log2(1.5),frac2keep=4){
+run.gene.set.analysis <- function(species,bin,gsa.dir,deseq.res.dir,min.gns.nu=5,max.gns.nu=1000,pval.cutoff=0.1,nPerm=1e4,fcQ=T,fc2keep=log2(1.5),frac2keep=4){
 
     if (species %in% c("hg19","hg18")){
         species = "human"
@@ -219,7 +219,7 @@ run.gene.set.analysis <- function(species,bin,deseq.res.dir,min.gns.nu=5,max.gns
             pvals=as.matrix(res[,2])
             rownames(pvals)=rownames(res)
 
-            setwd(paste(pd,gsa.dir,sep="/"))
+            setwd(gsa.dir)
             res.gs=c("GeneSets","Pval","Direction")
             gsaRes <- runGSA(fc,geneSetStat="mean",gsc=gsc,gsSizeLim=c(min.gns.nu,max.gns.nu),nPerm=nPerm)
             AllGSARes[[comp.name]][[gs.name]] = gsaRes
@@ -232,7 +232,7 @@ run.gene.set.analysis <- function(species,bin,deseq.res.dir,min.gns.nu=5,max.gns
             setwd(deseq.res.dir)
         }
     }
-    setwd(paste(pd,gsa.dir,sep="/"))
+    setwd(gsa.dir)
     save(AllGSARes,file="AllGSARes.Rdata",compress=T)
 
     setwd(pd)
