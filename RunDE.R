@@ -194,10 +194,11 @@ if(GSA){
     if(exists("species") && !is.null(species)){
         setwd(pd)
         dir.create(gsa.dir,showWarnings=FALSE,mode="0755")
-        deseq.res.dir=paste(pd,diff.exp.dir,sep="/")
+        deseq.res.dir=diff.exp.dir
         cat("Running gene set analysis...\n")
         run.gene.set.analysis(species=species,
                               bin=bin,
+                              gsa.dir=gsa.dir,
                               deseq.res.dir=deseq.res.dir)
         cat("    Done!\n\n")
     } else{
