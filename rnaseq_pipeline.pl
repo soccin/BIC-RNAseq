@@ -283,6 +283,7 @@ while(<MA>){
 }
 close MA;
 
+`/bin/mkdir -m 775 -p $output`; 
 `/bin/mkdir -m 775 -p $output/intFiles`; 
 `/bin/mkdir -m 775 -p $output/progress`;
 `/bin/mkdir -m 775 -p $output/alignments`;
@@ -311,6 +312,7 @@ my @currentTime = &getTime();
 	###next;
     ###}
 
+    `/bin/mkdir -m 775 -p $output/intFiles/$data[1]`;
     `/bin/mkdir -m 775 -p $output/intFiles/$data[1]/$data[0]/$data[2]`;
 
     $samp_libs_run{$data[1]}{$data[0]}{$data[2]} = 1;
@@ -382,6 +384,7 @@ foreach my $sample (keys %samp_libs_run){
     my $r1_gz_files = join(",", @R1);
     my $r2_gz_files = join(",", @R2);
     if($tophat){
+	`/bin/mkdir -m 775 -p $output/alignments/tophat2`;
 	`/bin/mkdir -m 775 -p $output/alignments/tophat2/$sample`;
 
 	my $inReads = "$r1_gz_files";	
@@ -408,6 +411,7 @@ foreach my $sample (keys %samp_libs_run){
 	    $starOut = "$output/intFiles/$sample/$sample\_STAR_1PASS_Aligned.out.sam_filtered.sam";
 	}
 	else{
+	    `/bin/mkdir -m 775 -p $output/intFiles/$sample`;
 	    `/bin/mkdir -m 775 -p $output/intFiles/$sample/star2passGG`;
 	    sleep(5);
 	
@@ -427,6 +431,7 @@ foreach my $sample (keys %samp_libs_run){
     }
 
     if($detectFusions){
+	`/bin/mkdir -m 775 -p $output/fusion`;
 	if($species =~ /hg19|human/i){	
 	    my @fusions = ();
 	    my $r1_files = join(" ", @R1);
@@ -440,6 +445,7 @@ foreach my $sample (keys %samp_libs_run){
 	    if($chimerascan){
 		### NOTE: CHIMERASCAN ONLY WORKS FOR PE READS
 		if($samp_pair{$sample} eq "PE"){
+		    `/bin/mkdir -m 775 -p $output/fusion/chimerascan`;
 		    `/bin/mkdir -m 775 -p $output/fusion/chimerascan/$sample`;
 		
 		    ### NOTE: CHIMERASCAN FAILS WHEN A READ PAIR IS OF DIFFERENT LENGTHS
@@ -452,6 +458,7 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 
 	    if($star_fusion){
+		`/bin/mkdir -m 775 -p $output/fusion/star`;
 		`/bin/mkdir -m 775 -p $output/fusion/star/$sample`;
 		
 		my $inReads = "$output/intFiles/$sample/$sample\_R1.fastq";	
@@ -465,6 +472,7 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 
 	    if($mapsplice){
+		`/bin/mkdir -m 775 -p $output/fusion/mapsplice`;
 		`/bin/mkdir -m 775 -p $output/fusion/mapsplice/$sample`;
 
 		my $inReads = "-1 $output/intFiles/$sample/$sample\_R1.fastq";	
@@ -480,6 +488,7 @@ foreach my $sample (keys %samp_libs_run){
 	    if($defuse){
 		### NOTE: DEFUSE ONLY WORKS FOR PE READS
 		if($samp_pair{$sample} eq "PE"){
+		    `/bin/mkdir -m 775 -p $output/fusion/defuse`;
 		    `/bin/mkdir -m 775 -p $output/fusion/defuse/$sample`;
 				
 		    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEFUSE_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output $output/fusion/defuse/$sample --parallel 6 --1fastq $output/intFiles/$sample/$sample\_R1.fastq --2fastq $output/intFiles/$sample/$sample\_R2.fastq`;
@@ -489,6 +498,7 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 
 	    if($fusioncatcher){
+		`/bin/mkdir -m 775 -p $output/fusion/fusioncatcher`;
 		`/bin/mkdir -m 775 -p $output/fusion/fusioncatcher/$sample`;
 
 		my $inReads = "-i $output/intFiles/$sample/$sample\_R1.fastq";	
@@ -513,12 +523,14 @@ foreach my $sample (keys %samp_libs_run){
 	}
     }
     if($cufflinks){
+	`/bin/mkdir -m 775 -p $output/cufflinks`;
 	if($star){
 	    `/bin/mkdir -m 775 -p $output/cufflinks/$sample`;
 	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_STAR -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/alignments/$sample\.bam`;
 	}
 	
 	if($tophat){
+	    `/bin/mkdir -m 775 -p $output/cufflinks/tophat2`;
 	    `/bin/mkdir -m 775 -p $output/cufflinks/tophat2/$sample`;
 	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT2 -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/tophat2/$sample $output/alignments/tophat2/$sample/accepted_hits.bam`;
 	}
@@ -536,9 +548,8 @@ foreach my $sample (keys %samp_libs_run){
 	sleep(5);
 	
 	if($htseq){
-	    if($star){
-		`/bin/mkdir -m 775 -p $output/counts_gene`;
-		
+	    `/bin/mkdir -m 775 -p $output/counts_gene`;
+	    if($star){		
 		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam $GTF > $output/counts_gene/$sample.htseq_count"`;
 	    }
 	    
@@ -550,9 +561,8 @@ foreach my $sample (keys %samp_libs_run){
 	}
 	
 	if($dexseq){
-	    if($star){
-		`/bin/mkdir -m 775 -p $output/counts_exon`;
-		
+	    `/bin/mkdir -m 775 -p $output/counts_exon`;
+	    if($star){		
 		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam $output/counts_exon/$sample.dexseq_count`;
 	    }
 	    
