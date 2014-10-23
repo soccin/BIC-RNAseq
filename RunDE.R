@@ -45,7 +45,7 @@ pd = getwd()
 ## defaults
 counts.dir="counts_gene"
 clustering.dir="clustering"
-diff.exp.dir="differentialExpresssion_gene"
+diff.exp.dir="differentialExpression_gene"
 gsa.dir="GSA"
 q.cut = 0.05
 lfc = 1   #0.57#log2(fc.cut)
