@@ -427,7 +427,7 @@ foreach my $sample (keys %samp_libs_run){
 	    $starOut = "$output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.sam";
 	}
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/alignments/$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
     }
 
     if($detectFusions){
@@ -526,7 +526,7 @@ foreach my $sample (keys %samp_libs_run){
 	`/bin/mkdir -m 775 -p $output/cufflinks`;
 	if($star){
 	    `/bin/mkdir -m 775 -p $output/cufflinks/$sample`;
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_STAR -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/alignments/$sample\.bam`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_STAR -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/alignments/$pre\_$sample\.bam`;
 	}
 	
 	if($tophat){
@@ -538,11 +538,11 @@ foreach my $sample (keys %samp_libs_run){
     
     if($htseq || $dexseq){
 	if($star){
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=48G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID USE_THREADING=true`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID USE_THREADING=true`;
 	}
 	
 	if($tophat){
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=48G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=$output/alignments/tophat2/$sample/accepted_hits.bam OUTPUT=$output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=$output/alignments/tophat2/$sample/accepted_hits.bam OUTPUT=$output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
 	}
 	
 	sleep(5);
