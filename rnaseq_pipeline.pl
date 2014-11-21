@@ -160,6 +160,8 @@ my $BOWTIE_INDEX = '';
 my $BOWTIE2_INDEX = '';
 my $TRANS_INDEX = '';
 my $REF_SEQ = '';
+my $RIBOSOMAL_INTERVALS='';
+my $REF_FLAT = '';
 
 if($species =~ /human|hg19/i){
     $species = 'hg19';
@@ -169,6 +171,8 @@ if($species =~ /human|hg19/i){
     $BOWTIE_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie/hg19_bowtie';
     $BOWTIE2_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie2/hg19_bowtie2';
     $chrSplits = '/ifs/data/bio/assemblies/H.sapiens/hg19/chromosomes';
+    $RIBOSOMAL_INTERVALS="$Bin/data/ribosomal_hg19.interval_file";
+    $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
 
     if($lncrna){
         $GTF = "$Bin/data/lncipedia.gtf";
@@ -287,6 +291,7 @@ close MA;
 `/bin/mkdir -m 775 -p $output/intFiles`; 
 `/bin/mkdir -m 775 -p $output/progress`;
 `/bin/mkdir -m 775 -p $output/alignments`;
+`/bin/mkdir -m 775 -p $output/metrics`;
 
 open(IN, "$map") or die "Can't open $map $!";
 while(<IN>){
@@ -384,15 +389,26 @@ foreach my $sample (keys %samp_libs_run){
     my $r1_gz_files = join(",", @R1);
     my $r2_gz_files = join(",", @R2);
     if($tophat){
+	`/bin/mkdir -m 775 -p $output/intFiles/tophat2`;
+	`/bin/mkdir -m 775 -p $output/intFiles/tophat2/$sample`;
 	`/bin/mkdir -m 775 -p $output/alignments/tophat2`;
-	`/bin/mkdir -m 775 -p $output/alignments/tophat2/$sample`;
+	`/bin/mkdir -m 775 -p $output/metrics/tophat2`;
 
 	my $inReads = "$r1_gz_files";	
 	if($samp_pair{$sample} eq "PE"){
 	    $inReads .= " $r2_gz_files";
 	}
 	
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT2_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 6 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o $output/alignments/tophat2/$sample $BOWTIE2_INDEX $inReads`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD $TOPHAT/tophat2 -p 6 --zpacker /opt/pigz-2.1.6/pigz  -r 70 --mate-std-dev 90 --GTF $GTF --transcriptome-index=$TRANS_INDEX -o $output/intFiles/tophat2/$sample $BOWTIE2_INDEX $inReads`;
+
+	sleep(5);
+
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_REORDER_$sample -hold_jid $pre\_$uID\_TOPHAT_$sample -pe alloc 1 -l virtual_free=10G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar ReorderSam I=$output/intFiles/tophat2/$sample/accepted_hits.bam O=$output/alignments/tophat2/$pre\_$sample\.bam REFERENCE=$REF_SEQ VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true`;
+
+	sleep(5);
+
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT_CRM -hold_jid $pre\_$uID\_REORDER_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/tophat2/$pre\_$sample\.bam O=$output/metrics/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/tophat2/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+
     }
 
     my $starOut = '';    
@@ -427,7 +443,12 @@ foreach my $sample (keys %samp_libs_run){
 	    $starOut = "$output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.sam";
 	}
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar MergeSamFiles I=$starOut O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
+
+	sleep(5);
+
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CRM -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/$pre\_$sample\.bam O=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+
     }
 
     if($detectFusions){
@@ -532,17 +553,17 @@ foreach my $sample (keys %samp_libs_run){
 	if($tophat){
 	    `/bin/mkdir -m 775 -p $output/cufflinks/tophat2`;
 	    `/bin/mkdir -m 775 -p $output/cufflinks/tophat2/$sample`;
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT2 -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/tophat2/$sample $output/alignments/tophat2/$sample/accepted_hits.bam`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUFFLINKS_TOPHAT -hold_jid $pre\_$uID\_TOPHAT_$sample -pe alloc 5 -l virtual_free=2G $Bin/qCMD $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/tophat2/$sample $output/intFiles/tophat2/$sample/accepted_hits.bam`;
 	}
     }
     
     if($htseq || $dexseq){
 	if($star){
-	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar I=$starOut O=$output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID USE_THREADING=true`;
+	    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_QNS_STAR_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar MergeSamFiles I=$starOut O=$output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam SORT_ORDER=queryname VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID USE_THREADING=true`;
 	}
 	
 	if($tophat){
-	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT2_$sample -hold_jid $pre\_$uID\_TOPHAT2_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/MergeSamFiles.jar INPUT=$output/alignments/tophat2/$sample/accepted_hits.bam OUTPUT=$output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;    
+	    `/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_QNS_TOPHAT_$sample -hold_jid $pre\_$uID\_TOPHAT_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar MergeSamFiles INPUT=$output/intFiles/tophat2/$sample/accepted_hits.bam OUTPUT=$output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam SORT_ORDER=queryname TMP_DIR=/scratch/$uID VALIDATION_STRINGENCY=LENIENT`;
 	}
 	
 	sleep(5);
@@ -556,7 +577,7 @@ foreach my $sample (keys %samp_libs_run){
 	    if($tophat){
 		`/bin/mkdir -m 775 -p $output/counts_gene/tophat2`;
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $GTF > $output/counts_gene/tophat2/$sample.htseq_count"`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT -hold_jid $pre\_$uID\_QNS_TOPHAT_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $GTF > $output/counts_gene/tophat2/$sample.htseq_count"`;
 	    }
 	}
 	
@@ -569,7 +590,7 @@ foreach my $sample (keys %samp_libs_run){
 	    if($tophat){
 		`/bin/mkdir -m 775 -p $output/counts_exon/tophat2`;
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_TOPHAT2 -hold_jid $pre\_$uID\_QNS_TOPHAT2_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $output/counts_exon/tophat2/$sample.dexseq_count`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_DEX_TOPHAT -hold_jid $pre\_$uID\_QNS_TOPHAT_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $output/counts_exon/tophat2/$sample.dexseq_count`;
 	    }
 	}
     }
@@ -582,7 +603,7 @@ if($htseq){
     }
 
     if($tophat){
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -hold_jid $pre\_$uID\_HT_TOPHAT2 -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_gene/tophat2 '*.htseq_count' $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt $geneNameConversion`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_HTSEQ_TOPHAT -hold_jid $pre\_$uID\_HT_TOPHAT -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_gene/tophat2 '*.htseq_count' $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt $geneNameConversion`;
     }
 }
 if($dexseq){
@@ -591,9 +612,11 @@ if($dexseq){
     }
 
     if($tophat){
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_DEX_TOPHAT2 -hold_jid $pre\_$uID\_DEX_TOPHAT2 -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_exon/tophat2 '*.dexseq_count' $curDir/$output/counts_exon/tophat2/$pre\_dexseq_all_samples.txt $geneNameConversion`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_MATRIX_DEX_TOPHAT -hold_jid $pre\_$uID\_DEX_TOPHAT -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/bin/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_exon/tophat2 '*.dexseq_count' $curDir/$output/counts_exon/tophat2/$pre\_dexseq_all_samples.txt $geneNameConversion`;
     }
 }
+
+
 ### SAMPLE COMMAND
 ####qsub -N Proj_4226_DESeq ~/bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript ~/RNAseqPipe/trunk/bin/RunDE.R "\"proj.id='4226'\" \"output.dir='/ifs/data/byrne/rnaseq/Proj_4226'\" \"counts.file='Proj_4226_ALL_samples.htseq.count'\" \"key.file='/ifs/data/byrne/rnaseq/Proj_4226/sampleKey.txt'\" \"comps=c('hi - lo')\""
 
@@ -621,7 +644,7 @@ if($deseq){
 	`/bin/mkdir -m 775 -p $output/differentialExpression_gene/tophat2`;
 	`/bin/mkdir -m 775 -p $output/clustering/tophat2`;
 	`/bin/mkdir -m 775 -p $output/gsa/tophat2`;
-	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT2 -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT2 -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$curDir/$output/differentialExpression_gene/tophat2'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$curDir/$output/counts_gene/tophat2'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering/tophat2'\\\"\" \"\\\"gsa.dir='$curDir/$output/gsa/tophat2'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$curDir/$output/differentialExpression_gene/tophat2'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$curDir/$output/counts_gene/tophat2'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering/tophat2'\\\"\" \"\\\"gsa.dir='$curDir/$output/gsa/tophat2'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
     }
 }
 close LOG;
@@ -637,8 +660,8 @@ sub verifyConfig{
 	my @conf = split(/\s+/, $_);
 
 	if($conf[0] =~ /picard/i){
-	    if(!-e "$conf[1]/MergeSamFiles.jar" || !-e "$conf[1]/AddOrReplaceReadGroups.jar"){
-		die "CAN'T FIND MergeSamFiles.jar and/or AddOrReplaceReadGroups.jar IN $conf[1] $!";
+	    if(!-e "$conf[1]/picard.jar"){
+		die "CAN'T FIND picard.jar IN $conf[1] $!";
 	    }
 	    $PICARD = $conf[1];
 	}
