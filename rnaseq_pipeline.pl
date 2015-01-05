@@ -78,8 +78,8 @@ if($pre =~ /^\d+/){
     $pre = "s_$pre";
 }
 
-if($species !~ /human|hg19|mouse|mm9|hybrid/i){
-    die "Species must be human (hg19) or mouse (mm9) or human-mouse hybrid (hybrid)";
+if($species !~ /human|hg19|mouse|mm9|hybrid|zebrafish|zv9/i){
+    die "Species must be human (hg19) or mouse (mm9) or human-mouse hybrid (hybrid) or zebrafish (zv9)";
 }
 
 ### dumb reconstruction of command line
@@ -206,6 +206,16 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $starDB = '/ifs/data/mpirun/genomes/human/hg19_mm9_hybrid/star';
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
 }
+elsif($species =~ /zebrafish|zv9/i){
+    $species = 'zv9';
+    $REF_SEQ = '/ifs/data/bio/assemblies/D.rerio/zv9/zv9.fasta';
+    $GTF = '/ifs/data/bio/assemblies/D.rerio/zv9/zv9.gtf';
+    $starDB = '/ifs/data/bio/assemblies/D.rerio/zv9/star';
+    $chrSplits = '/ifs/data/bio/assemblies/D.rerio/zv9/chromosomes';
+    $geneNameConversion = "/ifs/data/bio/assemblies/D.rerio/zv9/zv9EnsemblIDtoGeneName.txt";
+}
+
+
 
 my $CUFFLINKS = '/opt/bin';
 my $HTSEQ = '/opt/bin';
