@@ -17,6 +17,7 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     HTSeq.dat=rr(counts.file,header=T)
     HTSeq.dat=make.rownames(HTSeq.dat)
     gns = NULL
+cat(c(colnames(HTSeq.dat),"\n"))
     if ("GeneSymbol" %in% colnames(HTSeq.dat)){
         gns = HTSeq.dat[,1]
         idsAndGns = as.matrix(gns)
@@ -28,6 +29,8 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
         HTSeq.dat = HTSeq.dat[,key[,1]]
     }
 
+cat(c(colnames(HTSeq.dat),"\n"))
+
     samps = colnames(HTSeq.dat)
     counts.dat=matrix2numeric(HTSeq.dat)
 
@@ -36,7 +39,8 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     if(is.null(conds)){
         conds=rep('s',length(samps))
     }
-
+cat(conds)
+cat("\n")
     ########################################
     ## write scaled data using DESeq method
     ########################################

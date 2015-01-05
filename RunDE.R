@@ -43,10 +43,10 @@ cat(c("\n++++++++++++++++ BIC RNA-Seq Counts Analysis ++++++++++++++++\n\n"))
 pd = getwd()
 
 ## defaults
-counts.dir="counts_gene"
-clustering.dir="clustering"
-diff.exp.dir="differentialExpression_gene"
-gsa.dir="GSA"
+counts.dir=paste(pd,"counts_gene",sep="/")
+clustering.dir=paste(pd,"clustering",sep="/")
+diff.exp.dir=paste(pd,"differentialExpression_gene",sep="/")
+gsa.dir=paste(pd,"GSA",sep="/")
 q.cut = 0.05
 lfc = 1   #0.57#log2(fc.cut)
 fc.cut = 2   #2^0.57
