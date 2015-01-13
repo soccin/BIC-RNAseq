@@ -171,7 +171,7 @@ if($species =~ /human|hg19/i){
     $BOWTIE_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie/hg19_bowtie';
     $BOWTIE2_INDEX = '/ifs/data/bio/assemblies/H.sapiens/hg19/bowtie2/hg19_bowtie2';
     $chrSplits = '/ifs/data/bio/assemblies/H.sapiens/hg19/chromosomes';
-    $RIBOSOMAL_INTERVALS="$Bin/data/ribosomal_hg19.interval_file";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
 
     if($lncrna){
@@ -189,7 +189,7 @@ if($species =~ /human|hg19/i){
 elsif($species =~ /mouse|mm9/i){
     $species = 'mm9';
     $REF_SEQ = '/ifs/data/bio/assemblies/M.musculus/mm9/mm9.fasta';
-    $GTF = "$Bin/data//Mus_musculus.NCBIM37.67_ENSEMBL.gtf";
+    $GTF = "$Bin/data/Mus_musculus.NCBIM37.67_ENSEMBL.gtf";
     $DEXSEQ_GTF = "$Bin/data/Mus_musculus.NCBIM37.67_ENSEMBL.dexseq.gtf";
     $starDB = '/ifs/data/bio/assemblies/M.musculus/mm9/star';
     $geneNameConversion = "$Bin/data/mm9Ensembl67IDToGeneName.txt";
@@ -197,6 +197,8 @@ elsif($species =~ /mouse|mm9/i){
     $BOWTIE2_INDEX = '/ifs/data/bio/assemblies/M.musculus/mm9/bowtie2/mm9_bowtie2';
     $chrSplits = '/ifs/data/bio/assemblies/M.musculus/mm9/chromosomes';
     $TRANS_INDEX = '/ifs/data/bio/assemblies/M.musculus/mm9/bowtie2/transcriptome/ensembl';
+    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_MM9_assemblies.interval_file";
+    $REF_FLAT = "$Bin/data/refFlat__mm9.txt.gz";
 }
 elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $species = 'hybrid';
@@ -205,16 +207,17 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
     $starDB = '/ifs/data/mpirun/genomes/human/hg19_mm9_hybrid/star';
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19.interval_file";
+    $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
 }
 elsif($species =~ /zebrafish|zv9/i){
     $species = 'zv9';
     $REF_SEQ = '/ifs/data/bio/assemblies/D.rerio/zv9/zv9.fasta';
-    $GTF = '/ifs/data/bio/assemblies/D.rerio/zv9/zv9.gtf';
+    $GTF = "$Bin/data/zv9.gtf";
     $starDB = '/ifs/data/bio/assemblies/D.rerio/zv9/star';
     $chrSplits = '/ifs/data/bio/assemblies/D.rerio/zv9/chromosomes';
-    $geneNameConversion = "/ifs/data/bio/assemblies/D.rerio/zv9/zv9EnsemblIDtoGeneName.txt";
+    $geneNameConversion = "Bin/data/zv9EnsemblIDtoGeneName.txt";
 }
-
 
 
 my $CUFFLINKS = '/opt/bin';
@@ -364,6 +367,8 @@ my @currentTime = &getTime();
 }
 close IN;
 
+my @crm = ();
+my @crm_tophat = ();
 foreach my $sample (keys %samp_libs_run){
     my @R1 = ();
     my @R2 = ();
@@ -413,12 +418,16 @@ foreach my $sample (keys %samp_libs_run){
 
 	sleep(5);
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_REORDER_$sample -hold_jid $pre\_$uID\_TOPHAT_$sample -pe alloc 1 -l virtual_free=10G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar ReorderSam I=$output/intFiles/tophat2/$sample/accepted_hits.bam O=$output/alignments/tophat2/$pre\_$sample\.bam REFERENCE=$REF_SEQ VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_REORDER_$sample -hold_jid $pre\_$uID\_TOPHAT_$sample -pe alloc 1 -l virtual_free=10G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar ReorderSam I=$output/intFiles/tophat2/$sample/accepted_hits.bam O=$output/intFiles/tophat2/$sample/accepted_hits_RO.bam REFERENCE=$REF_SEQ VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true`;
 
 	sleep(5);
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT_CRM -hold_jid $pre\_$uID\_REORDER_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/tophat2/$pre\_$sample\.bam O=$output/metrics/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/tophat2/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT_AORRG_$sample -hold_jid $pre\_$uID\_REORDER_$sample -pe alloc 3 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar AddOrReplaceReadGroups I=$output/intFiles/tophat2/$sample/accepted_hits_RO.bam O=$output/alignments/tophat2/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true RGID=$sample\_1 RGLB=_1 RGPL=Illumina RGPU=$sample\_1 RGSM=$sample`;
 
+	sleep(5);
+
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT_CRM -hold_jid $pre\_$uID\_TOPHAT_AORRG_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/tophat2/$pre\_$sample\.bam O=$output/intFiles/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/tophat2/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+	push @crm_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt";
     }
 
     my $starOut = '';    
@@ -453,12 +462,16 @@ foreach my $sample (keys %samp_libs_run){
 	    $starOut = "$output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.sam";
 	}
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar MergeSamFiles I=$starOut O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_MERGE_$sample -hold_jid $pre\_$uID\_SP_$sample -pe alloc 12 -l virtual_free=7G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar MergeSamFiles I=$starOut O=$output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
 
 	sleep(5);
 
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CRM -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/$pre\_$sample\.bam O=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_AORRG_$sample -hold_jid $pre\_$uID\_STAR_MERGE_$sample -pe alloc 3 -l virtual_free=3G -q lau.q,lcg.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar AddOrReplaceReadGroups I=$output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.bam O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true RGID=$sample\_1 RGLB=_1 RGPL=Illumina RGPU=$sample\_1 RGSM=$sample`;
 
+	sleep(5);
+	
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CRM -hold_jid $pre\_$uID\_STAR_AORRG_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/$pre\_$sample\.bam O=$output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+	push @crm, "-metrics $output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt";
     }
 
     if($detectFusions){
@@ -626,6 +639,14 @@ if($dexseq){
     }
 }
 
+if($star){
+    my $crmfiles = join(" ", @crm);
+    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MERGE_CRM -hold_jid $pre\_$uID\_STAR_CRM -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/mergePicardMetrics.pl $crmfiles ">$output/metrics/$pre\_CollectRnaSeqMetrics.txt"`;
+}
+if($tophat){
+    my $crmfiles_tophat = join(" ", @crm_tophat);
+    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MERGE_CRM_TOPHAT -hold_jid $pre\_$uID\_TOPHAT_CRM -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/mergePicardMetrics.pl $crmfiles_tophat ">$output/metrics/tophat2/$pre\_CollectRnaSeqMetrics.txt"`;
+}
 
 ### SAMPLE COMMAND
 ####qsub -N Proj_4226_DESeq ~/bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript ~/RNAseqPipe/trunk/bin/RunDE.R "\"proj.id='4226'\" \"output.dir='/ifs/data/byrne/rnaseq/Proj_4226'\" \"counts.file='Proj_4226_ALL_samples.htseq.count'\" \"key.file='/ifs/data/byrne/rnaseq/Proj_4226/sampleKey.txt'\" \"comps=c('hi - lo')\""
