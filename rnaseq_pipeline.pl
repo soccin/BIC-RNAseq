@@ -369,6 +369,8 @@ close IN;
 
 my @crm = ();
 my @crm_tophat = ();
+my @asm = ();
+my @asm_tophat = ();
 foreach my $sample (keys %samp_libs_run){
     my @R1 = ();
     my @R2 = ();
@@ -428,6 +430,9 @@ foreach my $sample (keys %samp_libs_run){
 
 	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT_CRM -hold_jid $pre\_$uID\_TOPHAT_AORRG_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/tophat2/$pre\_$sample\.bam O=$output/intFiles/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/tophat2/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
 	push @crm_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt";
+
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_TOPHAT_ASM -hold_jid $pre\_$uID\_TOPHAT_AORRG_$sample -pe alloc 1 -l virtual_free=10G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics INPUT=$output/alignments/tophat2/$pre\_$sample\.bam OUTPUT=$output/intFiles/tophat2/$pre\_$sample\_AlignmentSummaryMetrics.txt REFERENCE_SEQUENCE=$REF_SEQ METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE VALIDATION_STRINGENCY=LENIENT`;
+	push @asm_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_AlignmentSummaryMetrics.txt";
     }
 
     my $starOut = '';    
@@ -472,6 +477,9 @@ foreach my $sample (keys %samp_libs_run){
 	
 	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CRM -hold_jid $pre\_$uID\_STAR_AORRG_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/$pre\_$sample\.bam O=$output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
 	push @crm, "-metrics $output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt";
+
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_ASM -hold_jid $pre\_$uID\_STAR_AORRG_$sample -pe alloc 1 -l virtual_free=10G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics INPUT=$output/alignments/$pre\_$sample\.bam OUTPUT=$output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt REFERENCE_SEQUENCE=$REF_SEQ METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE VALIDATION_STRINGENCY=LENIENT`;
+	push @asm, "-metrics $output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt";
     }
 
     if($detectFusions){
@@ -642,10 +650,16 @@ if($dexseq){
 if($star){
     my $crmfiles = join(" ", @crm);
     `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MERGE_CRM -hold_jid $pre\_$uID\_STAR_CRM -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/mergePicardMetrics.pl $crmfiles ">$output/metrics/$pre\_CollectRnaSeqMetrics.txt"`;
+
+    my $asmfiles = join(" ", @asm);
+    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MERGE_ASM -hold_jid $pre\_$uID\_STAR_ASM -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/mergePicardMetrics.pl $asmfiles ">$output/metrics/$pre\_AlignmentSummaryMetrics.txt"`;
 }
 if($tophat){
     my $crmfiles_tophat = join(" ", @crm_tophat);
     `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MERGE_CRM_TOPHAT -hold_jid $pre\_$uID\_TOPHAT_CRM -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/mergePicardMetrics.pl $crmfiles_tophat ">$output/metrics/tophat2/$pre\_CollectRnaSeqMetrics.txt"`;
+
+    my $asmfiles_tophat = join(" ", @asm_tophat);
+    `/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_MERGE_ASM_TOPHAT -hold_jid $pre\_$uID\_TOPHAT_ASM -pe alloc 1 -l virtual_free=1G $Bin/qCMD $Bin/mergePicardMetrics.pl $asmfiles_tophat ">$output/metrics/tophat2$pre\_AlignmentSummaryMetrics.txt"`;
 }
 
 ### SAMPLE COMMAND
