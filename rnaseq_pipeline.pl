@@ -560,7 +560,7 @@ foreach my $sample (keys %samp_libs_run){
 
 		### NOTE: DUE TO PYTHON MODULE COMPATIBILITY ISSUES ON NODES
 		###       HAVE TO USE DIFFERENT VERSION OF PYTHON
-		`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o $output/fusion/fusioncatcher/$sample -p 6`;
+		`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_FC_$sample -hold_jid $pre\_$uID\_CAT_$sample -pe alloc 6 -l virtual_free=2G $Bin/qCMD_FC $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v73 $inReads -o $output/fusion/fusioncatcher/$sample -p 6 --skip-adapter`;
 
 		push @fusions, "--fusioncatcher $output/fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
 
