@@ -27,7 +27,7 @@ use FindBin qw($Bin);
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand);
 
 $pre = 'TEMP';
 $output = "results";
@@ -51,17 +51,19 @@ GetOptions ('map=s' => \$map,
 	    'fusioncatcher' => \$fusioncatcher,
 	    'allfusions' => \$allfusions,
             'species=s' => \$species,
+            'strand=s' => \$strand,
             'lncrna' => \$lncrna,
  	    'output|out|o=s' => \$output,
             'lincrna_BROAD' => \$lincrna_BROAD) or exit(1);
 
 
-if(!$map || !$species || !$config || $help){
+if(!$map || !$species || !$strand || !$config || $help){
     print <<HELP;
 
-    USAGE: ./rnaseq_pipeline.pl -map MAP -species SPECIES -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS
+    USAGE: ./rnaseq_pipeline.pl -map MAP -species SPECIES -strand STRAND -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS
 	* MAP: file listing sample mapping information for processing (REQUIRED)
 	* SPECIES: only hg19 and mm9 and human-mouse hybrid (hybrid) currently supported (REQUIRED)
+	* STRAND: library strand; valid options are none, forward, reverse (REQUIRED)
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
 	* PRE: output prefix (default: TEMP)
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
@@ -92,6 +94,9 @@ if($map){
 }
 if($config){
     $commandLine .= " -config $config";
+}
+if($strand){
+    $commandLine .= " -strand $strand";
 }
 if($samplekey){
     $commandLine .= " -samplekey $samplekey";
@@ -300,6 +305,22 @@ while(<MA>){
 }
 close MA;
 
+my $htseq_stranded = '';
+my $picard_strand_specificity = '';
+if($strand =~ /none/i){
+    $htseq_stranded = 'no';
+    $picard_strand_specificity = 'NONE';
+}
+elsif($strand =~ /forward/i){
+    $htseq_stranded = 'yes';
+    $picard_strand_specificity = 'FIRST_READ_TRANSCRIPTION_STRAND';
+}
+elsif($strand =~ /reverse/i){
+    $htseq_stranded = 'reverse';
+    $picard_strand_specificity = 'SECOND_READ_TRANSCRIPTION_STRAND';
+}
+
+
 `/bin/mkdir -m 775 -p $output`; 
 `/bin/mkdir -m 775 -p $output/intFiles`; 
 `/bin/mkdir -m 775 -p $output/progress`;
@@ -475,7 +496,7 @@ foreach my $sample (keys %samp_libs_run){
 
 	sleep(5);
 	
-	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CRM -hold_jid $pre\_$uID\_STAR_AORRG_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/$pre\_$sample\.bam O=$output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_CRM -hold_jid $pre\_$uID\_STAR_AORRG_$sample -pe alloc 1 -l virtual_free=3G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/$pre\_$sample\.bam O=$output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=$picard_strand_specificity METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
 	push @crm, "-metrics $output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt";
 
 	`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_STAR_ASM -hold_jid $pre\_$uID\_STAR_AORRG_$sample -pe alloc 1 -l virtual_free=10G -q lau.q,lcg.q,nce.q $Bin/qCMD /opt/bin/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics INPUT=$output/alignments/$pre\_$sample\.bam OUTPUT=$output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt REFERENCE_SEQUENCE=$REF_SEQ METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE VALIDATION_STRINGENCY=LENIENT`;
@@ -602,13 +623,13 @@ foreach my $sample (keys %samp_libs_run){
 	if($htseq){
 	    `/bin/mkdir -m 775 -p $output/counts_gene`;
 	    if($star){		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam $GTF > $output/counts_gene/$sample.htseq_count"`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_STAR -hold_jid $pre\_$uID\_QNS_STAR_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s $htseq_stranded -t exon $output/intFiles/$sample/$sample\_STAR_queryname_sorted.sam $GTF > $output/counts_gene/$sample.htseq_count"`;
 	    }
 	    
 	    if($tophat){
 		`/bin/mkdir -m 775 -p $output/counts_gene/tophat2`;
 		
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT -hold_jid $pre\_$uID\_QNS_TOPHAT_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s no -t exon $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $GTF > $output/counts_gene/tophat2/$sample.htseq_count"`;
+		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_HT_TOPHAT -hold_jid $pre\_$uID\_QNS_TOPHAT_$sample -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$HTSEQ/htseq-count -m intersection-strict -s $htseq_stranded -t exon $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $GTF > $output/counts_gene/tophat2/$sample.htseq_count"`;
 	    }
 	}
 	
