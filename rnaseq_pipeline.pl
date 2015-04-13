@@ -27,7 +27,7 @@ use FindBin qw($Bin);
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $clustering);
 
 $pre = 'TEMP';
 $output = "results";
@@ -44,6 +44,7 @@ GetOptions ('map=s' => \$map,
 	    'dexseq' => \$dexseq,
 	    'htseq' => \$htseq,
 	    'deseq' => \$deseq,
+	    'clustering' => \$clustering,
 	    'chimerascan' => \$chimerascan,
 	    'star_fusion' => \$star_fusion,
 	    'mapsplice' => \$mapsplice,
@@ -68,6 +69,7 @@ if(!$map || !$species || !$strand || !$config || $help){
 	* PRE: output prefix (default: TEMP)
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
+	* CLUSTERING: will normalize and cluster samples even without downstream analysis
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
 	* OUTPUT: output results directory (default: results)
@@ -711,6 +713,17 @@ if($deseq){
 	`/bin/mkdir -m 775 -p $output/clustering/tophat2`;
 	`/bin/mkdir -m 775 -p $output/gsa/tophat2`;
 	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_TOPHAT -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$curDir/$output/differentialExpression_gene/tophat2'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$curDir/$output/counts_gene/tophat2'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering/tophat2'\\\"\" \"\\\"gsa.dir='$curDir/$output/gsa/tophat2'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
+    }
+}
+elsif($clustering){
+    if($star){
+	`/bin/mkdir -m 775 -p $output/clustering`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_CLUSTERING_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering'\\\"\"`;
+    }
+
+    if($tophat){
+	`/bin/mkdir -m 775 -p $output/clustering/tophat2`;
+	`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_CLUSTERING_TOPHAT -hold_jid $pre\_$uID\_MATRIX_HTSEQ_TOPHAT -pe alloc 1 -l virtual_free=1G $Bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering/tophat2'\\\"\"`;
     }
 }
 close LOG;
