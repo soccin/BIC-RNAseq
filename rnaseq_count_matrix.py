@@ -11,8 +11,8 @@ import fnmatch
 #####################################
 
 #####################################
-## Usage: /opt/bin/python/ makeCountMatrix.py rootDir patternToSearch outputFileName
-## Example: /opt/bin/python makeCountMatrix.py /ifs/res/liang/RNASeq/Proj2983_MassagueJ "*htseq.count*" Proj2983_MassagueJ_htseq.count_allSamples.txt
+## Usage: /opt/bin/python rnaseq_count_matrix.py rootDir suffixToSearch outputFileName
+## Example: /opt/bin/python rnaseq_count_matrix.py /ifs/res/liang/RNASeq/Proj2983_MassagueJ .htseq_count Proj2983_MassagueJ_htseq.count_allSamples.txt
 #####################################
 
 def usage():
@@ -26,6 +26,7 @@ def findFiles(rootDir,pattern):
     create and return a list of full paths to files that match pattern entered
     """
     filepaths = []
+    pattern = '*'+pattern
     for path, dirs, files in os.walk(os.path.abspath(rootDir)):
         if fnmatch.filter(files, pattern):
             for file in fnmatch.filter(files, pattern):
@@ -44,7 +45,7 @@ def getSampleID(filepath,pattern):
        filepath = filepath[:-1]
     file_name = os.path.basename(filepath)
 
-    pattern = pattern.replace("*","")
+    #pattern = pattern.replace("*","")
     samp = file_name.replace(pattern,"")
 
     return samp
