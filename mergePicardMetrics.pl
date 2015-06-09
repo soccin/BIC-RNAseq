@@ -1,4 +1,4 @@
-#!/opt/bin/perl
+#!/usr/bin/perl
 
 use strict;
 use Getopt::Long qw(GetOptions);
