@@ -12,7 +12,7 @@ MAPSPLICE		/opt/common/CentOS_6/mapsplice/MapSplice-v2.1.8
 PERL			/opt/common/CentOS_6/perl/perl-5.16.3/bin
 PICARD			/opt/common/CentOS_6/picard/picard-tools-1.124
 PYTHON			/opt/common/CentOS_6/python/python-2.7.8/bin
-R			/opt/common/CentOS_6/R/R-3.1.2/bin
+R			/opt/common/CentOS_6/R/R-3.2.0/bin
 SAMTOOLS                /opt/common/CentOS_6/samtools/samtools-0.1.19
 STAR			/opt/common/CentOS_6/star/STAR-STAR_2.4.1d/bin/Linux_x86_64
 TOPHAT			/opt/common/CentOS_6/tophat/tophat-2.0.14.Linux_x86_64
