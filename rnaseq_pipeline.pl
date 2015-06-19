@@ -246,7 +246,7 @@ elsif($species =~ /mouse|mm10/i){
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/mm10_bowtie2';
     $chrSplits = '/ifs/depot/assemblies/M.musculus/mm10/chromosomes';
     $TRANS_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/transcriptome/ensembl/v80/Mus_musculus.GRCm38.80_canonical_chromosomes';
-    $RIBOSOMAL_INTERVALS = "";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_mm10.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__mm10.txt.gz";
 
     if($r1adaptor){
