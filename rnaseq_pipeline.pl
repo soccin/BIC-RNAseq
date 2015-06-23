@@ -74,7 +74,7 @@ if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
 
     USAGE: rnaseq_pipeline.pl -map MAP -species SPECIES -strand STRAND -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS -scheduler SCHEDULER
 	* MAP: file listing sample mapping information for processing (REQUIRED)
-	* SPECIES: only hg19 and mm9 and human-mouse hybrid (hybrid) currently supported (REQUIRED)
+	* SPECIES: only hg19 and mouse (mm10; default) and human-mouse hybrid (hybrid) currently supported (REQUIRED)
 	* STRAND: library strand; valid options are none, forward, reverse (REQUIRED)
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
 	* SCHEDULER: currently support for SGE and LSF (REQUIRED)
@@ -98,7 +98,7 @@ if($pre =~ /^\d+/){
 }
 
 if($species !~ /human|hg19|mouse|mm9|hybrid|zebrafish|zv9/i){
-    die "Species must be human (hg19) or mouse (mm9) or human-mouse hybrid (hybrid) or zebrafish (zv9)";
+    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid) or zebrafish (zv9)";
 }
 
 if($r1adaptor){
