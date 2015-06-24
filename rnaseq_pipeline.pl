@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $clustering, $r1adaptor, $r2adaptor, $scheduler);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $clustering, $r1adaptor, $r2adaptor, $scheduler, $transcript);
 
 $pre = 'TEMP';
 $output = "results";
@@ -57,6 +57,7 @@ GetOptions ('map=s' => \$map,
 	    'defuse' => \$defuse,
 	    'fusioncatcher' => \$fusioncatcher,
 	    'allfusions' => \$allfusions,
+	    'transcript' => \$transcript,
             'species=s' => \$species,
             'strand=s' => \$strand,
             'lncrna' => \$lncrna,
@@ -84,7 +85,7 @@ if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
 	* CLUSTERING: will normalize and cluster samples even without downstream analysis
 	* R1ADAPTOR/R2ADAPTOR: if provided, will trim adaptor sequences; NOTE: if provided for only one end, will also assign it to the other end
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
-	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs
+	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs, transcript analysis using express and kallisto (-transcript)
 	* PRIORITY_PROJECT: sge notion of priority assigned to projects (default: ngs)
 	* PRIORITY_GROUP: lsf notion of priority assigned to groups (default: Pipeline)
 	* OUTPUT: output results directory (default: results)
@@ -181,6 +182,9 @@ if($fusioncatcher){
 if($allfusions){
     $commandLine .= " -allfusions";
 }
+if($transcript){
+    $commandLine .= " -transcript";
+}
 if($species){
     $commandLine .= " -species $species";
 }
@@ -197,6 +201,27 @@ foreach my $argnum (0 .. $#ARGV) {
     $commandLine .= " $ARGV[$argnum]";
 }
 
+
+
+### error check similar to variants pipeline #####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 my $GTF = '';
 my $DEXSEQ_GTF = '';
 my $CHIMERASCAN_INDEX = '';
@@ -205,10 +230,13 @@ my $starDB = '';
 my $chrSplits = '';
 my $BOWTIE_INDEX = '';
 my $BOWTIE2_INDEX = '';
+my $TRANS_FASTA_DEDUP = '';
 my $TRANS_INDEX = '';
+my $TRANS_INDEX_DEDUP = '';
 my $REF_SEQ = '';
 my $RIBOSOMAL_INTERVALS='';
 my $REF_FLAT = '';
+my $KALLISTO_INDEX = '';
 
 if($species =~ /human|hg19/i){
     $species = 'hg19';
@@ -221,7 +249,10 @@ if($species =~ /human|hg19/i){
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
     $TRANS_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/gencode.v18.annotation';
+    $TRANS_INDEX_DEDUP = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/deduplicated/gencode.v18.annotation.dedup';
+    $TRANS_FASTA_DEDUP = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/deduplicated/gencode.v18.annotation.dedup.fa';
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
+    $KALLISTO_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/kallisto/v0.42.1/gencode/v18/gencode.v18.annotation.gtf.fasta.idx';
 
     if($lncrna){
         $GTF = "$Bin/data/lncipedia.gtf";
@@ -246,8 +277,11 @@ elsif($species =~ /mouse|mm10/i){
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/mm10_bowtie2';
     $chrSplits = '/ifs/depot/assemblies/M.musculus/mm10/chromosomes';
     $TRANS_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/transcriptome/ensembl/v80/Mus_musculus.GRCm38.80_canonical_chromosomes';
+    $TRANS_INDEX_DEDUP = '';
+    $TRANS_FASTA_DEDUP = '';
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_mm10.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__mm10.txt.gz";
+    $KALLISTO_INDEX = '';
 
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/M.musculus/mm10/index/star/2.4.1d/ensembl/v80/overhang49';
@@ -266,8 +300,11 @@ elsif($species =~ /mm9/i){
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/M.musculus/mm9/index/bowtie/2.1.0/mm9_bowtie2';
     $chrSplits = '/ifs/depot/assemblies/M.musculus/mm9/chromosomes';
     $TRANS_INDEX = '/ifs/depot/assemblies/M.musculus/mm9/index/bowtie/2.1.0/transcriptome/ensembl/vTBD/ensembl';
+    $TRANS_INDEX_DEDUP = '';
+    $TRANS_FASTA_DEDUP = '';
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_MM9_assemblies.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__mm9.txt.gz";
+    $KALLISTO_INDEX = '';
 
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/M.musculus/mm9/index/star/2.4.1d/ensembl/v67/overhang49';
@@ -302,9 +339,12 @@ elsif($species =~ /zebrafish|zv9/i){
 }
 
 
+my $BOWTIE2 = '';
 my $CUFFLINKS = '';
 my $HTSEQ = '';
 my $DEXSEQ = '';
+my $EXPRESS = '';
+my $KALLISTO = '';
 my $PICARD = '';
 my $CHIMERASCAN = '';
 my $MAPSPLICE = '';
@@ -1086,7 +1126,81 @@ foreach my $sample (keys %samp_libs_run){
 	    my @currentTime = &getTime();
 	    print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSKIPPING FUSION CALLING FOR SAMPLE $sample BECAUSE IT ISN'T SUPPORTED FOR $species; CURRENTLY ONLY SUPPORT FOR hg19";
 	}
-    }    
+    }
+
+    if($transcript){
+	my $r1_gz_files1 = join(" ", @R1);
+	my $r2_gz_files1 = join(" ", @R2);
+	my $r1_gz_files2 = join(",", @R1);
+	my $r2_gz_files2 = join(",", @R2);
+	
+	my $inReads = "-1 $r1_gz_files2";	
+	if($samp_pair{$sample} eq "PE"){
+	    $inReads .= " -2 $r2_gz_files2";
+	}
+	
+	my $ran_bowtie2 = 0;
+	my $bowtie2j = '';
+	if(!-e "$output/progress/$pre\_$uID\_BOWTIE2_$sample.done"){
+	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2`;
+	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2/$sample`;
+	    ### express-recommended bowtie2 settings
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_BOWTIE2_$sample", cpu => "12", mem => "3", cluster_out => "$output/progress/$pre\_$uID\_BOWTIE2_$sample.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $BOWTIE2/bowtie2 --all --maxins 600 --rdg 6,5 --rfg 6,5 --score-min L,-.6,-.4 --no-discordant --no-mixed --threads 12 -x $TRANS_INDEX_DEDUP $inReads -S $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
+	    `/bin/touch $output/progress/$pre\_$uID\_BOWTIE2_$sample.done`;
+	    $bowtie2j = "$pre\_$uID\_BOWTIE2_$sample";
+	    $ran_bowtie2 = 1;
+	}
+	
+	if(!-e "$output/progress/$pre\_$uID\_eXpress_$sample.done" || $ran_bowtie2){
+	    sleep(3);
+	    `/bin/mkdir -m 775 -p $output/transcript`;
+	    `/bin/mkdir -m 775 -p $output/transcript/express`;
+	    `/bin/mkdir -m 775 -p $output/transcript/express/$sample`;
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_eXpress_$sample", job_hold => "$bowtie2j", cpu => "5", mem => "15", cluster_out => "$output/progress/$pre\_$uID\_eXpress_$sample.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $EXPRESS/express --output-dir $output/transcript/express/$sample --no-update-check $TRANS_FASTA_DEDUP $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
+	    `/bin/touch $output/progress/$pre\_$uID\_eXpress_$sample.done`;
+	}
+	
+	
+	my $ran_zcat3 = 0;
+	my @zcat3_jids = ();
+	my $kinReads = "$output/intFiles/$sample/$sample\_v3_R1.fastq";
+	if(!-e "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.done"){
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_ZCAT3_$sample\_v3_R1", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/zcat $r1_gz_files1 ">$output/intFiles/$sample/$sample\_v3_R1.fastq"`;
+	    `/bin/touch $output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.done`;
+	    push @zcat3_jids, "$pre\_$uID\_ZCAT3_$sample\_v3_R1";
+	    $ran_zcat3 = 1;
+	}
+	
+	if($samp_pair{$sample} eq "PE"){
+	    $kinReads .= " $output/intFiles/$sample/$sample\_v3_R2.fastq";
+	    if(!-e "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.done"){
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_ZCAT3_$sample\_v3_R2", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.log");
+		my $standardParams = Schedule::queuing(%stdParams);
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/zcat $r2_gz_files1 ">$output/intFiles/$sample/$sample\_v3_R2.fastq"`;
+		`/bin/touch $output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.done`;
+		push @zcat3_jids, "$pre\_$uID\_ZCAT3_$sample\_v3_R2";
+		$ran_zcat3 = 1;
+	    }
+	}
+	    
+	my $zcat3j = join(",", @zcat3_jids);
+	if(!-e "$output/progress/$pre\_$uID\_kallisto_$sample.done" || $ran_zcat3){
+	    sleep(3);
+	    `/bin/mkdir -m 775 -p $output/transcript`;
+	    `/bin/mkdir -m 775 -p $output/transcript/kallisto`;
+	    `/bin/mkdir -m 775 -p $output/transcript/kallisto/$sample`;
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_kallisto_$sample", job_hold => "$zcat3j", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_kallisto_$sample.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $KALLISTO/kallisto quant -i $KALLISTO_INDEX -o $output/transcript/kallisto/$sample -b 100 $kinReads`;
+	    `/bin/touch $output/progress/$pre\_$uID\_kallisto_$sample.done`;
+	}
+    }
 }
 
 my $ran_shmatrix = 0;
@@ -1333,11 +1447,17 @@ sub verifyConfig{
 	    }
 	    $TOPHAT = $conf[1];
 	}
-	elsif($conf[0] =~ /tophat/i){
-	    if(!-e "$conf[1]/tophat2"){
-		die "CAN'T FIND tophat2 IN $conf[1] $!";
+	elsif($conf[0] =~ /express/i){
+	    if(!-e "$conf[1]/express"){
+		die "CAN'T FIND express IN $conf[1] $!";
 	    }
-	    $TOPHAT = $conf[1];
+	    $EXPRESS = $conf[1];
+	}
+	elsif($conf[0] =~ /kallisto/i){
+	    if(!-e "$conf[1]/kallisto"){
+		die "CAN'T FIND kallisto IN $conf[1] $!";
+	    }
+	    $KALLISTO = $conf[1];
 	}
 	elsif($conf[0] =~ /^bowtie2$/i){
 	    ### need bowtie2 in path for tophat to run
@@ -1345,7 +1465,8 @@ sub verifyConfig{
 		die "CAN'T FIND bowtie2 IN $conf[1] $!";
 	    }
 	    my $path_tmp = $ENV{'PATH'};
-	    $ENV{'PATH'} = "$conf[1]:$path_tmp";	    
+	    $ENV{'PATH'} = "$conf[1]:$path_tmp";
+	    $BOWTIE2 = $conf[1];
 	}
 	elsif($conf[0] =~ /^bowtie$/i){
 	    ### need bowtie in path for chimerascan to run
