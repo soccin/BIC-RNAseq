@@ -202,25 +202,60 @@ foreach my $argnum (0 .. $#ARGV) {
 }
 
 
+my %mapping_samples = ();
+open(MA, "$map") or die "Can't open mapping file $map $!";
+while(<MA>){
+    chomp;
+    
+    my @data = split(/\s+/, $_);
+    
+    $mapping_samples{$data[1]} = 1;
+    if(!-d $data[3]){
+	die "$data[3] does not exist\n";
+    }
+}
+close MA;
 
-### error check similar to variants pipeline #####
+if($comparisons || $samplekey || $deseq){
+    my %sample_comparisons = ();
+    open(SC, "$comparisons") or die "Can't open comparisons file $comparisons $!";
+    while(<SC>){
+	chomp;
+	
+	my @data = split(/\s+/, $_);
+	$sample_comparisons{$data[0]} = 1;
+	$sample_comparisons{$data[1]} = 1;
+    }
+    close SC;
+    
+    my %samplekey_samples = ();
+    my %samplekey_conditions = ();
+    open(SK, "$samplekey") or die "Can't open key file $samplekey $!";
+    while(<SK>){
+	chomp;
+	
+	my @data = split(/\s+/, $_);
+	$samplekey_samples{$data[0]} = 1;
+	$samplekey_conditions{$data[1]} = 1;
+	print "data[0]: $data[0]\tdata[1]: $data[1]\n";
+	if(!$mapping_samples{$data[0]} || !$sample_comparisons{$data[1]}){
+	    die "either sample $data[0] cannot be found in $map and/or condition $data[1] cannot be found in $comparisons $!";
+	}
+    }
+    close SK;
 
+    foreach my $ms (keys %mapping_samples){
+	if(!$samplekey_samples{$ms}){
+	    die "sample $ms is in mapping file $map, but not in sample key file $samplekey $!";
+	}
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    foreach my $sc (keys %sample_comparisons){
+	if(!$samplekey_conditions{$sc}){
+	    die "condition $sc is in sample comparisons file $comparisons, but not in sample key file $samplekey $!";
+	}
+    }
+}
 
 my $GTF = '';
 my $DEXSEQ_GTF = '';
