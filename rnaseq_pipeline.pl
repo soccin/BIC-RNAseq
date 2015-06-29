@@ -1112,6 +1112,14 @@ foreach my $sample (keys %samp_libs_run){
 
 	    if($defuse){
 		### NOTE: DEFUSE ONLY WORKS FOR PE READS
+		my $defuse_config = '';
+		if($species =~ /human|hg19/i){
+		    $defuse_config = "$DEFUSE/scripts/config_homo_sapiens.txt";
+		}
+		elsif($species =~ /mouse|mm10/i){
+		    $defuse_config = "$DEFUSE/scripts/config_mus_musculus.txt";
+		}
+		
 		if($samp_pair{$sample} eq "PE"){
 		    `/bin/mkdir -m 775 -p $output/fusion/defuse`;
 		    `/bin/mkdir -m 775 -p $output/fusion/defuse/$sample`;
