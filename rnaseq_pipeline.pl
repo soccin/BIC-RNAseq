@@ -1127,7 +1127,7 @@ foreach my $sample (keys %samp_libs_run){
 		    if(!-e "$output/progress/$pre\_$uID\_DEFUSE_$sample.done" || $ran_zcat2){
 			my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DEFUSE_$sample", job_hold => "$zcat2j", cpu => "12", mem => "150", cluster_out => "$output/progress/$pre\_$uID\_DEFUSE_$sample.log");
 			my $standardParams = Schedule::queuing(%stdParams);
-			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $DEFUSE/scripts/defuse.pl --config $DEFUSE/scripts/config.txt --output $output/fusion/defuse/$sample --parallel 12 --1fastq $output/intFiles/$sample/$sample\_v2_R1.fastq --2fastq $output/intFiles/$sample/$sample\_v2_R2.fastq`;
+			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $DEFUSE/scripts/defuse.pl --config $defuse_config --output $output/fusion/defuse/$sample --parallel 12 --1fastq $output/intFiles/$sample/$sample\_v2_R1.fastq --2fastq $output/intFiles/$sample/$sample\_v2_R2.fastq`;
 			`/bin/touch $output/progress/$pre\_$uID\_DEFUSE_$sample.done`;
 			push @fusion_jids, "$pre\_$uID\_DEFUSE_$sample";
 			$ran_fusion = 1;
