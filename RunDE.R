@@ -113,6 +113,7 @@ tmp<-capture.output(suppressMessages(source(paste(bin,"analyze_counts.R",sep="/"
 
 tmp<-capture.output(suppressMessages(library("DESeq")))
 tmp<-capture.output(suppressMessages(library("limma")))
+tmp<-capture.output(suppressMessages(library("gplots")))
 
 setwd(pd)
 ## create key if key.file is given
@@ -179,6 +180,10 @@ if(diff.exp){
                      fitType=fitType,
                      method=method,
                      sharingMode=sharingMode)
+        cat("    Done!\n\n")
+        cat("Generating generic heatmaps of top differentially expressed genes...\n")
+        norm.counts.file = paste(counts.dir,"counts_scaled_DESeq.xls",sep="/")
+        make.generic.heatmaps(diff.exp.dir,norm.counts.file)
         cat("    Done!\n\n")
     } else{
         cat("No sample key or comparisons found. Can not differential expression analysis.\n")

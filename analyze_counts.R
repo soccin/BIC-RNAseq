@@ -170,6 +170,55 @@ run.diff.exp <- function(counts.raw,comps,key,output.dir,gns=NULL,q.cut=0.5,lfc=
     return
 }
 
+make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
+
+    ## load normalized counts
+    dat = read.delim(norm.counts.file,sep="\t",header=T)
+    ## assign Ensembl IDs as rownames
+    rownames(dat) = dat[,1]
+    ## remove Ensembl IDs from matrix
+    dat = dat[,-1]
+
+    comp_results = dir(diff.exp.dir)[grep("^ResDESeq",dir(diff.exp.dir))]
+
+    for (compres in comp_results){
+
+        file = sub("ResDESeq_","",compres)
+        file = sub(".xls","",file)
+        conds = unlist(strsplit(file,"_vs_"))
+        condA = conds[1]
+        condB = conds[2]
+
+        genes = as.matrix(read.delim(paste(diff.exp.dir,compres,sep="/"),sep="\t",header=T))[,1]
+
+        ## extract data for those genes
+        htmp.dat = dat[genes,grep(paste("GeneSymbol",condA,condB,sep="|"),colnames(dat))]
+
+        ## remove duplicate genes
+        if(length(which(duplicated(htmp.dat[,"GeneSymbol"])))){
+            htmp.dat = htmp.dat[-which(duplicated(as.vector(htmp.dat[,"GeneSymbol"]))),]
+        }
+        ## as long as gene symbols are unique, assign them 
+        ## as rownames; if not, we'll have to average values
+        ## for genes that occur multiple times
+        rownames(htmp.dat)=htmp.dat[,"GeneSymbol"]
+        htmp.dat = htmp.dat[,-1]
+
+        ## from matrix
+        htmp.dat = as.matrix(log2(htmp.dat))
+
+        if(dim(htmp.dat)[1]>100){
+            htmp.dat = htmp.dat[1:100,]
+        }
+
+        ## make heatmap pdf
+        pdf(paste(diff.exp.dir,"/ResDESeq_",condA,"_vs_",condB,"_heatmap.pdf",sep=""),width=25,height=16)
+        heatmap.2(htmp.dat - apply(htmp.dat, 1, mean), trace='none', col=colorpanel(16,"green","black","red"),cexRow=0.9,cexCol=1.2, dendrogram="both",main=paste("Top Differentially Expressed Genes ",condA," vs ",condB,sep=""), symbreaks=TRUE, keysize=0.5, margin=c(20,10))
+        dev.off()
+    }
+
+    return
+}
 
 run.gene.set.analysis <- function(species,bin,gsa.dir,deseq.res.dir,min.gns.nu=5,max.gns.nu=1000,pval.cutoff=0.1,nPerm=1e4,fcQ=T,fc2keep=log2(1.5),frac2keep=4){
 
