@@ -1188,7 +1188,7 @@ foreach my $sample (keys %samp_libs_run){
 	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2`;
 	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2/$sample`;
 	    ### express-recommended bowtie2 settings
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_BOWTIE2_$sample", cpu => "12", mem => "50", cluster_out => "$output/progress/$pre\_$uID\_BOWTIE2_$sample.log");
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_BOWTIE2_$sample", cpu => "12", mem => "60", cluster_out => "$output/progress/$pre\_$uID\_BOWTIE2_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $BOWTIE2/bowtie2 --all --maxins 600 --rdg 6,5 --rfg 6,5 --score-min L,-.6,-.4 --no-discordant --no-mixed --threads 12 -x $TRANS_INDEX_DEDUP $inReads -S $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
 	    `/bin/touch $output/progress/$pre\_$uID\_BOWTIE2_$sample.done`;
@@ -1196,15 +1196,15 @@ foreach my $sample (keys %samp_libs_run){
 	    $ran_bowtie2 = 1;
 	}
 	
-	if(!-e "$output/progress/$pre\_$uID\_eXpress_$sample.done" || $ran_bowtie2){
+	if(!-e "$output/progress/$pre\_$uID\_EXPRESS_$sample.done" || $ran_bowtie2){
 	    sleep(3);
 	    `/bin/mkdir -m 775 -p $output/transcript`;
 	    `/bin/mkdir -m 775 -p $output/transcript/express`;
 	    `/bin/mkdir -m 775 -p $output/transcript/express/$sample`;
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_eXpress_$sample", job_hold => "$bowtie2j", cpu => "5", mem => "15", cluster_out => "$output/progress/$pre\_$uID\_eXpress_$sample.log");
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_EXPRESS_$sample", job_hold => "$bowtie2j", cpu => "5", mem => "15", cluster_out => "$output/progress/$pre\_$uID\_EXPRESS_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $EXPRESS/express --output-dir $output/transcript/express/$sample --no-update-check $TRANS_FASTA_DEDUP $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
-	    `/bin/touch $output/progress/$pre\_$uID\_eXpress_$sample.done`;
+	    `/bin/touch $output/progress/$pre\_$uID\_EXPRESS_$sample.done`;
 	}
 	
 	
@@ -1233,15 +1233,15 @@ foreach my $sample (keys %samp_libs_run){
 	}
 	    
 	my $zcat3j = join(",", @zcat3_jids);
-	if(!-e "$output/progress/$pre\_$uID\_kallisto_$sample.done" || $ran_zcat3){
+	if(!-e "$output/progress/$pre\_$uID\_KALLISTO_$sample.done" || $ran_zcat3){
 	    sleep(3);
 	    `/bin/mkdir -m 775 -p $output/transcript`;
 	    `/bin/mkdir -m 775 -p $output/transcript/kallisto`;
 	    `/bin/mkdir -m 775 -p $output/transcript/kallisto/$sample`;
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_kallisto_$sample", job_hold => "$zcat3j", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_kallisto_$sample.log");
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_KALLISTO_$sample", job_hold => "$zcat3j", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_KALLISTO_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $KALLISTO/kallisto quant -i $KALLISTO_INDEX -o $output/transcript/kallisto/$sample -b 100 $kinReads`;
-	    `/bin/touch $output/progress/$pre\_$uID\_kallisto_$sample.done`;
+	    `/bin/touch $output/progress/$pre\_$uID\_KALLISTO_$sample.done`;
 	}
     }
 }
