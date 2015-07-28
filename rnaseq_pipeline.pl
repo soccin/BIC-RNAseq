@@ -98,7 +98,7 @@ if($pre =~ /^\d+/){
     $pre = "s_$pre";
 }
 
-if($species !~ /human|hg19|mouse|mm9|hybrid|zebrafish|zv9/i){
+if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9/i){
     die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid) or zebrafish (zv9)";
 }
 
