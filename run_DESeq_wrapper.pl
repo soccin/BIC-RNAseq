@@ -4,7 +4,7 @@ use strict;
 use Getopt::Long qw(GetOptions);
 
 
-my ($config, $bin, $species, $counts, $samplekey, $comparisons, $clusterOnly, $diff_out, $count_out, $cluster_out, $gsa_out, $help);
+my ($config, $bin, $species, $counts, $samplekey, $comparisons, $clusterOnly, $diff_out, $count_out, $cluster_out, $gsa_out, $help, $no_replicates);
 
 my $pre = 'TEMP';
 GetOptions ('pre=s' => \$pre,
@@ -19,6 +19,7 @@ GetOptions ('pre=s' => \$pre,
 	    'cluster_out=s' => \$cluster_out,
 	    'gsa_out=s' => \$gsa_out,
  	    'clusterOnly' => \$clusterOnly,
+            'no_replicates' => \$no_replicates,
 	    'help' => \$help) or exit(1);
 
 my $R = '';
@@ -51,6 +52,10 @@ else{
     close COMP;
     
     my $cmpStr = join(",", @comps);
-    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"gsa.dir='$gsa_out'\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\"\n";
-    `$R/Rscript $bin/RunDE.R "bin='$bin'" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "gsa.dir='$gsa_out'" "key.file='$samplekey'" "comps=c($cmpStr)"`;
+    my $reps = "";
+    if($no_replicates){
+        $reps = "no.replicates=TRUE";
+    }
+    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"gsa.dir='$gsa_out'\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"\n";
+    `$R/Rscript $bin/RunDE.R "bin='$bin'" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "gsa.dir='$gsa_out'" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps"`;
 }

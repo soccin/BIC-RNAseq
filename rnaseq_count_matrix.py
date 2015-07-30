@@ -59,7 +59,7 @@ def printMatrix(matrix,allSamps,id_idx,outFile):
     if id_idx:
         header = "GeneID\tGeneSymbol\t" + "\t".join(allSamps)
     else:
-        header = "GeneSymbol\t" + "\t".join(allSamps)
+        header = "GeneID\t" + "\t".join(allSamps)
     with open(outFile,'w') as out:
         print>>out,header
         ids = sorted(matrix.keys())

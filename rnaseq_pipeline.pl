@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $clustering, $r1adaptor, $r2adaptor, $scheduler, $transcript);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $clustering, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates);
 
 $pre = 'TEMP';
 $output = "results";
@@ -67,7 +67,8 @@ GetOptions ('map=s' => \$map,
  	    'scheduler=s' => \$scheduler,
  	    'priority_project=s' => \$priority_project,
  	    'priority_group=s' => \$priority_group,
-            'lincrna_BROAD' => \$lincrna_BROAD) or exit(1);
+            'lincrna_BROAD' => \$lincrna_BROAD,
+            'no_replicates' => \$no_replicates) or exit(1);
 
 
 if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
@@ -98,8 +99,8 @@ if($pre =~ /^\d+/){
     $pre = "s_$pre";
 }
 
-if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9/i){
-    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid) or zebrafish (zv9)";
+if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|dm3|fly/i){
+    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), or zebrafish (zv9)";
 }
 
 if($r1adaptor){
@@ -190,6 +191,9 @@ if($species){
 }
 if($lncrna){
     $commandLine .= " -lncrna";
+}
+if($no_replicates){
+    $no_replicates .= " -no_replicates";
 }
 
 $commandLine.= " -priority_project $priority_project";
@@ -371,6 +375,30 @@ elsif($species =~ /zebrafish|zv9/i){
     $starDB = '';
     $chrSplits = '';
     $geneNameConversion = "Bin/data/zv9EnsemblIDtoGeneName.txt";
+}
+elsif($species =~ /fly|dm3/i){
+    $species = 'dm3';
+    $REF_SEQ = '/ifs/depot/assemblies/D.melanogaster/dm3/dm3.fasta';
+    $GTF = "$Bin/data/dm3.flybase_more150bp_CollapseGenes_20140925.gtf";
+    $DEXSEQ_GTF = "";
+    $geneNameConversion = "";
+    $BOWTIE_INDEX = '/ifs/depot/assemblies/D.melanogaster/dm3/index/bowtie/1.1.1/dm3_bowtie';
+    $BOWTIE2_INDEX = '/ifs/depot/assemblies/D.melanogaster/dm3/index/bowtie/2.2.4/dm3_bowtie2'; 
+    $chrSplits = '/ifs/depot/assemblies/D.melanogaster/dm3/chromosomes';
+    $TRANS_INDEX = '';
+    $TRANS_INDEX_DEDUP = '';
+    $TRANS_FASTA_DEDUP = '';
+    $RIBOSOMAL_INTERVALS = '';
+    $REF_FLAT = '';
+    $KALLISTO_INDEX = '';
+
+    if($r1adaptor){
+        $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang49'; 
+    }
+    else{
+        $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang74'; 
+    }
+
 }
 
 
@@ -1355,10 +1383,14 @@ if($deseq){
 	`/bin/mkdir -m 775 -p $output/gsa`;
 	###`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD $R/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$curDir/$output/differentialExpression_gene'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$curDir/$output/counts_gene'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering'\\\"\" \"\\\"gsa.dir='$curDir/$output/gsa'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_STAR.done" || $ran_shmatrix){
+            my $reps = '';
+            if($no_replicates){
+                $reps = '-no_replicates';
+            }
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $curDir/$output/differentialExpression_gene -count_out $curDir/$output/counts_gene -cluster_out $curDir/$output/clustering -gsa_out $curDir/$output/gsa -config $config -bin $Bin -species $species -counts $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $curDir/$output/differentialExpression_gene -count_out $curDir/$output/counts_gene -cluster_out $curDir/$output/clustering -gsa_out $curDir/$output/gsa -config $config -bin $Bin -species $species -counts $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
 	}
     }

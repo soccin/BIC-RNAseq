@@ -113,6 +113,12 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
 
 
 cluster.samples <- function(counts.scaled,output.dir=output.dir,conds=conds){
+    cat(c(length(colnames(counts.scaled)),"\n"))
+
+    if(length(colnames(counts.scaled))<3){
+        cat("    Less than three samples; can not run cluster analysis\n")
+        return()
+    }
 
     setwd(output.dir)
 
@@ -174,15 +180,21 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
 
     ## load normalized counts
     dat = read.delim(norm.counts.file,sep="\t",header=T)
-    ## assign Ensembl IDs as rownames
-    rownames(dat) = dat[,1]
-    ## remove Ensembl IDs from matrix
-    dat = dat[,-1]
 
-    comp_results = dir(diff.exp.dir)[grep("^ResDESeq",dir(diff.exp.dir))]
+    ## assign IDs as rownames
+    rownames(dat) = dat[,1]
+    
+    if ("GeneSymbol" %in% colnames(dat)){
+        ## remove Ensembl IDs from matrix
+        dat = dat[,-1]
+        idHeader = "GeneSymbol"
+    } else {
+        idHeader = "GeneID"
+    }
+
+    comp_results = dir(diff.exp.dir)[grep("^ResDESeq.*\\.xls$",dir(diff.exp.dir))]
 
     for (compres in comp_results){
-
         file = sub("ResDESeq_","",compres)
         file = sub(".xls","",file)
         conds = unlist(strsplit(file,"_vs_"))
@@ -192,28 +204,32 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
         genes = as.matrix(read.delim(paste(diff.exp.dir,compres,sep="/"),sep="\t",header=T))[,1]
 
         ## extract data for those genes
-        htmp.dat = dat[genes,grep(paste("GeneSymbol",condA,condB,sep="|"),colnames(dat))]
+        htmp.dat = dat[genes,grep(paste(idHeader,condA,condB,sep="|"),colnames(dat))]
 
         ## remove duplicate genes
-        if(length(which(duplicated(htmp.dat[,"GeneSymbol"])))){
-            htmp.dat = htmp.dat[-which(duplicated(as.vector(htmp.dat[,"GeneSymbol"]))),]
+        if(length(htmp.dat[which(duplicated(htmp.dat[,idHeader])),idHeader])>0){
+            htmp.dat = htmp.dat[-which(duplicated(as.vector(htmp.dat[,idHeader]))),]
         }
+
+        ## remove any rows that have NAs
+        htmp.dat = htmp.dat[complete.cases(htmp.dat),]
         ## as long as gene symbols are unique, assign them 
         ## as rownames; if not, we'll have to average values
         ## for genes that occur multiple times
-        rownames(htmp.dat)=htmp.dat[,"GeneSymbol"]
+        rownames(htmp.dat)=htmp.dat[,idHeader]
         htmp.dat = htmp.dat[,-1]
 
         ## from matrix
         htmp.dat = as.matrix(log2(htmp.dat))
 
+        ## take only the top 100 genes in order to make heatmap legible
         if(dim(htmp.dat)[1]>100){
             htmp.dat = htmp.dat[1:100,]
         }
 
         ## make heatmap pdf
         pdf(paste(diff.exp.dir,"/ResDESeq_",condA,"_vs_",condB,"_heatmap.pdf",sep=""),width=25,height=16)
-        heatmap.2(htmp.dat - apply(htmp.dat, 1, mean), trace='none', col=colorpanel(16,"green","black","red"),cexRow=0.9,cexCol=1.2, dendrogram="both",main=paste("Top Differentially Expressed Genes ",condA," vs ",condB,sep=""), symbreaks=TRUE, keysize=0.5, margin=c(20,10))
+            heatmap.2(htmp.dat - apply(htmp.dat, 1, mean), trace='none', col=colorpanel(16,"green","black","red"),cexRow=0.9,cexCol=1.2, dendrogram="both",main=paste("Top Differentially Expressed Genes ",condA," vs ",condB,sep=""), symbreaks=TRUE, keysize=0.5, margin=c(20,10))
         dev.off()
     }
 

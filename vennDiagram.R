@@ -43,7 +43,7 @@ venn.file = paste("venn",comp,".pdf",sep="")
 all.ids = c()
 
 for (x in 1:length(all.dat)){
-    all.ids = c(all.ids,as.vector(all.dat[[x]][,"ID"]))
+    all.ids = c(all.ids,as.vector(all.dat[[x]][,"GeneID"]))
 }
 all.ids = unique(all.ids)
 
@@ -57,8 +57,8 @@ colnames(res)=comp.names
 
 for (x in 1:length(all.dat)){
     dat = all.dat[[x]]
-    res[as.vector(dat[which(dat[,grep("log2",colnames(dat))]>0),"ID"]),colnames(res)[x]] = 1
-    res[as.vector(dat[which(dat[,grep("log2",colnames(dat))]<0),"ID"]),colnames(res)[x]] = -1
+    res[as.vector(dat[which(dat[,grep("log2",colnames(dat))]>0),"GeneID"]),colnames(res)[x]] = 1
+    res[as.vector(dat[which(dat[,grep("log2",colnames(dat))]<0),"GeneID"]),colnames(res)[x]] = -1
 }
 
 ## generate venn diagram based on matrix
@@ -80,7 +80,7 @@ make.multi.comp.matrix <- function(ids,all.dat,compsToExclude=NULL){
     colnames(final.dat)  = rep("tmp",2*length(all.dat)+2)
 
     for(i in 1:length(all.dat)){
-        dat.to.write = as.matrix(all.dat[[i]][ids,-grep("Mean_at_cond|^ID$|^GeneSymbol$",colnames(all.dat[[i]]))])
+        dat.to.write = as.matrix(all.dat[[i]][ids,-grep("Mean_at_cond|^GeneID$|^GeneSymbol$",colnames(all.dat[[i]]))])
         colnames(dat.to.write)[1] = paste("P.adj",comp.names[i],sep="__")
         final.dat[,c(i*2-1,i*2)] = dat.to.write
         colnames(final.dat)[c(i*2-1,i*2)] = colnames(dat.to.write)
@@ -109,7 +109,7 @@ make.multi.comp.matrix <- function(ids,all.dat,compsToExclude=NULL){
     }
     colnames(final.dat)[c(ncol(final.dat)-1,ncol(final.dat))]=c("meanFDR_common_comps","meanFC_common_comps")
     final.dat = cbind(rownames(final.dat),final.dat)
-    colnames(final.dat)[1]="ID"
+    colnames(final.dat)[1]="GeneID"
     return(final.dat)
 }
 

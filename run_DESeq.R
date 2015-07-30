@@ -103,10 +103,10 @@ if(length(ng)==0){
 		#print("getting ans ready")
                 if ("GeneSymbol" %in% colnames(resSig)){
                     ans=resSig[ng,c("id","GeneSymbol","padj", "log2FoldChange","baseMeanA","baseMeanB")]
-                    colnames(ans)=c("ID","GeneSymbol", "P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
+                    colnames(ans)=c("GeneID","GeneSymbol", "P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
                 } else {
                     ans=resSig[ng,c("id","padj", "log2FoldChange","baseMeanA","baseMeanB")]
-                    colnames(ans)=c("ID", "P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
+                    colnames(ans)=c("GeneID", "P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
                 }
 	        rownames(ans)=ans[,1]
 
@@ -121,10 +121,10 @@ if(length(ng)==0){
 #print("getting FC and p-values for all genes")
 if ("GeneSymbol" %in% colnames(res)){
     res=res[,c("id","GeneSymbol","pval","padj", "log2FoldChange","baseMeanA","baseMeanB")]
-    colnames(res)=c("ID","GeneSymbol", "pval","P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
+    colnames(res)=c("GeneID","GeneSymbol", "pval","P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
 } else {
     res=res[,c("id","pval","padj", "log2FoldChange","baseMeanA","baseMeanB")]
-    colnames(res)=c("ID", "pval","P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
+    colnames(res)=c("GeneID", "pval","P.adj", paste("log2[",condB,"/",condA,"]",sep=""), paste("Mean_at_cond_",condA, sep=""), paste("Mean_at_cond_",condB, sep=""))
 }
 rownames(res)=res[,1]
 

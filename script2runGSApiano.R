@@ -53,7 +53,7 @@ processgsaRes<-function(gsaRes,pval.cutoff=0.01,fc2keep=log2(1.5),frac2keep=2,fc
 	tmp=as.matrix(GSAsummaryTable(gsaRes))
 	if(!is.null(tmp))
 	{
-		print(tmp[1:3,])
+		#print(tmp[1:3,])
 		
 		gsa.tab.dn=NULL
 		gsa.tab.up=NULL
@@ -101,7 +101,7 @@ processgsaRes<-function(gsaRes,pval.cutoff=0.01,fc2keep=log2(1.5),frac2keep=2,fc
 run.pianoGSA<-function(fls,dir4res,gs.names=c("c1","c2","c3","c5-1", "c6","c7"),dir.gs="/home/raya/Tools/Data/",min.gns.nu=10,max.gns.nu=500,nPerm=100,pval.cutoff=0.01,ncol.gns=NULL,fc2keep=log2(1.5),frac2keep=2,fcQ=T,microarrayQ=F)
 {
 	gs.names2load=pastec(gs.names,".all.v4.0.symbols.gmt")
-	print(gs.names2load)
+	#print(gs.names2load)
 	
 	#c1.all.v4.0.symbols.gmt
 	#c2.all.v4.0.symbols.gmt
@@ -214,7 +214,7 @@ organize.pathways<-function(wd)
 
 	for(the.fl in fls)
 	{
-	print(the.fl)
+	#print(the.fl)
 	
 	nn=1
 	res=NULL
@@ -224,9 +224,9 @@ organize.pathways<-function(wd)
 	
 	for(the.fl2use in fls2use)
 	{
-		print(the.fl2use)
+		#print(the.fl2use)
 		res=as.matrix(read.csv(the.fl2use,sep="\t",header=T))
-	print(res)
+	#print(res)
 		if(nrow(res)>0)
 		{		if(ncol(res)==1)
 						res=t(res)
