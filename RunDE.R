@@ -100,12 +100,6 @@ if (GSA && exists("key.file") && exists("comps") && !exists("species")){
     cat ("Error: Gene set analysis is turned ON. Please either turn it OFF or specify which species this data is from\n")
     q()
 }
-if (no.replicates){
-    fitType = 'local'
-    method = 'blind'
-    sharingMode = 'fit-only'
-}
-
 
 tmp<-capture.output(suppressMessages(source(paste(bin,"tools.R",sep="/"))))
 tmp<-capture.output(suppressMessages(source(paste(bin,"run_DESeq.R",sep="/"))))
@@ -116,14 +110,26 @@ tmp<-capture.output(suppressMessages(library("limma")))
 tmp<-capture.output(suppressMessages(library("gplots")))
 
 setwd(pd)
-## create key if key.file is given
+## if key file is given, create key and check for replicates
 if (exists("key.file")){
     key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
     key[,1] = make.names(key[,1])    
     conds=key[,2]
+
+    t=table(conds)
+    for(cond in conds){
+        if(t[names(t)==cond]<2){
+            cat(c("No replicates found for condition \"",cond,"\". Setting no.replicates=TRUE\n"))
+            no.replicates=TRUE
+        }
+    }   
 } 
     
-
+if (no.replicates){
+    fitType = 'local'
+    method = 'blind'
+    sharingMode = 'fit-only'
+}
 ############################
 ## normalize data (always)
 ############################
