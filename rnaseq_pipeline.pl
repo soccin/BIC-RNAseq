@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $clustering, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates);
 
 $pre = 'TEMP';
 $output = "results";
@@ -50,7 +50,6 @@ GetOptions ('map=s' => \$map,
 	    'dexseq' => \$dexseq,
 	    'htseq' => \$htseq,
 	    'deseq' => \$deseq,
-	    'clustering' => \$clustering,
 	    'chimerascan' => \$chimerascan,
 	    'star_fusion' => \$star_fusion,
 	    'mapsplice' => \$mapsplice,
@@ -83,7 +82,6 @@ if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
 	* PRE: output prefix (default: TEMP)
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
-	* CLUSTERING: will normalize and cluster samples even without downstream analysis
 	* R1ADAPTOR/R2ADAPTOR: if provided, will trim adaptor sequences; NOTE: if provided for only one end, will also assign it to the other end
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs, transcript analysis using express and kallisto (-transcript)
@@ -1409,7 +1407,7 @@ if($deseq){
 	}
     }
 }
-elsif($clustering){
+else{
     if($star){
 	`/bin/mkdir -m 775 -p $output/clustering`;
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_STAR.done" || $ran_shmatrix){
