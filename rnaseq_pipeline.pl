@@ -937,25 +937,13 @@ foreach my $sample (keys %samp_libs_run){
 	    $starOut = "$output/intFiles/$sample/$sample\_STAR_2PASS_Aligned.out.sam_filtered.sam";
 	}
 
-	my $ran_starmerge = 0;
-	my $starmergej = '';
-	if(!-e "$output/progress/$pre\_$uID\_STAR_MERGE_$sample.done" || $ran_sp){
-	    sleep(3);
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_MERGE_$sample", job_hold => "$spj", cpu => "24", mem => "90", cluster_out => "$output/progress/$pre\_$uID\_STAR_MERGE_$sample.log");
-	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx48g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar MergeSamFiles I=$starOut O=$starOut\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true USE_THREADING=true`;
-	    `/bin/touch $output/progress/$pre\_$uID\_STAR_MERGE_$sample.done`;
-	    $starmergej = "$pre\_$uID\_STAR_MERGE_$sample";
-	    $ran_starmerge = 1;
-	}
-
 	my $ran_staraddrg = 0;
 	my $staraddrgj = '';
-	if(!-e "$output/progress/$pre\_$uID\_STAR_AORRG_$sample.done" || $ran_starmerge){
+	if(!-e "$output/progress/$pre\_$uID\_STAR_AORRG_$sample.done" || $ran_sp){
 	    sleep(3);
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_AORRG_$sample", job_hold => "$starmergej", cpu => "3", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_STAR_AORRG_$sample.log");
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_AORRG_$sample", job_hold => "$spj", cpu => "3", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_STAR_AORRG_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar AddOrReplaceReadGroups I=$starOut\.bam O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true RGID=$sample\_1 RGLB=_1 RGPL=Illumina RGPU=$sample\_1 RGSM=$sample`;
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar AddOrReplaceReadGroups I=$starOut O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true RGID=$sample\_1 RGLB=_1 RGPL=Illumina RGPU=$sample\_1 RGSM=$sample`;
 	    `/bin/touch $output/progress/$pre\_$uID\_STAR_AORRG_$sample.done`;
 	    $staraddrgj = "$pre\_$uID\_STAR_AORRG_$sample";
 	    $ran_staraddrg = 1;	
@@ -964,11 +952,11 @@ foreach my $sample (keys %samp_libs_run){
 	if($cufflinks){
 	    `/bin/mkdir -m 775 -p $output/cufflinks`;
 	    `/bin/mkdir -m 775 -p $output/cufflinks/$sample`;
-	    if(!-e "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done" || $ran_starmerge){
+	    if(!-e "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done" || $ran_sp){
 		sleep(3);
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUFFLINKS_STAR_$sample", job_hold => "$starmergej", cpu => "5", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.log");
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUFFLINKS_STAR_$sample", job_hold => "$spj", cpu => "5", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $starOut\.bam`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/alignments/$pre\_$sample\.bam`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done`;
 	    }
 	}
