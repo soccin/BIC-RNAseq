@@ -723,10 +723,12 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUTADAPT_$sample\_R1", job_hold => "$zcatj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`/common/sge/bin/lx24-amd64/qsub -P ngs -N $pre\_$uID\_CUTADAPT_$sample\_R1 -hold_jid $zcatj -pe alloc 1 -l virtual_free=1G $Bin/qCMD "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR1 -o $output/intFiles/$sample/$sample\_R1_CT.fastq $output/intFiles/$sample/$sample\_R1.fastq >$output/intFiles/$sample/$sample\_R1\_CUTADAPT\_STATS.txt"`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR1 -o $output/intFiles/$sample/$sample\_R1_CT.fastq $output/intFiles/$sample/$sample\_R1.fastq >$output/intFiles/$sample/$sample\_R1\_CUTADAPT\_STATS.txt"`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.done`;
 		push @ca_jids, "$pre\_$uID\_CUTADAPT_$sample\_R1";
+		push @cag_jids, "$pre\_$uID\_CUTADAPT_$sample\_R1";
 		$ran_ca = 1;
+		$ran_cag = 1;
 	    }
 
     	    my $caj = join(",", @ca_jids);
