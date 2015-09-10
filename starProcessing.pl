@@ -7,7 +7,6 @@ use strict;
 ### because this causes error in picard size isize is an int
 ###         2) alignments where read length does not match qual length; seems to be a problem in star
 ###         3) where there aren't enough fields (have that as 11 right now; through quals)
-###         4) reads with no alignments (* in chr field)
 
 my $file = shift;
 open(IN, "$file");
@@ -24,7 +23,7 @@ while(my $line = <IN>){
     }
 
     my @data = split(/\t/, $line);
-    if(abs($data[8]) >= 2**31 - 1 || length($data[9]) != length($data[10]) || scalar(@data) < 11 || $data[2] eq "*"){
+    if(abs($data[8]) >= 2**31 - 1 || length($data[9]) != length($data[10]) || scalar(@data) < 11){
 	next;
     }
 
