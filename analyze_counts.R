@@ -185,8 +185,6 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
     rownames(dat) = dat[,1]
     
     if ("GeneSymbol" %in% colnames(dat)){
-        ## remove Ensembl IDs from matrix
-        dat = dat[,-1]
         idHeader = "GeneSymbol"
     } else {
         idHeader = "GeneID"
