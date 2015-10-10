@@ -555,6 +555,9 @@ my @currentTime = &getTime();
 		    $samp_pair{$data[1]} = "SE";
 		    print OUT "$file\n";
 		}
+		else{ 
+		    die "CAN'T DETERMINE WHETHER RUN IS PAIRED OR SINGLE ENDED for sample $data[1]\n"; 
+		}
 	    }
 	}
     }
@@ -1204,9 +1207,9 @@ foreach my $sample (keys %samp_libs_run){
 	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2`;
 	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2/$sample`;
 	    ### express-recommended bowtie2 settings
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_BOWTIE2_$sample", cpu => "12", mem => "60", cluster_out => "$output/progress/$pre\_$uID\_BOWTIE2_$sample.log");
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_BOWTIE2_$sample", cpu => "24", mem => "60", cluster_out => "$output/progress/$pre\_$uID\_BOWTIE2_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $BOWTIE2/bowtie2 --all --maxins 600 --rdg 6,5 --rfg 6,5 --score-min L,-.6,-.4 --no-discordant --no-mixed --threads 12 -x $TRANS_INDEX_DEDUP $inReads -S $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $BOWTIE2/bowtie2 --all --maxins 600 --rdg 6,5 --rfg 6,5 --score-min L,-.6,-.4 --no-discordant --no-mixed --threads 24 -x $TRANS_INDEX_DEDUP $inReads -S $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
 	    `/bin/touch $output/progress/$pre\_$uID\_BOWTIE2_$sample.done`;
 	    $bowtie2j = "$pre\_$uID\_BOWTIE2_$sample";
 	    $ran_bowtie2 = 1;
