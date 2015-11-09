@@ -9,7 +9,7 @@ EXPRESS			/opt/common/CentOS_6/express/express-1.5.1-linux_x86_64
 FUSIONCATCHER		/opt/common/CentOS_6/fusioncatcher/fusioncatcher_v0.99.3e
 HTSEQ			/opt/common/CentOS_6/htseq/HTSeq-0.5.3/scripts
 KALLISTO		/opt/common/CentOS_6/kallisto/kallisto_linux-v0.42.1
-JAVA			/opt/common/CentOS_6/java/jre1.7.0_75/bin
+JAVA			/opt/common/CentOS_6/java/jdk1.7.0_75/bin
 MAPSPLICE		/opt/common/CentOS_6/mapsplice/MapSplice-v2.1.8
 PERL			/opt/common/CentOS_6/perl/perl-5.16.3/bin
 PICARD			/opt/common/CentOS_6/picard/picard-tools-1.124
