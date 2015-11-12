@@ -225,10 +225,12 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
             htmp.dat = htmp.dat[1:100,]
         }
 
-        ## make heatmap pdf
-        pdf(paste(diff.exp.dir,"/ResDESeq_",condA,"_vs_",condB,"_heatmap.pdf",sep=""),width=25,height=16)
+        if(dim(htmp.dat)[1]>1 && dim(htmp.dat)[2]>1){
+            ## make heatmap pdf
+            pdf(paste(diff.exp.dir,"/ResDESeq_",condA,"_vs_",condB,"_heatmap.pdf",sep=""),width=25,height=16)
             heatmap.2(htmp.dat - apply(htmp.dat, 1, mean), trace='none', col=colorpanel(16,"green","black","red"),cexRow=0.9,cexCol=1.2, dendrogram="both",main=paste("Top Differentially Expressed Genes ",condA," vs ",condB,sep=""), symbreaks=TRUE, keysize=0.5, margin=c(20,10))
-        dev.off()
+            dev.off()
+        }
     }
 
     return
