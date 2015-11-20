@@ -24,12 +24,18 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
         HTSeq.dat = HTSeq.dat[,-1]
     }
 
+    ## TEMP FOR KALLISTO TESTING
+    ## filter out any rows with zero counts 
+    #HTSeq.dat=HTSeq.dat[apply(HTSeq.dat, 1, function(row) all(row >10 )),]
+
     if(!is.null(key)){
         HTSeq.dat = HTSeq.dat[,key[,1]]
     }
 
     samps = colnames(HTSeq.dat)
-    counts.dat=matrix2numeric(HTSeq.dat)
+
+    ## for kallisto counts, round floats to integers
+    counts.dat=round(matrix2numeric(HTSeq.dat))
 
     ## if no conditions given, create a vector of one mock 
     ## condition needed for make.cds  
