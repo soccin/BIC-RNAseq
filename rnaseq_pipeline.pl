@@ -239,7 +239,6 @@ if($comparisons || $samplekey || $deseq){
 	my @data = split(/\s+/, $_);
 	$samplekey_samples{$data[0]} = 1;
 	$samplekey_conditions{$data[1]} = 1;
-	print "data[0]: $data[0]\tdata[1]: $data[1]\n";
 	if(!$mapping_samples{$data[0]} || !$sample_comparisons{$data[1]}){
 	    die "either sample $data[0] cannot be found in $map and/or condition $data[1] cannot be found in $comparisons $!";
 	}
@@ -259,6 +258,46 @@ if($comparisons || $samplekey || $deseq){
     }
 }
 
+my $BOWTIE2 = '';
+my $CUFFLINKS = '';
+my $HTSEQ = '';
+my $DEXSEQ = '';
+my $EXPRESS = '';
+my $KALLISTO = '';
+my $PICARD = '';
+my $CHIMERASCAN = '';
+my $MAPSPLICE = '';
+my $STAR = '';
+my $DEFUSE = '';
+my $FUSIONCATCHER = '';
+my $TOPHAT = '';
+my $PYTHON = '';
+my $JAVA = '';
+my $PERL = '';
+my $R = '';
+my $CUTADAPT = '';
+my $STAR_FUSION = '';
+
+my $curDir = `pwd`;
+chomp $curDir;
+my $cd = $curDir;
+$cd =~ s/\//_/g;
+
+my $uID = `/usr/bin/id -u -n`;
+chomp $uID;
+
+my %samp_libs_run = ();
+my $slr_count = 0;
+my %samp_pair = ();
+
+open(LOG, ">$cd\_rnaseq_pipeline.log") or die "can't write to output log";
+my @currentTime = &getTime();
+print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSTARTING RNASEQ PIPELINE FOR $pre\n";
+print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tCOMMAND LINE: $commandLine\n";
+
+### Check that all programs are available
+&verifyConfig($config);
+
 my $GTF = '';
 my $DEXSEQ_GTF = '';
 my $CHIMERASCAN_INDEX = '';
@@ -274,6 +313,8 @@ my $REF_SEQ = '';
 my $RIBOSOMAL_INTERVALS='';
 my $REF_FLAT = '';
 my $KALLISTO_INDEX = '';
+my $STAR_FUSION_GENOME_LIB = '';
+my $CHIMERASCAN_FP_FILTER = '';
 
 if($species =~ /human|hg19/i){
     $species = 'hg19';
@@ -290,7 +331,8 @@ if($species =~ /human|hg19/i){
     $TRANS_FASTA_DEDUP = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/deduplicated/gencode.v18.annotation.dedup.fa';
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
     $KALLISTO_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/kallisto/v0.42.1/gencode/v18/gencode.v18.annotation.gtf.fasta.idx';
-
+    $STAR_FUSION_GENOME_LIB = "$STAR_FUSION/Hg19_CTAT_resource_lib";
+    $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19_bodymap_false_positive_chimeras.txt";
     if($lncrna){
         $GTF = "$Bin/data/lncipedia.gtf";
         $starDB = '/ifs/depot/assemblies/H.sapiens/hg19/index/star/2.3.0e_r291/LNCipedia';
@@ -398,46 +440,6 @@ elsif($species =~ /fly|dm3/i){
     }
 
 }
-
-
-my $BOWTIE2 = '';
-my $CUFFLINKS = '';
-my $HTSEQ = '';
-my $DEXSEQ = '';
-my $EXPRESS = '';
-my $KALLISTO = '';
-my $PICARD = '';
-my $CHIMERASCAN = '';
-my $MAPSPLICE = '';
-my $STAR = '';
-my $DEFUSE = '';
-my $FUSIONCATCHER = '';
-my $TOPHAT = '';
-my $PYTHON = '';
-my $JAVA = '';
-my $PERL = '';
-my $R = '';
-my $CUTADAPT = '';
-
-my $curDir = `pwd`;
-chomp $curDir;
-my $cd = $curDir;
-$cd =~ s/\//_/g;
-
-my $uID = `/usr/bin/id -u -n`;
-chomp $uID;
-
-my %samp_libs_run = ();
-my $slr_count = 0;
-my %samp_pair = ();
-
-open(LOG, ">$cd\_rnaseq_pipeline.log") or die "can't write to output log";
-my @currentTime = &getTime();
-print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tSTARTING RNASEQ PIPELINE FOR $pre\n";
-print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tCOMMAND LINE: $commandLine\n";
-
-### Check that all programs are available
-&verifyConfig($config);
 
 if($allfusions){
     $chimerascan = 1;
@@ -1080,7 +1082,7 @@ foreach my $sample (keys %samp_libs_run){
 			
 			my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CHIMERASCAN_$sample", job_hold => "$zcat2j", cpu => "6", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CHIMERASCAN_$sample.log");
 			my $standardParams = Schedule::queuing(%stdParams);
-			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$Bin/data/hg19_bodymap_false_positive_chimeras.txt $CHIMERASCAN_INDEX $output/intFiles/$sample/$sample\_v2_R1.fastq $output/intFiles/$sample/$sample\_v2_R2.fastq $output/fusion/chimerascan/$sample/`;
+			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$CHIMERASCAN_FP_FILTER $CHIMERASCAN_INDEX $output/intFiles/$sample/$sample\_v2_R1.fastq $output/intFiles/$sample/$sample\_v2_R2.fastq $output/fusion/chimerascan/$sample/`;
 			`/bin/touch $output/progress/$pre\_$uID\_CHIMERASCAN_$sample.done`;
 			push @fusion_jids, "$pre\_$uID\_CHIMERASCAN_$sample";
 			$ran_fusion = 1;
@@ -1090,23 +1092,22 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 
 	    if($star_fusion){
-		`/bin/mkdir -m 775 -p $output/fusion/star`;
-		`/bin/mkdir -m 775 -p $output/fusion/star/$sample`;
-		
-		my $inReads = "$output/intFiles/$sample/$sample\_v2_R1.fastq";	
+		my $inReads = "--left_fq $output/intFiles/$sample/$sample\_v2_R1.fastq";	
 		if($samp_pair{$sample} eq "PE"){
-		    $inReads .= " $output/intFiles/$sample/$sample\_v2_R2.fastq";
+		    $inReads .= " --right_fq $output/intFiles/$sample/$sample\_v2_R2.fastq";
 		}
 
-		if(!-e "$output/progress/$pre\_$uID\_STAR_CHIMERA_$sample.done" || $ran_zcat2){
-		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_CHIMERA_$sample", job_hold => "$zcat2j", cpu => "6", mem => "20", cluster_out => "$output/progress/$pre\_$uID\_STAR_CHIMERA_$sample.log");
+		if(!-e "$output/progress/$pre\_$uID\_STAR_FUSION_$sample.done" || $ran_zcat2){
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_FUSION_$sample", job_hold => "$zcat2j", cpu => "6", mem => "20", cluster_out => "$output/progress/$pre\_$uID\_STAR_FUSION_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix $output/fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
-		    `/bin/touch $output/progress/$pre\_$uID\_STAR_CHIMERA_$sample.done`;
-		    push @fusion_jids, "$pre\_$uID\_STAR_CHIMERA_$sample";
+		    ###`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix $output/fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $STAR_FUSION/STAR-Fusion --genome_lib_dir $STAR_FUSION_GENOME_LIB $inReads --output_dir $output/fusion/star_fusion/$sample`;
+
+		    `/bin/touch $output/progress/$pre\_$uID\_STAR_FUSION_$sample.done`;
+		    push @fusion_jids, "$pre\_$uID\_STAR_FUSION_$sample";
 		    $ran_fusion = 1;
 		}
-		push @fusions, "--star $output/fusion/star/$sample/$sample\_STAR_Chimeric.out.junction";
+		push @fusions, "--star $output/fusion/star_fusion/$sample/star-fusion.fusion_candidates.final.abridged";
 	    }
 
 	    if($mapsplice){
@@ -1481,11 +1482,19 @@ sub verifyConfig{
 		die "CAN'T FIND samtools IN $conf[1] $!";
 	    }
 	}
-	elsif($conf[0] =~ /star/i){
+	elsif($conf[0] =~ /^star$/i){
 	    if(!-e "$conf[1]/STAR"){
 		die "CAN'T FIND STAR IN $conf[1] $!";
 	    }
 	    $STAR = $conf[1];
+	    my $path_tmp = $ENV{'PATH'};
+	    $ENV{'PATH'} = "$conf[1]:$path_tmp";	    
+	}
+	elsif($conf[0] =~ /star_fusion/i){
+	    if(!-e "$conf[1]/STAR-Fusion"){
+		die "CAN'T FIND STAR-Fusion IN $conf[1] $!";
+	    }
+	    $STAR_FUSION = $conf[1];
 	    my $path_tmp = $ENV{'PATH'};
 	    $ENV{'PATH'} = "$conf[1]:$path_tmp";	    
 	}
