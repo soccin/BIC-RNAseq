@@ -1006,7 +1006,6 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	}
 
-	my $ran_starcrm = 0;
 	my @starcrm = ();
 	if(!-e "$output/progress/$pre\_$uID\_STAR_CRM_$sample.done" || $ran_staraddrg){
 	    sleep(3);
@@ -1019,7 +1018,6 @@ foreach my $sample (keys %samp_libs_run){
 	}
 	push @crm, "-metrics $output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt";
 
-	my $ran_starasm = 0;
 	my @starasm = ();
 	if(!-e "$output/progress/$pre\_$uID\_STAR_ASM_$sample.done" || $ran_staraddrg){
 	    sleep(3);
