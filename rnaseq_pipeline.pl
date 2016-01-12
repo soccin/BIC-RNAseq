@@ -1406,7 +1406,7 @@ else{
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -cluster_out $curDir/$output/clustering -config $config -bin $Bin -counts $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt -clusterOnly`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $curDir/$output/counts_gene -cluster_out $curDir/$output/clustering -config $config -bin $Bin -counts $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt -clusterOnly`;
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_STAR.done`;
 	}
     }
@@ -1417,7 +1417,7 @@ else{
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "pre\_$uID\_CLUSTERING_TOPHAT", job_hold => "$thmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/pre\_$uID\_CLUSTERING_TOPHAT.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -cluster_out $curDir/$output/clustering/tophat2 -config $config -bin $Bin -counts $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt -clusterOnly`;	    
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $curDir/$output/counts_gene/tophat2 -cluster_out $curDir/$output/clustering/tophat2 -config $config -bin $Bin -counts $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt -clusterOnly`;	    
 	}
     }
 }
