@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates, $rsem, $kallisto, $express, $standard);
 
 $pre = 'TEMP';
 $output = "results";
@@ -57,8 +57,12 @@ GetOptions ('map=s' => \$map,
 	    'fusioncatcher' => \$fusioncatcher,
 	    'allfusions' => \$allfusions,
 	    'transcript' => \$transcript,
+	    'kallisto' => \$kallisto,
+	    'rsem' => \$rsem,
+	    'express' => \$express,
             'species=s' => \$species,
             'strand=s' => \$strand,
+            'standard=s' => \$standard,
             'lncrna' => \$lncrna,
  	    'output|out|o=s' => \$output,
 	    'r1adaptor=s' => \$r1adaptor,
@@ -80,11 +84,12 @@ if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
 	* SCHEDULER: currently support for SGE and LSF (REQUIRED)
 	* PRE: output prefix (default: TEMP)
+	* STANDARD: standard analysis - alignment, gene count, transcript count, counts normalization, and clustering
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
 	* R1ADAPTOR/R2ADAPTOR: if provided, will trim adaptor sequences; NOTE: if provided for only one end, will also assign it to the other end
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
-	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs, transcript analysis using express and kallisto (-transcript)
+	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs; transcript analysis using express (-express), kallisto (-kallisto) and rsem (-rsem), and all (-transcript)
 	* PRIORITY_PROJECT: sge notion of priority assigned to projects (default: ngs)
 	* PRIORITY_GROUP: lsf notion of priority assigned to groups (default: Pipeline)
 	* OUTPUT: output results directory (default: results)
@@ -95,6 +100,15 @@ exit;
 
 if($pre =~ /^\d+/){
     $pre = "s_$pre";
+}
+
+my $curDir = `pwd`;
+chomp $curDir;
+my $cd = $curDir;
+$cd =~ s/\//_/g;
+
+if($output !~ /^\//){
+    $output = "$curDir/$output";
 }
 
 if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|dm3|fly/i){
@@ -142,6 +156,9 @@ if($r1adaptor){
 if($r2adaptor){
     $commandLine .= " -r2adaptor $r2adaptor";
 }
+if($standard){
+    $commandLine .= " -standard";
+}
 if($star){
     $commandLine .= " -star";
 }
@@ -183,6 +200,15 @@ if($allfusions){
 }
 if($transcript){
     $commandLine .= " -transcript";
+}
+if($kallisto){
+    $commandLine .= " -kallisto";
+}
+if($rsem){
+    $commandLine .= " -rsem";
+}
+if($express){
+    $commandLine .= " -express";
 }
 if($species){
     $commandLine .= " -species $species";
@@ -275,13 +301,9 @@ my $PYTHON = '';
 my $JAVA = '';
 my $PERL = '';
 my $R = '';
+my $RSEM = '';
 my $CUTADAPT = '';
 my $STAR_FUSION = '';
-
-my $curDir = `pwd`;
-chomp $curDir;
-my $cd = $curDir;
-$cd =~ s/\//_/g;
 
 my $uID = `/usr/bin/id -u -n`;
 chomp $uID;
@@ -315,6 +337,7 @@ my $REF_FLAT = '';
 my $KALLISTO_INDEX = '';
 my $STAR_FUSION_GENOME_LIB = '';
 my $CHIMERASCAN_FP_FILTER = '';
+my $RSEM_DB = '';
 
 if($species =~ /human|hg19/i){
     $species = 'hg19';
@@ -331,6 +354,7 @@ if($species =~ /human|hg19/i){
     $TRANS_FASTA_DEDUP = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/deduplicated/gencode.v18.annotation.dedup.fa';
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
     $KALLISTO_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/kallisto/v0.42.1/gencode/v18/gencode.v18.annotation.gtf.fasta.idx';
+    $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/hg19/star/hg19_v19_gencode';
     $STAR_FUSION_GENOME_LIB = "$STAR_FUSION/Hg19_CTAT_resource_lib";
     $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19_bodymap_false_positive_chimeras.txt";
     if($lncrna){
@@ -361,6 +385,7 @@ elsif($species =~ /mouse|mm10/i){
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_mm10.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__mm10.txt.gz";
     $KALLISTO_INDEX = '';
+    $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/GRCm38/star/GRCm38_vM8_gencode';
 
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/M.musculus/mm10/index/star/2.4.1d/ensembl/v80/overhang49';
@@ -384,6 +409,7 @@ elsif($species =~ /mm9/i){
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_MM9_assemblies.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__mm9.txt.gz";
     $KALLISTO_INDEX = '';
+    $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/mm9/star/mm9_vm1_gencode';
 
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/M.musculus/mm9/index/star/2.4.1d/ensembl/v67/overhang49';
@@ -400,6 +426,7 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
+    $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/hg19/star/hg19_v19_gencode';
 
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang49';
@@ -441,6 +468,13 @@ elsif($species =~ /fly|dm3/i){
 
 }
 
+if($standard){
+    $star = 1;
+    $htseq = 1;
+    $kallisto = 1;
+    $rsem = 1;
+}
+
 if($allfusions){
     $chimerascan = 1;
     $star_fusion = 1;
@@ -453,6 +487,11 @@ if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
     $detectFusions = 1;
 }
 
+if($transcript){
+    $kallisto = 1;
+    $rsem = 1;
+    ###$express = 1;
+}
 
 if($comparisons || $samplekey){
     if(-e $comparisons && -e $samplekey){
@@ -506,8 +545,11 @@ elsif($strand =~ /reverse/i){
 `/bin/mkdir -m 775 -p $output`; 
 `/bin/mkdir -m 775 -p $output/intFiles`; 
 `/bin/mkdir -m 775 -p $output/progress`;
-`/bin/mkdir -m 775 -p $output/alignments`;
+`/bin/mkdir -m 775 -p $output/gene`;
+`/bin/mkdir -m 775 -p $output/transcript`;
+`/bin/mkdir -m 775 -p $output/gene/alignments`;
 `/bin/mkdir -m 775 -p $output/metrics`;
+`/bin/mkdir -m 775 -p $output/metrics/crm`;
 
 my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
 my $additionalParams = Schedule::additionalParams(%addParams);
@@ -590,6 +632,10 @@ my $ran_starhtseq = 0;
 my @starhtseq_jids = ();
 my $ran_stardexseq = 0;
 my @stardexseq_jids = ();
+my $ran_rceg = 0;
+my @rce_jids = ();
+my $ran_kallisto = 0;
+my @kallisto_jids = ();
 
 foreach my $sample (keys %samp_libs_run){
     my @R1 = ();
@@ -756,7 +802,7 @@ foreach my $sample (keys %samp_libs_run){
     if($tophat){
 	`/bin/mkdir -m 775 -p $output/intFiles/tophat2`;
 	`/bin/mkdir -m 775 -p $output/intFiles/tophat2/$sample`;
-	`/bin/mkdir -m 775 -p $output/alignments/tophat2`;
+	`/bin/mkdir -m 775 -p $output/gene/alignments/tophat2`;
 	`/bin/mkdir -m 775 -p $output/metrics/tophat2`;
 
 	my $inReads = "$r1_gz_files";	
@@ -782,7 +828,7 @@ foreach my $sample (keys %samp_libs_run){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_REORDER_$sample", job_hold => "$tophatj", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_REORDER_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar ReorderSam I=$output/intFiles/tophat2/$sample/accepted_hits.bam O=$output/alignments/tophat2/$pre\_$sample\.bam REFERENCE=$REF_SEQ VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar ReorderSam I=$output/intFiles/tophat2/$sample/accepted_hits.bam O=$output/gene/alignments/tophat2/$pre\_$sample\.bam REFERENCE=$REF_SEQ VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true`;
 	    `/bin/touch $output/progress/$pre\_$uID\_TOPHAT_$sample.done`;
 	    $reorderj = "$pre\_$uID\_REORDER_$sample";
 	    $ran_reorder = 1;
@@ -815,14 +861,14 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	    
 	    if($htseq){
-		`/bin/mkdir -m 775 -p $output/counts_gene`;
-		`/bin/mkdir -m 775 -p $output/counts_gene/tophat2`;
+		`/bin/mkdir -m 775 -p $output/gene/counts_gene`;
+		`/bin/mkdir -m 775 -p $output/gene/counts_gene/tophat2`;
 		
 		if(!-e "$output/progress/$pre\_$uID\_HT_TOPHAT_$sample.done" || $ran_tophatqns){
 		    sleep(3);
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_HT_TOPHAT_$sample", job_hold => "$tophatqnsj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_HT_TOPHAT_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $HTSEQ/htseq-count -m intersection-strict -s $htseq_stranded -t exon $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $GTF > $output/counts_gene/tophat2/$sample.htseq_count"`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $HTSEQ/htseq-count -m intersection-strict -s $htseq_stranded -t exon $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $GTF > $output/gene/counts_gene/tophat2/$sample.htseq_count"`;
 		    `/bin/touch $output/progress/$pre\_$uID\_HT_TOPHAT_$sample.done`;
 		    push @tophathtseq_jids, "$pre\_$uID\_HT_TOPHAT_$sample";
 		    $ran_tophathtseq = 1;
@@ -830,14 +876,15 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	    
 	    if($dexseq){
-		`/bin/mkdir -m 775 -p $output/counts_exon`;
-		`/bin/mkdir -m 775 -p $output/counts_exon/tophat2`;
+		`/bin/mkdir -m 775 -p $output/exon`;
+		`/bin/mkdir -m 775 -p $output/exon/counts_exon`;
+		`/bin/mkdir -m 775 -p $output/exon/counts_exon/tophat2`;
 		
      		if(!-e "$output/progress/$pre\_$uID\_DEXSEQ_TOPHAT_$sample.done" || $ran_tophatqns){
 		    sleep(3);
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DEXSEQ_TOPHAT_$sample", job_hold => "$tophatqnsj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DEXSEQ_TOPHAT_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $output/counts_exon/tophat2/$sample.dexseq_count`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $output/intFiles/$sample/$sample\_TOPHAT2_accepted_hits_queryname_sorted.sam $output/exon/counts_exon/tophat2/$sample.dexseq_count`;
 		    `/bin/touch $output/progress/$pre\_$uID\_DEXSEQ_TOPHAT_$sample.done`;
 		    push @tophatdexseq_jids, "$pre\_$uID\_DEXSEQ_TOPHAT_$sample";
 		    $ran_tophatdexseq = 1;
@@ -845,11 +892,12 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	}
 
+	`/bin/mkdir -m 775 -p $output/metrics/tophat2/crm`;
 	if(!-e "$output/progress/$pre\_$uID\_TOPHAT_CRM_$sample.done" || $ran_reorder){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_CRM_$sample", job_hold => "$reorderj", cpu => "1", mem => "3", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_CRM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/tophat2/$pre\_$sample\.bam O=$output/intFiles/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/tophat2/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/gene/alignments/tophat2/$pre\_$sample\.bam O=$output/intFiles/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/tophat2/crm/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=NONE METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
 	    `/bin/touch $output/progress/$pre\_$uID\_TOPHAT_CRM_$sample.done`;
 	    push @tophatcrm_jids, "$pre\_$uID\_TOPHAT_CRM_$sample";
 	    $ran_tophatcrm = 1;
@@ -860,7 +908,7 @@ foreach my $sample (keys %samp_libs_run){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_ASM_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_ASM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics INPUT=$output/alignments/tophat2/$pre\_$sample\.bam OUTPUT=$output/intFiles/tophat2/$pre\_$sample\_AlignmentSummaryMetrics.txt REFERENCE_SEQUENCE=$REF_SEQ METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE VALIDATION_STRINGENCY=LENIENT`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics INPUT=$output/gene/alignments/tophat2/$pre\_$sample\.bam OUTPUT=$output/intFiles/tophat2/$pre\_$sample\_AlignmentSummaryMetrics.txt REFERENCE_SEQUENCE=$REF_SEQ METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE VALIDATION_STRINGENCY=LENIENT`;
 	    `/bin/touch $output/progress/$pre\_$uID\_TOPHAT_ASM_$sample.done`;
 	    push @tophatasm_jids, "$pre\_$uID\_TOPHAT_ASM_$sample";
 	    $ran_tophatasm = 1;
@@ -906,13 +954,13 @@ foreach my $sample (keys %samp_libs_run){
 	    my $mrl = $minReadLength - 1;
 	    my $ran_sgg2 = 0;
 	    my $sgg2j = '';
-	    if(!-e "$curDir/$output/progress/$pre\_$uID\_STAR_GG2_$sample.done" || $ran_star1p){
+	    if(!-e "$output/progress/$pre\_$uID\_STAR_GG2_$sample.done" || $ran_star1p){
 		sleep(3);
-		chdir "$curDir/$output/intFiles/$sample/star2passGG";
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_GG2_$sample", job_hold => "$star1pj", cpu => "12", mem => "40", cluster_out => "$curDir/$output/progress/$pre\_$uID\_STAR_GG2_$sample.log");
+		chdir "$output/intFiles/$sample/star2passGG";
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_GG2_$sample", job_hold => "$star1pj", cpu => "12", mem => "40", cluster_out => "$output/progress/$pre\_$uID\_STAR_GG2_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --runMode genomeGenerate --genomeDir $curDir/$output/intFiles/$sample/star2passGG --genomeFastaFiles $REF_SEQ --sjdbFileChrStartEnd $curDir/$output/intFiles/$sample/$sample\_STAR_1PASS_SJ.out.tab --sjdbOverhang $mrl --runThreadN 12`;
-		`/bin/touch $curDir/$output/progress/$pre\_$uID\_STAR_GG2_$sample.done`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --runMode genomeGenerate --genomeDir $output/intFiles/$sample/star2passGG --genomeFastaFiles $REF_SEQ --sjdbFileChrStartEnd $output/intFiles/$sample/$sample\_STAR_1PASS_SJ.out.tab --sjdbOverhang $mrl --runThreadN 12`;
+		`/bin/touch $output/progress/$pre\_$uID\_STAR_GG2_$sample.done`;
 		$sgg2j = "$pre\_$uID\_STAR_GG2_$sample";
 		$ran_sgg2 = 1;
 		chdir $curDir;
@@ -948,7 +996,7 @@ foreach my $sample (keys %samp_libs_run){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_AORRG_$sample", job_hold => "$spj", cpu => "3", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_STAR_AORRG_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar AddOrReplaceReadGroups I=$starOut O=$output/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true RGID=$sample\_1 RGLB=_1 RGPL=Illumina RGPU=$sample\_1 RGSM=$sample`;
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar AddOrReplaceReadGroups I=$starOut O=$output/gene/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true RGID=$sample\_1 RGLB=_1 RGPL=Illumina RGPU=$sample\_1 RGSM=$sample`;
 	    `/bin/touch $output/progress/$pre\_$uID\_STAR_AORRG_$sample.done`;
 	    $staraddrgj = "$pre\_$uID\_STAR_AORRG_$sample";
 	    $ran_staraddrg = 1;	
@@ -961,7 +1009,7 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUFFLINKS_STAR_$sample", job_hold => "$spj", cpu => "5", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/alignments/$pre\_$sample\.bam`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/gene/alignments/$pre\_$sample\.bam`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done`;
 	    }
 	}
@@ -980,12 +1028,12 @@ foreach my $sample (keys %samp_libs_run){
 	    }	    
 	
 	    if($htseq){
-		`/bin/mkdir -m 775 -p $output/counts_gene`;	   
+		`/bin/mkdir -m 775 -p $output/gene/counts_gene`;	   
 		if(!-e "$output/progress/$pre\_$uID\_HT_STAR_$sample.done" || $ran_starqns){
 		    sleep(3);
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_HT_STAR_$sample", job_hold => "$starqnsj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_HT_STAR_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $HTSEQ/htseq-count -m intersection-strict -s $htseq_stranded -t exon $starOut\_queryname_sorted.sam $GTF > $output/counts_gene/$sample.htseq_count"`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $HTSEQ/htseq-count -m intersection-strict -s $htseq_stranded -t exon $starOut\_queryname_sorted.sam $GTF > $output/gene/counts_gene/$sample.htseq_count"`;
 		    `/bin/touch $output/progress/$pre\_$uID\_HT_STAR_$sample.done`;
 		    push @starhtseq_jids, "$pre\_$uID\_HT_STAR_$sample";
 		    $ran_starhtseq = 1;
@@ -993,12 +1041,12 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	
 	    if($dexseq){
-		`/bin/mkdir -m 775 -p $output/counts_exon`;
+		`/bin/mkdir -m 775 -p $output/exon/counts_exon`;
      		if(!-e "$output/progress/$pre\_$uID\_DEX_STAR_$sample.done" || $ran_starqns){
 		    sleep(3);
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DEX_STAR_$sample", job_hold => "$starqnsj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DEX_STAR_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $starOut\_queryname_sorted.sam $output/counts_exon/$sample.dexseq_count`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $DEXSEQ/dexseq_count.py -s no $DEXSEQ_GTF $starOut\_queryname_sorted.sam $output/exon/counts_exon/$sample.dexseq_count`;
 		    `/bin/touch $output/progress/$pre\_$uID\_DEX_STAR_$sample.done`;
 		    push @stardexseq_jids, "$pre\_$uID\_DEX_STAR_$sample";
 		    $ran_stardexseq = 1;
@@ -1011,7 +1059,7 @@ foreach my $sample (keys %samp_libs_run){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_CRM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "3", cluster_out => "$output/progress/$pre\_$uID\_STAR_CRM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/alignments/$pre\_$sample\.bam O=$output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=$picard_strand_specificity METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx3g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectRnaSeqMetrics I=$output/gene/alignments/$pre\_$sample\.bam O=$output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt CHART_OUTPUT=$output/metrics/crm/$pre\_$sample\_CollectRnaSeqMetrics_chart.pdf REF_FLAT=$REF_FLAT RIBOSOMAL_INTERVALS=$RIBOSOMAL_INTERVALS STRAND_SPECIFICITY=$picard_strand_specificity METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE`;
 	    `/bin/touch $output/progress/$pre\_$uID\_STAR_CRM_$sample.done`;
 	    push @starcrm_jids, "$pre\_$uID\_STAR_CRM_$sample";
 	    $ran_starcrm = 1;
@@ -1023,7 +1071,7 @@ foreach my $sample (keys %samp_libs_run){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_ASM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_STAR_ASM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics INPUT=$output/alignments/$pre\_$sample\.bam OUTPUT=$output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt REFERENCE_SEQUENCE=$REF_SEQ METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE VALIDATION_STRINGENCY=LENIENT`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics INPUT=$output/gene/alignments/$pre\_$sample\.bam OUTPUT=$output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt REFERENCE_SEQUENCE=$REF_SEQ METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE VALIDATION_STRINGENCY=LENIENT`;
 	    `/bin/touch $output/progress/$pre\_$uID\_STAR_ASM_$sample.done`;
 	    push @starasm_jids, "$pre\_$uID\_STAR_ASM_$sample";
 	    $ran_starasm = 1;
@@ -1189,77 +1237,117 @@ foreach my $sample (keys %samp_libs_run){
 	}
     }
 
-    if($transcript){
+    if($kallisto || $rsem || $express){
 	my $r1_gz_files1 = join(" ", @R1);
 	my $r2_gz_files1 = join(" ", @R2);
 	my $r1_gz_files2 = join(",", @R1);
 	my $r2_gz_files2 = join(",", @R2);
 	
-	my $inReads = "-1 $r1_gz_files2";	
-	if($samp_pair{$sample} eq "PE"){
-	    $inReads .= " -2 $r2_gz_files2";
-	}
-	
-	my $ran_bowtie2 = 0;
-	my $bowtie2j = '';
-	if(!-e "$output/progress/$pre\_$uID\_BOWTIE2_$sample.done"){
-	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2`;
-	    `/bin/mkdir -m 775 -p $output/intFiles/bowtie2/$sample`;
-	    ### express-recommended bowtie2 settings
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_BOWTIE2_$sample", cpu => "24", mem => "60", cluster_out => "$output/progress/$pre\_$uID\_BOWTIE2_$sample.log");
-	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $BOWTIE2/bowtie2 --all --maxins 600 --rdg 6,5 --rfg 6,5 --score-min L,-.6,-.4 --no-discordant --no-mixed --threads 24 -x $TRANS_INDEX_DEDUP $inReads -S $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
-	    `/bin/touch $output/progress/$pre\_$uID\_BOWTIE2_$sample.done`;
-	    $bowtie2j = "$pre\_$uID\_BOWTIE2_$sample";
-	    $ran_bowtie2 = 1;
-	}
-	
-	if(!-e "$output/progress/$pre\_$uID\_EXPRESS_$sample.done" || $ran_bowtie2){
-	    sleep(3);
-	    `/bin/mkdir -m 775 -p $output/transcript`;
-	    `/bin/mkdir -m 775 -p $output/transcript/express`;
-	    `/bin/mkdir -m 775 -p $output/transcript/express/$sample`;
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_EXPRESS_$sample", job_hold => "$bowtie2j", cpu => "5", mem => "15", cluster_out => "$output/progress/$pre\_$uID\_EXPRESS_$sample.log");
-	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $EXPRESS/express --output-dir $output/transcript/express/$sample --no-update-check $TRANS_FASTA_DEDUP $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
-	    `/bin/touch $output/progress/$pre\_$uID\_EXPRESS_$sample.done`;
-	}
-	
-	
-	my $ran_zcat3 = 0;
-	my @zcat3_jids = ();
-	my $kinReads = "$output/intFiles/$sample/$sample\_v3_R1.fastq";
-	if(!-e "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.done"){
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_ZCAT3_$sample\_v3_R1", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.log");
-	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/zcat $r1_gz_files1 ">$output/intFiles/$sample/$sample\_v3_R1.fastq"`;
-	    `/bin/touch $output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.done`;
-	    push @zcat3_jids, "$pre\_$uID\_ZCAT3_$sample\_v3_R1";
-	    $ran_zcat3 = 1;
-	}
-	
-	if($samp_pair{$sample} eq "PE"){
-	    $kinReads .= " $output/intFiles/$sample/$sample\_v3_R2.fastq";
-	    if(!-e "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.done"){
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_ZCAT3_$sample\_v3_R2", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.log");
+	if($express){
+	    my $inReads = "-1 $r1_gz_files2";	
+	    if($samp_pair{$sample} eq "PE"){
+		$inReads .= " -2 $r2_gz_files2";
+	    }
+	    
+	    my $ran_bowtie2 = 0;
+	    my $bowtie2j = '';
+	    if(!-e "$output/progress/$pre\_$uID\_BOWTIE2_$sample.done"){
+		`/bin/mkdir -m 775 -p $output/intFiles/bowtie2`;
+		`/bin/mkdir -m 775 -p $output/intFiles/bowtie2/$sample`;
+		### express-recommended bowtie2 settings
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_BOWTIE2_$sample", cpu => "24", mem => "60", cluster_out => "$output/progress/$pre\_$uID\_BOWTIE2_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/zcat $r2_gz_files1 ">$output/intFiles/$sample/$sample\_v3_R2.fastq"`;
-		`/bin/touch $output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.done`;
-		push @zcat3_jids, "$pre\_$uID\_ZCAT3_$sample\_v3_R2";
-		$ran_zcat3 = 1;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $BOWTIE2/bowtie2 --all --maxins 600 --rdg 6,5 --rfg 6,5 --score-min L,-.6,-.4 --no-discordant --no-mixed --threads 24 -x $TRANS_INDEX_DEDUP $inReads -S $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
+		`/bin/touch $output/progress/$pre\_$uID\_BOWTIE2_$sample.done`;
+		$bowtie2j = "$pre\_$uID\_BOWTIE2_$sample";
+		$ran_bowtie2 = 1;
+	    }
+	    
+	    if(!-e "$output/progress/$pre\_$uID\_EXPRESS_$sample.done" || $ran_bowtie2){
+		sleep(3);
+		`/bin/mkdir -m 775 -p $output/transcript/counts`;
+		`/bin/mkdir -m 775 -p $output/transcript/counts/express`;
+		`/bin/mkdir -m 775 -p $output/transcript/counts/express/$sample`;
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_EXPRESS_$sample", job_hold => "$bowtie2j", cpu => "5", mem => "15", cluster_out => "$output/progress/$pre\_$uID\_EXPRESS_$sample.log");
+		my $standardParams = Schedule::queuing(%stdParams);
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $EXPRESS/express --output-dir $output/transcript/counts/express/$sample --no-update-check $TRANS_FASTA_DEDUP $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
+		`/bin/touch $output/progress/$pre\_$uID\_EXPRESS_$sample.done`;
 	    }
 	}
+    
+	if($kallisto || $rsem){
+	    my $ran_zcat3 = 0;
+	    my @zcat3_jids = ();
+	    my $rsem_mode = '';
+	    my $kallisto_mode = '--single -l 250';
+	    my $kinReads = "$output/intFiles/$sample/$sample\_v3_R1.fastq";
+	    if(!-e "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.done"){
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_ZCAT3_$sample\_v3_R1", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.log");
+		my $standardParams = Schedule::queuing(%stdParams);
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/zcat $r1_gz_files1 ">$output/intFiles/$sample/$sample\_v3_R1.fastq"`;
+		`/bin/touch $output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R1.done`;
+		push @zcat3_jids, "$pre\_$uID\_ZCAT3_$sample\_v3_R1";
+		$ran_zcat3 = 1;
+	    }
 	    
-	my $zcat3j = join(",", @zcat3_jids);
-	if(!-e "$output/progress/$pre\_$uID\_KALLISTO_$sample.done" || $ran_zcat3){
-	    sleep(3);
-	    `/bin/mkdir -m 775 -p $output/transcript`;
-	    `/bin/mkdir -m 775 -p $output/transcript/kallisto`;
-	    `/bin/mkdir -m 775 -p $output/transcript/kallisto/$sample`;
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_KALLISTO_$sample", job_hold => "$zcat3j", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_KALLISTO_$sample.log");
-	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $KALLISTO/kallisto quant -i $KALLISTO_INDEX -o $output/transcript/kallisto/$sample -b 100 $kinReads`;
-	    `/bin/touch $output/progress/$pre\_$uID\_KALLISTO_$sample.done`;
+	    if($samp_pair{$sample} eq "PE"){
+		$rsem_mode = '--paired-end';
+		$kallisto_mode = '';
+		$kinReads .= " $output/intFiles/$sample/$sample\_v3_R2.fastq";
+		if(!-e "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.done"){
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_ZCAT3_$sample\_v3_R2", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.log");
+		    my $standardParams = Schedule::queuing(%stdParams);
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/zcat $r2_gz_files1 ">$output/intFiles/$sample/$sample\_v3_R2.fastq"`;
+		    `/bin/touch $output/progress/$pre\_$uID\_ZCAT3_$sample\_v3_R2.done`;
+		    push @zcat3_jids, "$pre\_$uID\_ZCAT3_$sample\_v3_R2";
+		    $ran_zcat3 = 1;
+		}
+	    }
+	    
+	    my $zcat3j = join(",", @zcat3_jids);
+
+	    if($kallisto){
+		if(!-e "$output/progress/$pre\_$uID\_KALLISTO_$sample.done" || $ran_zcat3){
+		    sleep(3);
+		    `/bin/mkdir -m 775 -p $output/transcript/counts`;
+		    `/bin/mkdir -m 775 -p $output/transcript/counts/kallisto`;
+		    `/bin/mkdir -m 775 -p $output/transcript/counts/kallisto/$sample`;
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_KALLISTO_$sample", job_hold => "$zcat3j", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_KALLISTO_$sample.log");
+		    my $standardParams = Schedule::queuing(%stdParams);
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $KALLISTO/kallisto quant -i $KALLISTO_INDEX -o $output/transcript/counts/kallisto/$sample -b 100 $kallisto_mode $kinReads`;
+		    `/bin/touch $output/progress/$pre\_$uID\_KALLISTO_$sample.done`;
+		    push @kallisto_jids, "$pre\_$uID\_KALLISTO_$sample";
+		    $ran_kallisto = 1;
+		}
+	    }
+
+	    if($rsem){
+		my $ran_rsem_exp = 0;
+		my $rsemj = '';
+		if(!-e "$output/progress/$pre\_$uID\_RSEM_$sample.done" || $ran_zcat3){
+		    sleep(3);
+		    `/bin/mkdir -m 775 -p $output/transcript/counts`;
+		    `/bin/mkdir -m 775 -p $output/transcript/counts/rsem`;
+		    `/bin/mkdir -m 775 -p $output/transcript/counts/rsem/$sample`;
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEM_$sample", job_hold => "$zcat3j", cpu => "8", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_RSEM_$sample.log");
+		    my $standardParams = Schedule::queuing(%stdParams);
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-calculate-expression -p 8 $rsem_mode --star --star-path $STAR --estimate-rspd --append-names --output-genome-bam $kinReads $RSEM_DB $output/transcript/counts/rsem/$sample/$sample\_RSEM`;
+		    `/bin/touch $output/progress/$pre\_$uID\_RSEM_$sample.done`;
+		    $rsemj = "$pre\_$uID\_RSEM_$sample";
+		    push @rce_jids, "$pre\_$uID\_RSEM_$sample";
+		    $ran_rsem_exp = 1;
+		    $ran_rceg = 1;
+		}
+		
+		`/bin/mkdir -m 775 -p $output/metrics/RSEM`;
+		if(!-e "$output/progress/$pre\_$uID\_RSEM_PLOT_$sample.done" || $ran_rsem_exp){
+		    sleep(3);
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEM_PLOT_$sample", job_hold => "$rsemj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEM_PLOT_$sample.log");
+		    my $standardParams = Schedule::queuing(%stdParams);
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-plot-model $output/transcript/counts/rsem/$sample/$sample\_RSEM $output/metrics/RSEM/$pre\_$sample\_RSEM.pdf`;
+		    `/bin/touch $output/progress/$pre\_$uID\_RSEM_PLOT_$sample.done`;
+		}		
+	    }
 	}
     }
 }
@@ -1273,7 +1361,7 @@ if($star){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_HTSEQ_STAR", job_hold => "$starhtseqj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_HTSEQ_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_gene .htseq_count $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt $geneNameConversion`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/gene/counts_gene .htseq_count $output/gene/counts_gene/$pre\_htseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_HTSEQ_STAR.done`;
 	    $shmatrixj = "$pre\_$uID\_MATRIX_HTSEQ_STAR";
 	    $ran_shmatrix = 1;
@@ -1285,7 +1373,7 @@ if($star){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_DEX_STAR", job_hold => "$stardexseqj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_DEX_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_exon .dexseq_count $curDir/$output/counts_exon/$pre\_dexseq_all_samples.txt $geneNameConversion`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/exon/counts_exon .dexseq_count $output/exon/counts_exon/$pre\_dexseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_DEX_STAR.done`;
 	}
     }
@@ -1322,7 +1410,7 @@ if($tophat){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_HTSEQ_TOPHAT", job_hold => "$tophathtseqj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_HTSEQ_TOPHAT.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_gene/tophat2 .htseq_count $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt $geneNameConversion`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/gene/counts_gene/tophat2 .htseq_count $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_HTSEQ_TOPHAT.done`;
 	    $thmatrixj = "$pre\_$uID\_MATRIX_HTSEQ_TOPHAT";
 	    $ran_thmatrix = 1;
@@ -1335,7 +1423,7 @@ if($tophat){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_DEX_TOPHAT", job_hold => "$tophatdexseqj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_DEX_TOPHAT.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $curDir/$output/counts_exon/tophat2 .dexseq_count $curDir/$output/counts_exon/tophat2/$pre\_dexseq_all_samples.txt $geneNameConversion`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/exon/counts_exon/tophat2 .dexseq_count $output/exon/counts_exon/tophat2/$pre\_dexseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_DEX_TOPHAT.done`;
 	}
     }
@@ -1362,16 +1450,46 @@ if($tophat){
     }
 }
 
+
+my $ran_kmatrix = 0;
+my $kmatrixj = '';
+if($kallisto){
+    my $kallistoj = join(",", @kallisto_jids);
+    if(!-e "$output/progress/$pre\_$uID\_MATRIX_KALLISTO.done" || $ran_kallisto){
+	sleep(3);
+	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_KALLISTO", job_hold => "$kallistoj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_KALLISTO.log");
+	my $standardParams = Schedule::queuing(%stdParams);
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeKallistoAbundance.py $output/transcript/counts/kallisto abundance.txt $output/transcript/counts/kallisto/$pre\_kallisto_all_genes.txt`;
+	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_KALLISTO.done`;
+	$kmatrixj = "$pre\_$uID\_MATRIX_KALLISTO";
+	$ran_kmatrix = 1;
+    }
+}
+
+my $ran_rmatrix = 0;
+my $rmatrixj = '';
+if($rsem){
+    my $rsemj = join(",", @rce_jids);
+    if(!-e "$output/progress/$pre\_$uID\_MATRIX_RSEM.done" || $ran_rceg){
+	sleep(3);
+	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_RSEM", job_hold => "$rsemj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_RSEM.log");
+	my $standardParams = Schedule::queuing(%stdParams);
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeRSEMcounts.py $output/transcript/counts/rsem isoforms.results $output/transcript/counts/rsem/$pre\_rsem_all_genes.txt `;
+	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_RSEM.done`;
+	$rmatrixj = "$pre\_$uID\_MATRIX_RSEM";
+	$ran_rmatrix = 1;
+    }
+}
+
 ### SAMPLE COMMAND
 ####qsub -N Proj_4226_DESeq ~/bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript ~/RNAseqPipe/trunk/bin/RunDE.R "\"proj.id='4226'\" \"output.dir='/ifs/data/byrne/rnaseq/Proj_4226'\" \"counts.file='Proj_4226_ALL_samples.htseq.count'\" \"key.file='/ifs/data/byrne/rnaseq/Proj_4226/sampleKey.txt'\" \"comps=c('hi - lo')\""
 
-
 if($deseq){    
     if($star){
-	`/bin/mkdir -m 775 -p $output/differentialExpression_gene`;
-	`/bin/mkdir -m 775 -p $output/clustering`;
-	`/bin/mkdir -m 775 -p $output/gsa`;
-	###`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD $R/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$curDir/$output/differentialExpression_gene'\\\"\" \"\\\"counts.file='$curDir/$output/counts_gene/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$curDir/$output/counts_gene'\\\"\" \"\\\"clustering.dir='$curDir/$output/clustering'\\\"\" \"\\\"gsa.dir='$curDir/$output/gsa'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
+	`/bin/mkdir -m 775 -p $output/gene/differentialExpression_gene`;
+	`/bin/mkdir -m 775 -p $output/gene/clustering`;
+	`/bin/mkdir -m 775 -p $output/gene/gsa`;
+	###`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD $R/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$output/differentialExpression_gene'\\\"\" \"\\\"counts.file='$output/gene/counts_gene/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$output/gene/counts_gene'\\\"\" \"\\\"clustering.dir='$output/clustering'\\\"\" \"\\\"gsa.dir='$output/gsa'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_STAR.done" || $ran_shmatrix){
             my $reps = '';
             if($no_replicates){
@@ -1380,22 +1498,53 @@ if($deseq){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $curDir/$output/differentialExpression_gene -count_out $curDir/$output/counts_gene -cluster_out $curDir/$output/clustering -gsa_out $curDir/$output/gsa -config $config -bin $Bin -species $species -counts $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering -gsa_out $output/gene/gsa -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
 	}
     }
 
     if($tophat){
-	`/bin/mkdir -m 775 -p $output/differentialExpression_gene/tophat2`;
-	`/bin/mkdir -m 775 -p $output/clustering/tophat2`;
-	`/bin/mkdir -m 775 -p $output/gsa/tophat2`;
+	`/bin/mkdir -m 775 -p $output/gene/differentialExpression_gene/tophat2`;
+	`/bin/mkdir -m 775 -p $output/gene/clustering/tophat2`;
+	`/bin/mkdir -m 775 -p $output/gene/gsa/tophat2`;
 
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_TOPHAT.done" || $ran_thmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_TOPHAT", job_hold => "$thmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_TOPHAT.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $curDir/$output/differentialExpression_gene/tophat2 -count_out $curDir/$output/counts_gene/tophat2 -cluster_out $curDir/$output/clustering/tophat2 -gsa_out $curDir/$output/gsa/tophat2 -config $config -bin $Bin -species $species -counts $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene/tophat2 -count_out $output/gene/counts_gene/tophat2 -cluster_out $output/gene/clustering/tophat2 -gsa_out $output/gene/gsa/tophat2 -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_TOPHAT.done`;
+	}
+    }
+
+
+    if($kallisto){
+	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans`;
+	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans/kallisto`;
+	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
+	`/bin/mkdir -m 775 -p $output/transcript/clustering/kallisto`;
+	
+	if(!-e "$output/progress/$pre\_$uID\_DESeq_KALLISTO.done" || $ran_kmatrix){
+	    sleep(3);
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_KALLISTO.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/differentialExpression_trans/kallisto -count_out $output/transcript/counts/kallisto -cluster_out $output/transcript/clustering/kallisto -config $config -bin $Bin -species $species -counts $output/transcript/counts/kallisto/$pre\_kallisto_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_KALLISTO.done`;
+	}
+    }
+
+    if($rsem){
+	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans`;
+	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans/rsem`;
+	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
+	`/bin/mkdir -m 775 -p $output/transcript/clustering/rsem`;
+	
+	if(!-e "$output/progress/$pre\_$uID\_DESeq_RSEM.done" || $ran_rmatrix){
+	    sleep(3);
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_RSEM.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/differentialExpression_trans/rsem -count_out $output/transcript/counts/rsem -cluster_out $output/transcript/clustering/rsem -config $config -bin $Bin -species $species -counts $output/transcript/counts/rsem/$pre\_rsem_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_RSEM.done`;
 	}
     }
 }
@@ -1406,7 +1555,7 @@ else{
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $curDir/$output/counts_gene -cluster_out $curDir/$output/clustering -config $config -bin $Bin -counts $curDir/$output/counts_gene/$pre\_htseq_all_samples.txt -clusterOnly`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/gene/counts_gene -cluster_out $output/clustering -config $config -bin $Bin -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -clusterOnly`;
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_STAR.done`;
 	}
     }
@@ -1417,11 +1566,34 @@ else{
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "pre\_$uID\_CLUSTERING_TOPHAT", job_hold => "$thmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/pre\_$uID\_CLUSTERING_TOPHAT.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $curDir/$output/counts_gene/tophat2 -cluster_out $curDir/$output/clustering/tophat2 -config $config -bin $Bin -counts $curDir/$output/counts_gene/tophat2/$pre\_htseq_all_samples.txt -clusterOnly`;	    
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/gene/counts_gene/tophat2 -cluster_out $output/clustering/tophat2 -config $config -bin $Bin -counts $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt -clusterOnly`;	    
+	}
+    }
+
+    if($kallisto){
+	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
+	`/bin/mkdir -m 775 -p $output/transcript/clustering/kallisto`;	
+	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done" || $ran_kmatrix){
+	    sleep(3);
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/counts/kallisto -cluster_out $output/transcript/clustering/kallisto -config $config -bin $Bin -counts $output/transcript/counts/kallisto/$pre\_merged_kallisto_counts.txt -clusterOnly`;
+	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done`;
+	}
+    }
+
+    if($rsem){
+	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
+	`/bin/mkdir -m 775 -p $output/transcript/clustering/rsem`;	
+	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.done" || $ran_rmatrix){
+	    sleep(3);
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.log");
+	    my $standardParams = Schedule::queuing(%stdParams);
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/counts/rsem -cluster_out $output/transcript/clustering/rsem -config $config -bin $Bin -counts $output/transcript/counts/rsem/$pre\_merged_rsem_counts.txt -clusterOnly`;
+	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_RSEM.done`;
 	}
     }
 }
-
 
 if($r1adaptor){
     my $cagj = join(",", @cag_jids);
@@ -1479,6 +1651,8 @@ sub verifyConfig{
 	    if(!-e "$conf[1]/samtools"){
 		die "CAN'T FIND samtools IN $conf[1] $!";
 	    }
+	    my $path_tmp = $ENV{'PATH'};
+	    $ENV{'PATH'} = "$conf[1]:$path_tmp";	    
 	}
 	elsif($conf[0] =~ /^star$/i){
 	    if(!-e "$conf[1]/STAR"){
@@ -1578,6 +1752,14 @@ sub verifyConfig{
 		die "CAN'T FIND R IN $conf[1] $!";
 	    }
 	    $R = $conf[1];
+	    my $path_tmp = $ENV{'PATH'};
+	    $ENV{'PATH'} = "$conf[1]:$path_tmp";
+	}
+	elsif($conf[0] =~ /rsem/i){
+	    if(!-e "$conf[1]/rsem-calculate-expression"){
+		die "CAN'T FIND rsem-calculate-expression IN $conf[1] $!";
+	    }
+	    $RSEM = $conf[1];
 	    my $path_tmp = $ENV{'PATH'};
 	    $ENV{'PATH'} = "$conf[1]:$path_tmp";
 	}

@@ -56,6 +56,12 @@ else{
     if($no_replicates){
         $reps = "no.replicates=TRUE";
     }
-    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"gsa.dir='$gsa_out'\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"\n";
-    `$R/Rscript $bin/RunDE.R "bin='$bin'" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "gsa.dir='$gsa_out'" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps"`;
+
+    my $run_gsa = "gsa.dir='$gsa_out'";
+    if(!$gsa_out){
+	$run_gsa = "GSA=FALSE";
+    }
+    
+    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"\n";
+    `$R/Rscript $bin/RunDE.R "bin='$bin'" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" \"$run_gsa\" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps"`;
 }
