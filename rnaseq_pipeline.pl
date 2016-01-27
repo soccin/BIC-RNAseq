@@ -84,7 +84,7 @@ if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
 	* SCHEDULER: currently support for SGE and LSF (REQUIRED)
 	* PRE: output prefix (default: TEMP)
-	* STANDARD: standard analysis - alignment, gene count, transcript count, counts normalization, and clustering
+	* STANDARD: standard analysis - star alignment, htseq gene count, rsem and kallisto transcript counts, counts normalization, and clustering
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
 	* R1ADAPTOR/R2ADAPTOR: if provided, will trim adaptor sequences; NOTE: if provided for only one end, will also assign it to the other end
@@ -473,6 +473,10 @@ if($standard){
     $htseq = 1;
     $kallisto = 1;
     $rsem = 1;
+}
+
+if($star && !$htseq && !$dexseq){
+    $htseq = 1;
 }
 
 if($allfusions){
@@ -1549,7 +1553,7 @@ if($deseq){
     }
 }
 else{
-    if($star){
+    if($star && $htseq){
 	`/bin/mkdir -m 775 -p $output/clustering`;
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_STAR.done" || $ran_shmatrix){
 	    sleep(3);
@@ -1560,7 +1564,7 @@ else{
 	}
     }
 
-    if($tophat){
+    if($tophat && $htseq){
 	`/bin/mkdir -m 775 -p $output/clustering/tophat2`;
 	if(!-e "$output/progress/pre\_$uID\_CLUSTERING_TOPHAT.done" || $ran_thmatrix){
 	    sleep(3);
@@ -1570,7 +1574,7 @@ else{
 	}
     }
 
-    if($kallisto){
+    if($kallisto && $htseq){
 	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
 	`/bin/mkdir -m 775 -p $output/transcript/clustering/kallisto`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done" || $ran_kmatrix){
@@ -1582,7 +1586,7 @@ else{
 	}
     }
 
-    if($rsem){
+    if($rsem && $htseq){
 	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
 	`/bin/mkdir -m 775 -p $output/transcript/clustering/rsem`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.done" || $ran_rmatrix){
