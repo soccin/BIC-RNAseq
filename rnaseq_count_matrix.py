@@ -27,13 +27,14 @@ def findFiles(rootDir,pattern):
     """
     filepaths = []
     pattern = '*'+pattern
-    for path, dirs, files in os.walk(os.path.abspath(rootDir)):
-        if fnmatch.filter(files, pattern):
-            for file in fnmatch.filter(files, pattern):
-                filepaths.append(os.path.join(path,file))
-        else:
-            if "Proj" in path.split("/")[-1] and "-" in path.split("/")[-1]:
-                print>>sys.stderr, "WARNING: No files matching pattern %s found in %s" %(pattern, path)
+    #for path, dirs, files in os.walk(os.path.abspath(rootDir)):
+    files = os.listdir(os.path.abspath(rootDir))
+    if fnmatch.filter(files, pattern):
+        for file in fnmatch.filter(files, pattern):
+            filepaths.append(os.path.join(rootDir,file))
+    else:
+        if "Proj" in rootDir.split("/")[-1] and "-" in rootDir.split("/")[-1]:
+            print>>sys.stderr, "WARNING: No files matching pattern %s found in %s" %(pattern, path)
 
     return filepaths
 
