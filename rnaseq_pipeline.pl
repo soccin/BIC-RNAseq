@@ -1343,12 +1343,12 @@ foreach my $sample (keys %samp_libs_run){
 		    $ran_rceg = 1;
 		}
 		
-		`/bin/mkdir -m 775 -p $output/metrics/RSEM`;
+		`/bin/mkdir -m 775 -p $output/metrics/rsem`;
 		if(!-e "$output/progress/$pre\_$uID\_RSEM_PLOT_$sample.done" || $ran_rsem_exp){
 		    sleep(3);
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEM_PLOT_$sample", job_hold => "$rsemj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEM_PLOT_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-plot-model $output/transcript/counts/rsem/$sample/$sample\_RSEM $output/metrics/RSEM/$pre\_$sample\_RSEM.pdf`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-plot-model $output/transcript/counts/rsem/$sample/$sample\_RSEM $output/metrics/rsem/$pre\_$sample\_RSEM.pdf`;
 		    `/bin/touch $output/progress/$pre\_$uID\_RSEM_PLOT_$sample.done`;
 		}		
 	    }
