@@ -47,7 +47,7 @@ def getSampleID(filepath,pattern):
     ## assuming dir structure is:
     ## [proj]/[results]/transcript/counts/rsem/[sample]/*isoforms.results
     dirs = filepath.split("/")
-    samp = dirs[dirs.index("rsem")+1]
+    samp = dirs[dirs.index("rsem")+2]
 
     return samp
 

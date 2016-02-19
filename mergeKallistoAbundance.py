@@ -47,7 +47,7 @@ def getSampleID(filepath,pattern):
     ## dir structure is:
     ## [proj]/[results]/transcript/kallisto/[sample]/abundance.txt
     dirs = filepath.split("/")
-    samp = dirs[dirs.index("kallisto")+1]
+    samp = dirs[dirs.index("kallisto")+2]
 
     return samp
 
