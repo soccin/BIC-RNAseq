@@ -1269,12 +1269,12 @@ foreach my $sample (keys %samp_libs_run){
 	    
 	    if(!-e "$output/progress/$pre\_$uID\_EXPRESS_$sample.done" || $ran_bowtie2){
 		sleep(3);
-		`/bin/mkdir -m 775 -p $output/transcript/counts`;
-		`/bin/mkdir -m 775 -p $output/transcript/counts/express`;
-		`/bin/mkdir -m 775 -p $output/transcript/counts/express/$sample`;
+		`/bin/mkdir -m 775 -p $output/transcript/express`;
+		`/bin/mkdir -m 775 -p $output/transcript/express/counts_trans`;
+		`/bin/mkdir -m 775 -p $output/transcript/express/counts_trans/$sample`;
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_EXPRESS_$sample", job_hold => "$bowtie2j", cpu => "5", mem => "15", cluster_out => "$output/progress/$pre\_$uID\_EXPRESS_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $EXPRESS/express --output-dir $output/transcript/counts/express/$sample --no-update-check $TRANS_FASTA_DEDUP $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $EXPRESS/express --output-dir $output/transcript/express/counts_trans/$sample --no-update-check $TRANS_FASTA_DEDUP $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
 		`/bin/touch $output/progress/$pre\_$uID\_EXPRESS_$sample.done`;
 	    }
 	}
@@ -1313,12 +1313,12 @@ foreach my $sample (keys %samp_libs_run){
 	    if($kallisto){
 		if(!-e "$output/progress/$pre\_$uID\_KALLISTO_$sample.done" || $ran_zcat3){
 		    sleep(3);
-		    `/bin/mkdir -m 775 -p $output/transcript/counts`;
-		    `/bin/mkdir -m 775 -p $output/transcript/counts/kallisto`;
-		    `/bin/mkdir -m 775 -p $output/transcript/counts/kallisto/$sample`;
+		    `/bin/mkdir -m 775 -p $output/transcript/kallisto`;
+		    `/bin/mkdir -m 775 -p $output/transcript/kallisto/counts_trans`;
+		    `/bin/mkdir -m 775 -p $output/transcript/kallisto/counts_trans/$sample`;
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_KALLISTO_$sample", job_hold => "$zcat3j", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_KALLISTO_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $KALLISTO/kallisto quant -i $KALLISTO_INDEX -o $output/transcript/counts/kallisto/$sample -b 100 $kallisto_mode $kinReads`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $KALLISTO/kallisto quant -i $KALLISTO_INDEX -o $output/transcript/kallisto/counts_trans/$sample -b 100 $kallisto_mode $kinReads`;
 		    `/bin/touch $output/progress/$pre\_$uID\_KALLISTO_$sample.done`;
 		    push @kallisto_jids, "$pre\_$uID\_KALLISTO_$sample";
 		    $ran_kallisto = 1;
@@ -1330,12 +1330,12 @@ foreach my $sample (keys %samp_libs_run){
 		my $rsemj = '';
 		if(!-e "$output/progress/$pre\_$uID\_RSEM_$sample.done" || $ran_zcat3){
 		    sleep(3);
-		    `/bin/mkdir -m 775 -p $output/transcript/counts`;
-		    `/bin/mkdir -m 775 -p $output/transcript/counts/rsem`;
-		    `/bin/mkdir -m 775 -p $output/transcript/counts/rsem/$sample`;
+		    `/bin/mkdir -m 775 -p $output/transcript/rsem`;
+		    `/bin/mkdir -m 775 -p $output/transcript/rsem/counts_trans`;
+		    `/bin/mkdir -m 775 -p $output/transcript/rsem/counts_trans/$sample`;
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEM_$sample", job_hold => "$zcat3j", cpu => "8", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_RSEM_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-calculate-expression -p 8 $rsem_mode --star --star-path $STAR --estimate-rspd --append-names --output-genome-bam $kinReads $RSEM_DB $output/transcript/counts/rsem/$sample/$sample\_RSEM`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-calculate-expression -p 8 $rsem_mode --star --star-path $STAR --estimate-rspd --append-names --output-genome-bam $kinReads $RSEM_DB $output/transcript/rsem/counts_trans/$sample/$sample\_RSEM`;
 		    `/bin/touch $output/progress/$pre\_$uID\_RSEM_$sample.done`;
 		    $rsemj = "$pre\_$uID\_RSEM_$sample";
 		    push @rce_jids, "$pre\_$uID\_RSEM_$sample";
@@ -1348,7 +1348,7 @@ foreach my $sample (keys %samp_libs_run){
 		    sleep(3);
 		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEM_PLOT_$sample", job_hold => "$rsemj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEM_PLOT_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
-		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-plot-model $output/transcript/counts/rsem/$sample/$sample\_RSEM $output/metrics/rsem/$pre\_$sample\_RSEM.pdf`;
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-plot-model $output/transcript/rsem/counts_trans/$sample/$sample\_RSEM $output/metrics/rsem/$pre\_$sample\_RSEM.pdf`;
 		    `/bin/touch $output/progress/$pre\_$uID\_RSEM_PLOT_$sample.done`;
 		}		
 	    }
@@ -1463,7 +1463,7 @@ if($kallisto){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_KALLISTO", job_hold => "$kallistoj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_KALLISTO.log");
 	my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeKallistoAbundance.py $output/transcript/counts/kallisto abundance.txt $output/transcript/counts/kallisto/$pre\_kallisto_all_genes.txt`;
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeKallistoAbundance.py $output/transcript/kallisto/counts_trans abundance.txt $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_genes.txt`;
 	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_KALLISTO.done`;
 	$kmatrixj = "$pre\_$uID\_MATRIX_KALLISTO";
 	$ran_kmatrix = 1;
@@ -1478,7 +1478,7 @@ if($rsem){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_RSEM", job_hold => "$rsemj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_RSEM.log");
 	my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeRSEMcounts.py $output/transcript/counts/rsem isoforms.results $output/transcript/counts/rsem/$pre\_rsem_all_genes.txt `;
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeRSEMcounts.py $output/transcript/rsem/counts_trans isoforms.results $output/transcript/rsem/counts_trans/$pre\_rsem_all_genes.txt `;
 	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_RSEM.done`;
 	$rmatrixj = "$pre\_$uID\_MATRIX_RSEM";
 	$ran_rmatrix = 1;
@@ -1524,30 +1524,30 @@ if($deseq){
 
     if($kallisto){
 	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans`;
-	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans/kallisto`;
+	`/bin/mkdir -m 775 -p $output/transcript/kallisto/differentialExpression_trans`;
 	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
-	`/bin/mkdir -m 775 -p $output/transcript/clustering/kallisto`;
+	`/bin/mkdir -m 775 -p $output/transcript/kallisto/clustering`;
 	
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_KALLISTO.done" || $ran_kmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_KALLISTO.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/differentialExpression_trans/kallisto -count_out $output/transcript/counts/kallisto -cluster_out $output/transcript/clustering/kallisto -config $config -bin $Bin -species $species -counts $output/transcript/counts/kallisto/$pre\_kallisto_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/kallisto/differentialExpression_trans -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -species $species -counts $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_KALLISTO.done`;
 	}
     }
 
     if($rsem){
 	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans`;
-	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans/rsem`;
+	`/bin/mkdir -m 775 -p $output/transcript/rsem/differentialExpression_trans`;
 	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
-	`/bin/mkdir -m 775 -p $output/transcript/clustering/rsem`;
+	`/bin/mkdir -m 775 -p $output/transcript/rsem/clustering`;
 	
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_RSEM.done" || $ran_rmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_RSEM.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/differentialExpression_trans/rsem -count_out $output/transcript/counts/rsem -cluster_out $output/transcript/clustering/rsem -config $config -bin $Bin -species $species -counts $output/transcript/counts/rsem/$pre\_rsem_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/rsem/differentialExpression_trans -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -species $species -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_RSEM.done`;
 	}
     }
@@ -1576,24 +1576,24 @@ else{
 
     if($kallisto && $htseq){
 	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
-	`/bin/mkdir -m 775 -p $output/transcript/clustering/kallisto`;	
+	`/bin/mkdir -m 775 -p $output/transcript/kallisto/clustering`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done" || $ran_kmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/counts/kallisto -cluster_out $output/transcript/clustering/kallisto -config $config -bin $Bin -counts $output/transcript/counts/kallisto/$pre\_merged_kallisto_counts.txt -clusterOnly`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -counts $output/transcript/kallisto/counts_trans/$pre\_merged_kallisto_counts.txt -clusterOnly`;
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done`;
 	}
     }
 
     if($rsem && $htseq){
 	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
-	`/bin/mkdir -m 775 -p $output/transcript/clustering/rsem`;	
+	`/bin/mkdir -m 775 -p $output/transcript/rsem/clustering`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.done" || $ran_rmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/counts/rsem -cluster_out $output/transcript/clustering/rsem -config $config -bin $Bin -counts $output/transcript/counts/rsem/$pre\_merged_rsem_counts.txt -clusterOnly`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -counts $output/transcript/rsem/counts_trans/$pre\_merged_rsem_counts.txt -clusterOnly`;
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_RSEM.done`;
 	}
     }
