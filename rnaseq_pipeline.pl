@@ -1009,9 +1009,9 @@ foreach my $sample (keys %samp_libs_run){
 	if($cufflinks){
 	    `/bin/mkdir -m 775 -p $output/cufflinks`;
 	    `/bin/mkdir -m 775 -p $output/cufflinks/$sample`;
-	    if(!-e "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done" || $ran_sp){
+	    if(!-e "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done" || $ran_staraddrg){
 		sleep(3);
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUFFLINKS_STAR_$sample", job_hold => "$spj", cpu => "5", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.log");
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUFFLINKS_STAR_$sample", job_hold => "$staraddrgj", cpu => "5", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/gene/alignments/$pre\_$sample\.bam`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done`;
