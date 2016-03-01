@@ -1472,7 +1472,7 @@ if($kallisto){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_KALLISTO", job_hold => "$kallistoj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_KALLISTO.log");
 	my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeKallistoAbundance.py $output/transcript/kallisto/counts_trans abundance.txt $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_genes.txt`;
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeKallistoAbundance.py $output/transcript/kallisto/counts_trans abundance.txt $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_trans.txt`;
 	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_KALLISTO.done`;
 	$kmatrixj = "$pre\_$uID\_MATRIX_KALLISTO";
 	$ran_kmatrix = 1;
@@ -1487,7 +1487,7 @@ if($rsem){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MATRIX_RSEM", job_hold => "$rsemj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MATRIX_RSEM.log");
 	my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeRSEMcounts.py $output/transcript/rsem/counts_trans isoforms.results $output/transcript/rsem/counts_trans/$pre\_rsem_all_genes.txt `;
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeRSEMcounts.py $output/transcript/rsem/counts_trans isoforms.results $output/transcript/rsem/counts_trans/$pre\_rsem_all_trans.txt`;
 	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_RSEM.done`;
 	$rmatrixj = "$pre\_$uID\_MATRIX_RSEM";
 	$ran_rmatrix = 1;
@@ -1539,7 +1539,7 @@ if($deseq){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_KALLISTO.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/kallisto/differentialExpression_trans -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -species $species -counts $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/kallisto/differentialExpression_trans -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -species $species -counts $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_trans.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_KALLISTO.done`;
 	}
     }
@@ -1552,7 +1552,7 @@ if($deseq){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_RSEM.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/rsem/differentialExpression_trans -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -species $species -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_genes.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/rsem/differentialExpression_trans -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -species $species -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_trans.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_RSEM.done`;
 	}
     }
