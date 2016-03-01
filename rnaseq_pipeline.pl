@@ -560,7 +560,6 @@ elsif($strand =~ /reverse/i){
 `/bin/mkdir -m 775 -p $output/intFiles`; 
 `/bin/mkdir -m 775 -p $output/progress`;
 `/bin/mkdir -m 775 -p $output/gene`;
-`/bin/mkdir -m 775 -p $output/transcript`;
 `/bin/mkdir -m 775 -p $output/gene/alignments`;
 `/bin/mkdir -m 775 -p $output/metrics`;
 `/bin/mkdir -m 775 -p $output/metrics/crm`;
@@ -1533,9 +1532,7 @@ if($deseq){
 
 
     if($kallisto){
-	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans`;
 	`/bin/mkdir -m 775 -p $output/transcript/kallisto/differentialExpression_trans`;
-	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
 	`/bin/mkdir -m 775 -p $output/transcript/kallisto/clustering`;
 	
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_KALLISTO.done" || $ran_kmatrix){
@@ -1548,9 +1545,7 @@ if($deseq){
     }
 
     if($rsem){
-	`/bin/mkdir -m 775 -p $output/transcript/differentialExpression_trans`;
 	`/bin/mkdir -m 775 -p $output/transcript/rsem/differentialExpression_trans`;
-	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
 	`/bin/mkdir -m 775 -p $output/transcript/rsem/clustering`;
 	
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_RSEM.done" || $ran_rmatrix){
@@ -1564,28 +1559,27 @@ if($deseq){
 }
 else{
     if($star && $htseq){
-	`/bin/mkdir -m 775 -p $output/clustering`;
+	`/bin/mkdir -m 775 -p $output/gene/clustering`;
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_STAR.done" || $ran_shmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/gene/counts_gene -cluster_out $output/clustering -config $config -bin $Bin -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -clusterOnly`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering -config $config -bin $Bin -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -clusterOnly`;
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_STAR.done`;
 	}
     }
 
     if($tophat && $htseq){
-	`/bin/mkdir -m 775 -p $output/clustering/tophat2`;
+	`/bin/mkdir -m 775 -p $output/gene/clustering/tophat2`;
 	if(!-e "$output/progress/pre\_$uID\_CLUSTERING_TOPHAT.done" || $ran_thmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "pre\_$uID\_CLUSTERING_TOPHAT", job_hold => "$thmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/pre\_$uID\_CLUSTERING_TOPHAT.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/gene/counts_gene/tophat2 -cluster_out $output/clustering/tophat2 -config $config -bin $Bin -counts $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt -clusterOnly`;	    
+	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/gene/counts_gene/tophat2 -cluster_out $output/gene/clustering/tophat2 -config $config -bin $Bin -counts $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt -clusterOnly`;	    
 	}
     }
 
     if($kallisto && $htseq){
-	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
 	`/bin/mkdir -m 775 -p $output/transcript/kallisto/clustering`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done" || $ran_kmatrix){
 	    sleep(3);
@@ -1597,7 +1591,6 @@ else{
     }
 
     if($rsem && $htseq){
-	`/bin/mkdir -m 775 -p $output/transcript/clustering`;
 	`/bin/mkdir -m 775 -p $output/transcript/rsem/clustering`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.done" || $ran_rmatrix){
 	    sleep(3);
