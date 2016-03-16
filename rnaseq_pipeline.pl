@@ -435,7 +435,25 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang74';
     }
 }
-elsif($species =~ /zebrafish|zv9/i){
+elsif($species =~ /zebrafish|zv10/i){
+    $species = 'zv10';
+    $REF_SEQ = '/ifs/depot/assemblies/D.rerio/GRCz10/GRCz10.fasta';
+    $GTF = "$Bin/data/GRCz10.gtf";
+    if($r1adaptor){
+        $starDB = '/ifs/depot/assemblies/D.rerio/GRCz10/index/star/2.5.0a/ensembl/v83/overhang49';
+    } else {
+        $starDB = '/ifs/depot/assemblies/D.rerio/GRCz10/index/star/2.5.0a/ensembl/v83/overhang74';
+    }
+    $chrSplits = '/ifs/depot/assemblies/D.rerio/GRCz10/chromosomes';
+    $geneNameConversion = "$Bin/data/zv10EnsemblIDtoGeneName.txt";
+    $TRANS_INDEX = '';
+    $TRANS_INDEX_DEDUP = '';
+    $TRANS_FASTA_DEDUP = '';
+    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_zv10.interval_file";
+    $REF_FLAT = "$Bin/data/refFlat__zv10.txt.gz";
+    $KALLISTO_INDEX = '';
+}
+elsif($species =~ /zv9/i){
     $species = 'zv9';
     $REF_SEQ = '/ifs/depot/assemblies/D.rerio/zv9/zv9.fasta';
     $GTF = "$Bin/data/zv9.gtf";
@@ -475,7 +493,6 @@ elsif($species =~ /fly|dm3/i){
     else{
         $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang74'; 
     }
-
 }
 
 if($standard){
