@@ -451,6 +451,7 @@ elsif($species =~ /zebrafish|zv10/i){
     $TRANS_FASTA_DEDUP = '';
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_zv10.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__zv10.txt.gz";
+    $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/zv10/star/zv10_v83_ensembl';
     $KALLISTO_INDEX = '';
 }
 elsif($species =~ /zv9/i){
