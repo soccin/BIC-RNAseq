@@ -111,8 +111,8 @@ if($output !~ /^\//){
     $output = "$curDir/$output";
 }
 
-if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|dm3|fly/i){
-    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), or zebrafish (zv9)";
+if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|dm3|fly/i){
+    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), or zebrafish (zv9/zv10)";
 }
 
 if($r1adaptor){
