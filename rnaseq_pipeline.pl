@@ -1585,7 +1585,7 @@ else{
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -counts $output/transcript/kallisto/counts_trans/$pre\_merged_kallisto_counts.txt -clusterOnly`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -counts $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_trans.txt -clusterOnly`;
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done`;
 	}
     }
@@ -1596,7 +1596,7 @@ else{
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CLUSTERING_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -counts $output/transcript/rsem/counts_trans/$pre\_merged_rsem_counts.txt -clusterOnly`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_trans.txt -clusterOnly`;
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_RSEM.done`;
 	}
     }
