@@ -1261,6 +1261,15 @@ foreach my $sample (keys %samp_libs_run){
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $Bin/MergeFusion $mergeFusions --out $output/fusion/$pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
 		`/bin/touch $output/progress/$pre\_$uID\_MERGE_FUSION_$sample.done`;
 	    }
+
+
+            if(!-e "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.done" || $ran_fusion){
+                my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RANK_FUSION_$sample", job_hold => "$pre\_$uID\_MERGE_FUSION_$sample", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.log");
+                my $standardParams = Schedule::queuing(%stdParams);
+                `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/FusionMetaCaller.R $output/fusion/$pre\_merged_fusions_$sample\.txt $output/fusion/$pre\_merged_fusions_$sample\_ranked\.txt`;
+                `/bin/touch $output/progress/$pre\_$uID\_RANK_FUSION_$sample.done`;
+            }
+
 	}
 	else{
 	    my @currentTime = &getTime();
