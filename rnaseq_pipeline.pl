@@ -111,8 +111,8 @@ if($output !~ /^\//){
     $output = "$curDir/$output";
 }
 
-if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|dm3|fly/i){
-    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), or zebrafish (zv9/zv10)";
+if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|dm3|fly|WBcel235/i){
+    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), C.elegans (WBcel235) or zebrafish (zv9/zv10)";
 }
 
 if($r1adaptor){
@@ -494,7 +494,41 @@ elsif($species =~ /fly|dm3/i){
     else{
         $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang74'; 
     }
+    if($r1adaptor){
+        $starDB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/star/2.4.1d/ensembl/v20151123/overhang49';
+    }
+    else{
+        $starDB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/star/2.4.1d/ensembl/v20151123/overhang74';
+    }
 }
+elsif($species =~ /WBcel235/i){
+    $species = 'WBcel235';
+    $REF_SEQ = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/WBcel235.fasta';
+    $GTF = "$Bin/data/WBcel235/ensembl_WBcel235.gtf";
+    $DEXSEQ_GTF = '';
+    $CHIMERASCAN_INDEX = '';
+    $BOWTIE_INDEX = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/bowtie/1.1.1/WBcel235_bowtie';
+    $BOWTIE2_INDEX = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/bowtie/2.2.4/WBcel235_bowtie2';
+    $chrSplits = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/chromosomes';
+    $RIBOSOMAL_INTERVALS = "$Bin/data/WBcel235/ribosomal_WBcel235.interval_file";
+    $REF_FLAT = "$Bin/data/WBcel235/refFlat__ce11.txt.gz";
+    $TRANS_INDEX = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/bowtie/2.2.4/transcriptome/ensembl/v20151123/genes';
+    $TRANS_INDEX_DEDUP = '';
+    $TRANS_FASTA_DEDUP = '';
+    $geneNameConversion = "$Bin/data/WBcel235/WBcel235EnsemblIDToGeneName.txt";
+    $KALLISTO_INDEX = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/kallisto/v0.42.1/ensembl/v20151123/genes.gtf.fasta.idx';
+    $RSEM_DB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/rsem/1.2.25/star/2.4.1d/WBcel235_ensembl';
+    $STAR_FUSION_GENOME_LIB = '';
+    $CHIMERASCAN_FP_FILTER = '';
+
+    if($r1adaptor){
+        $starDB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/star/2.4.1d/ensembl/v20151123/overhang49';
+    }
+    else{
+        $starDB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/star/2.4.1d/ensembl/v20151123/overhang74';
+    }
+}
+
 
 if($standard){
     $star = 1;
