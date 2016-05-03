@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates, $rsem, $kallisto, $express, $standard);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $standard_transcript);
 
 $pre = 'TEMP';
 $output = "results";
@@ -62,7 +62,8 @@ GetOptions ('map=s' => \$map,
 	    'express' => \$express,
             'species=s' => \$species,
             'strand=s' => \$strand,
-            'standard' => \$standard,
+            'standard_gene' => \$standard_gene,
+            'standard_transcript|standard_trans' => \$standard_transcript,
             'lncrna' => \$lncrna,
  	    'output|out|o=s' => \$output,
 	    'r1adaptor=s' => \$r1adaptor,
@@ -84,7 +85,8 @@ if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
 	* SCHEDULER: currently support for SGE and LSF (REQUIRED)
 	* PRE: output prefix (default: TEMP)
-	* STANDARD: standard analysis - star alignment, htseq gene count, rsem and kallisto transcript counts, counts normalization, and clustering
+	* STANDARD_GENE: standard analysis - star alignment, htseq gene count, counts normalization, and clustering
+	* STANDARD_TRANSCRIPT: standard analysis - rsem transcript counts, counts normalization, and clustering
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
 	* R1ADAPTOR/R2ADAPTOR: if provided, will trim adaptor sequences; NOTE: if provided for only one end, will also assign it to the other end
@@ -156,8 +158,11 @@ if($r1adaptor){
 if($r2adaptor){
     $commandLine .= " -r2adaptor $r2adaptor";
 }
-if($standard){
-    $commandLine .= " -standard";
+if($standard_gene){
+    $commandLine .= " -standard_gene";
+}
+if($standard_transcript){
+    $commandLine .= " -standard_transcript";
 }
 if($star){
     $commandLine .= " -star";
@@ -530,10 +535,13 @@ elsif($species =~ /WBcel235/i){
 }
 
 
-if($standard){
+if($standard_gene){
     $star = 1;
     $htseq = 1;
-    $kallisto = 1;
+}
+
+if($standard_transcript){
+    ###$kallisto = 1;
     $rsem = 1;
 }
 
@@ -594,17 +602,23 @@ close MA;
 
 my $htseq_stranded = '';
 my $picard_strand_specificity = '';
+my $star_outSAMstrandField = ''; ### compatibility with cufflinks;
+my $cufflinks_lib_type = '';
 if($strand =~ /none/i){
     $htseq_stranded = 'no';
     $picard_strand_specificity = 'NONE';
+    $star_outSAMstrandField = '--outSAMstrandField intronMotif';
+    $cufflinks_lib_type = '--library-type fr-unstranded';
 }
 elsif($strand =~ /forward/i){
     $htseq_stranded = 'yes';
     $picard_strand_specificity = 'FIRST_READ_TRANSCRIPTION_STRAND';
+    $cufflinks_lib_type = '--library-type fr-firststrand';
 }
 elsif($strand =~ /reverse/i){
     $htseq_stranded = 'reverse';
     $picard_strand_specificity = 'SECOND_READ_TRANSCRIPTION_STRAND';
+    $cufflinks_lib_type = '--library-type fr-secondstrand';
 }
 
 
@@ -907,7 +921,7 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUFFLINKS_TOPHAT_$sample", job_hold => "$tophatj", cpu => "5", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CUFFLINKS_TOPHAT_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/tophat2/$sample $output/intFiles/tophat2/$sample/accepted_hits.bam`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check $cufflinks_lib_type -N -G $GTF -o $output/cufflinks/tophat2/$sample $output/intFiles/tophat2/$sample/accepted_hits.bam`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUFFLINKS_TOPHAT_$sample.done`;
 	    }
 	}
@@ -994,7 +1008,7 @@ foreach my $sample (keys %samp_libs_run){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_1PASS_$sample", job_hold => "$gzj", cpu => "12", mem => "40", cluster_out => "$output/progress/$pre\_$uID\_STAR_1PASS_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_1PASS_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_1PASS_ $star_outSAMstrandField --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
 	    `/bin/touch $output/progress/$pre\_$uID\_STAR_1PASS_$sample.done`;
 	    $star1pj = "$pre\_$uID\_STAR_1PASS_$sample";
 	    $ran_star1p = 1;
@@ -1037,7 +1051,7 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_2PASS_$sample", job_hold => "$sgg2j", cpu => "12", mem => "40", cluster_out => "$output/progress/$pre\_$uID\_STAR_2PASS_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $output/intFiles/$sample/star2passGG --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_2PASS_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $output/intFiles/$sample/star2passGG --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_2PASS_ $star_outSAMstrandField --outFilterIntronMotifs RemoveNoncanonical --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
 		`/bin/touch $output/progress/$pre\_$uID\_STAR_2PASS_$sample.done`;
 		$star2pj = "$pre\_$uID\_STAR_2PASS_$sample";
 		$ran_star2p = 1;
@@ -1074,7 +1088,7 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUFFLINKS_STAR_$sample", job_hold => "$staraddrgj", cpu => "5", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check -N -G $GTF -o $output/cufflinks/$sample $output/gene/alignments/$pre\_$sample\.bam`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check $cufflinks_lib_type -N -G $GTF -o $output/cufflinks/$sample $output/gene/alignments/$pre\_$sample\.bam`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done`;
 	    }
 	}
