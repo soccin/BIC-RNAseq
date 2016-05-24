@@ -30,12 +30,18 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $transcript, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $standard_transcript);
+my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript);
 
 $pre = 'TEMP';
 $output = "results";
 my $priority_project = "ngs";
 my $priority_group = "Pipeline";
+
+my $uID = `/usr/bin/id -u -n`;
+chomp $uID;
+
+my $email = "$uID\@cbio.mskcc.org";
+my $rsync = "/ifs/solres/$uID";
 
 GetOptions ('map=s' => \$map,
 	    'pre=s' => \$pre,
@@ -56,16 +62,19 @@ GetOptions ('map=s' => \$map,
 	    'defuse' => \$defuse,
 	    'fusioncatcher' => \$fusioncatcher,
 	    'allfusions' => \$allfusions,
-	    'transcript' => \$transcript,
 	    'kallisto' => \$kallisto,
 	    'rsem' => \$rsem,
 	    'express' => \$express,
             'species=s' => \$species,
             'strand=s' => \$strand,
             'standard_gene' => \$standard_gene,
+            'differential_gene|diff_gene' => \$differential_gene,
             'standard_transcript|standard_trans' => \$standard_transcript,
+            'differential_transcript|diff_trans' => \$differential_transcript,
             'lncrna' => \$lncrna,
  	    'output|out|o=s' => \$output,
+	    'rsync=s' => \$rsync,
+	    'email' => \$email,
 	    'r1adaptor=s' => \$r1adaptor,
 	    'r2adaptor=s' => \$r2adaptor,
  	    'scheduler=s' => \$scheduler,
@@ -85,10 +94,14 @@ if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
 	* SCHEDULER: currently support for SGE and LSF (REQUIRED)
 	* PRE: output prefix (default: TEMP)
-	* STANDARD_GENE: standard analysis - star alignment, htseq gene count, counts normalization, and clustering
-	* STANDARD_TRANSCRIPT: standard analysis - rsem transcript counts, counts normalization, and clustering
+	* STANDARD_GENE: standard analysis - star alignment, htseq gene count
+	* DIFFERENTIAL_GENE: differential gene analysis - star alignment, htseq gene count, deseq, counts normalization, clustering, and gsa
+	* STANDARD_TRANSCRIPT: standard analysis - rsem transcript counts
+	* DIFFERENTIAL_TRANSCRIPT: differential transcript analysis - rsem transcript counts, deseq, counts normalization, and clustering
 	* SAMPLEKEY: tab-delimited file listing sampleName in column A and condition in column B (if -deseq, REQUIRED)
 	* COMPARISONS: tab-delimited file listing the conditions to compare in columns A/B (if -deseq, REQUIRED)
+	* EMAIL: email to send notication of finished final job of pipeline (default: $uID\@cbio.mskcc.org)
+	* RSYNC:  path to rsync data for archive (default: /ifs/solres/$uID)
 	* R1ADAPTOR/R2ADAPTOR: if provided, will trim adaptor sequences; NOTE: if provided for only one end, will also assign it to the other end
 	* ALIGNERS SUPPORTED: star (-star), defaults to 2pass method unless -pass1 specified; tophat2 (-tophat); if no aligner specifed, will default to STAR
 	* ANALYSES SUPPORTED: cufflinks (-cufflinks); htseq (-htseq); dexseq (-dexseq); deseq (-deseq; must specify samplekey and comparisons); fusion callers chimerascan (-chimerascan), rna star (-star_fusion), mapsplice (-mapsplice), defuse (-defuse), fusioncatcher (-fusioncatcher); -allfusions will run all supported fusion detection programs; transcript analysis using express (-express), kallisto (-kallisto) and rsem (-rsem), and all (-transcript)
@@ -203,9 +216,6 @@ if($fusioncatcher){
 if($allfusions){
     $commandLine .= " -allfusions";
 }
-if($transcript){
-    $commandLine .= " -transcript";
-}
 if($kallisto){
     $commandLine .= " -kallisto";
 }
@@ -222,8 +232,15 @@ if($lncrna){
     $commandLine .= " -lncrna";
 }
 if($no_replicates){
-    $no_replicates .= " -no_replicates";
+    $commandLine .= " -no_replicates";
 }
+if($rsync){
+    $commandLine .= " -rsync $rsync";
+}
+if($email){
+    $commandLine .= " -email $email";
+}
+
 
 $commandLine.= " -priority_project $priority_project";
 $commandLine .= " -priority_group $priority_group";
@@ -309,9 +326,6 @@ my $R = '';
 my $RSEM = '';
 my $CUTADAPT = '';
 my $STAR_FUSION = '';
-
-my $uID = `/usr/bin/id -u -n`;
-chomp $uID;
 
 my %samp_libs_run = ();
 my $slr_count = 0;
@@ -540,10 +554,21 @@ if($standard_gene){
     $htseq = 1;
 }
 
+if($differential_gene){
+    $star = 1;
+    $htseq = 1;
+    $deseq = 1;
+}
+
 if($standard_transcript){
-    ###$kallisto = 1;
     $rsem = 1;
 }
+
+if($differential_transcript){
+    $rsem = 1;
+    $deseq = 1;
+}
+
 
 if($star && !$htseq && !$dexseq){
     $htseq = 1;
@@ -559,12 +584,6 @@ if($allfusions){
 
 if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
     $detectFusions = 1;
-}
-
-if($transcript){
-    $kallisto = 1;
-    $rsem = 1;
-    ###$express = 1;
 }
 
 if($comparisons || $samplekey){
@@ -633,6 +652,7 @@ elsif($strand =~ /reverse/i){
 my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
 my $additionalParams = Schedule::additionalParams(%addParams);
 
+my @syncJobs = ();
 open(IN, "$map") or die "Can't open $map $!";
 while(<IN>){
     chomp;
@@ -923,6 +943,7 @@ foreach my $sample (keys %samp_libs_run){
 		my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check $cufflinks_lib_type -N -G $GTF -o $output/cufflinks/tophat2/$sample $output/intFiles/tophat2/$sample/accepted_hits.bam`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUFFLINKS_TOPHAT_$sample.done`;
+		push @syncJobs, "$pre\_$uID\_CUFFLINKS_TOPHAT_$sample";
 	    }
 	}
 	
@@ -1090,6 +1111,7 @@ foreach my $sample (keys %samp_libs_run){
 		my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $CUFFLINKS/cufflinks -q -p 12 --no-update-check $cufflinks_lib_type -N -G $GTF -o $output/cufflinks/$sample $output/gene/alignments/$pre\_$sample\.bam`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done`;
+		push @syncJobs, "$pre\_$uID\_CUFFLINKS_STAR_$sample";
 	    }
 	}
 
@@ -1303,19 +1325,23 @@ foreach my $sample (keys %samp_libs_run){
 
 	    my $mergeFusions = join(" ", @fusions);
 	    my $fusionj = join(",", @fusion_jids);
+	    my $ran_merge_fusion = 0;
+	    my $merge_fusionj = '';
 	    if(!-e "$output/progress/$pre\_$uID\_MERGE_FUSION_$sample.done" || $ran_fusion){
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_FUSION_$sample", job_hold => "$fusionj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_FUSION_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $Bin/MergeFusion $mergeFusions --out $output/fusion/$pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
 		`/bin/touch $output/progress/$pre\_$uID\_MERGE_FUSION_$sample.done`;
+		$merge_fusionj = "$pre\_$uID\_MERGE_FUSION_$sample";
+		$ran_merge_fusion = 1;
 	    }
 
-
-            if(!-e "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.done" || $ran_fusion){
-                my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RANK_FUSION_$sample", job_hold => "$pre\_$uID\_MERGE_FUSION_$sample", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.log");
+            if(!-e "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.done" || $ran_merge_fusion){
+                my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RANK_FUSION_$sample", job_hold => "$merge_fusionj", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.log");
                 my $standardParams = Schedule::queuing(%stdParams);
                 `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/FusionMetaCaller.R $output/fusion/$pre\_merged_fusions_$sample\.txt $output/fusion/$pre\_merged_fusions_$sample\_ranked\.txt`;
                 `/bin/touch $output/progress/$pre\_$uID\_RANK_FUSION_$sample.done`;
+		push @syncJobs, "$pre\_$uID\_RANK_FUSION_$sample";
             }
 
 	}
@@ -1360,6 +1386,7 @@ foreach my $sample (keys %samp_libs_run){
 		my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $EXPRESS/express --output-dir $output/transcript/express/counts_trans/$sample --no-update-check $TRANS_FASTA_DEDUP $output/intFiles/bowtie2/$sample/$sample\_bowtie2.sam`;
 		`/bin/touch $output/progress/$pre\_$uID\_EXPRESS_$sample.done`;
+		push @syncJobs, "$pre\_$uID\_EXPRESS_$sample";
 	    }
 	}
     
@@ -1434,6 +1461,7 @@ foreach my $sample (keys %samp_libs_run){
 		    my $standardParams = Schedule::queuing(%stdParams);
 		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $RSEM/rsem-plot-model $output/transcript/rsem/counts_trans/$sample/$sample\_RSEM $output/metrics/rsem/$pre\_$sample\_RSEM.pdf`;
 		    `/bin/touch $output/progress/$pre\_$uID\_RSEM_PLOT_$sample.done`;
+		    push @syncJobs, "$pre\_$uID\_RSEM_PLOT_$sample";
 		}		
 	    }
 	}
@@ -1452,6 +1480,7 @@ if($star){
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/gene/counts_gene .htseq_count $output/gene/counts_gene/$pre\_htseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_HTSEQ_STAR.done`;
 	    $shmatrixj = "$pre\_$uID\_MATRIX_HTSEQ_STAR";
+	    push @syncJobs, "$pre\_$uID\_MATRIX_HTSEQ_STAR";
 	    $ran_shmatrix = 1;
 	}
     }
@@ -1463,6 +1492,7 @@ if($star){
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/exon/counts_exon .dexseq_count $output/exon/counts_exon/$pre\_dexseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_DEX_STAR.done`;
+	    push @syncJobs, "$pre\_$uID\_MATRIX_DEX_STAR";
 	}
     }
 
@@ -1475,6 +1505,7 @@ if($star){
 	my $standardParams = Schedule::queuing(%stdParams);
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $crmfiles ">$output/metrics/$pre\_CollectRnaSeqMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_CRM_STAR.done`;
+	push @syncJobs, "$pre\_$uID\_MERGE_CRM_STAR";
     }
 
     my $asmfiles = join(" ", @asm);
@@ -1486,6 +1517,7 @@ if($star){
 	my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $asmfiles ">$output/metrics/$pre\_AlignmentSummaryMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_ASM_STAR.done`;
+	push @syncJobs, "$pre\_$uID\_MERGE_ASM_STAR";
     }
 }
 
@@ -1501,6 +1533,7 @@ if($tophat){
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/gene/counts_gene/tophat2 .htseq_count $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_HTSEQ_TOPHAT.done`;
 	    $thmatrixj = "$pre\_$uID\_MATRIX_HTSEQ_TOPHAT";
+	    push @syncJobs, "$pre\_$uID\_MATRIX_HTSEQ_TOPHAT";
 	    $ran_thmatrix = 1;
 	}
     }
@@ -1513,6 +1546,7 @@ if($tophat){
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/rnaseq_count_matrix.py $output/exon/counts_exon/tophat2 .dexseq_count $output/exon/counts_exon/tophat2/$pre\_dexseq_all_samples.txt $geneNameConversion`;
 	    `/bin/touch $output/progress/$pre\_$uID\_MATRIX_DEX_TOPHAT.done`;
+	    push @syncJobs, "$pre\_$uID\_MATRIX_DEX_TOPHAT";
 	}
     }
 
@@ -1524,6 +1558,7 @@ if($tophat){
 	my $standardParams = Schedule::queuing(%stdParams);
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $crmfiles_tophat ">$output/metrics/tophat2/$pre\_CollectRnaSeqMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_CRM_TOPHAT.done`;
+	push @syncJobs, "$pre\_$uID\_MERGE_CRM_TOPHAT";
     }
 
     my $asmfiles_tophat = join(" ", @asm_tophat);
@@ -1535,6 +1570,7 @@ if($tophat){
 	my $standardParams = Schedule::queuing(%stdParams);
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $asmfiles_tophat ">$output/metrics/tophat2/$pre\_AlignmentSummaryMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_ASM_TOPHAT.done`;
+	push @syncJobs, "$pre\_$uID\_MERGE_ASM_TOPHAT";
     }
 }
 
@@ -1550,6 +1586,7 @@ if($kallisto){
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeKallistoAbundance.py $output/transcript/kallisto/counts_trans abundance.txt $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt`;
 	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_KALLISTO.done`;
 	$kmatrixj = "$pre\_$uID\_MATRIX_KALLISTO";
+	push @syncJobs, "$pre\_$uID\_MATRIX_KALLISTO";
 	$ran_kmatrix = 1;
     }
 }
@@ -1565,6 +1602,7 @@ if($rsem){
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeRSEMcounts.py $output/transcript/rsem/counts_trans isoforms.results $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt`;
 	`/bin/touch $output/progress/$pre\_$uID\_MATRIX_RSEM.done`;
 	$rmatrixj = "$pre\_$uID\_MATRIX_RSEM";
+	push @syncJobs, "$pre\_$uID\_MATRIX_RSEM";
 	$ran_rmatrix = 1;
     }
 }
@@ -1588,6 +1626,7 @@ if($deseq){
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering -gsa_out $output/gene/gsa -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
+	    push @syncJobs, "$pre\_$uID\_DESeq_STAR";
 	}
     }
 
@@ -1602,6 +1641,7 @@ if($deseq){
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene/tophat2 -count_out $output/gene/counts_gene/tophat2 -cluster_out $output/gene/clustering/tophat2 -gsa_out $output/gene/gsa/tophat2 -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_TOPHAT.done`;
+	    push @syncJobs, "$pre\_$uID\_DESeq_TOPHAT";
 	}
     }
 
@@ -1616,6 +1656,7 @@ if($deseq){
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/kallisto/differentialExpression_trans -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -species $species -counts $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_KALLISTO.done`;
+	    push @syncJobs, "$pre\_$uID\_DESeq_KALLISTO";
 	}
     }
 
@@ -1629,10 +1670,12 @@ if($deseq){
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/rsem/differentialExpression_trans -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -species $species -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_RSEM.done`;
+	    push @syncJobs, "$pre\_$uID\_DESeq_RSEM";
 	}
     }
 }
 else{
+=begin CLUSTER
     if($star && $htseq){
 	`/bin/mkdir -m 775 -p $output/gene/clustering`;
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_STAR.done" || $ran_shmatrix){
@@ -1654,7 +1697,7 @@ else{
 	}
     }
 
-    if($kallisto && $htseq){
+    if($kallisto){
 	`/bin/mkdir -m 775 -p $output/transcript/kallisto/clustering`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_KALLISTO.done" || $ran_kmatrix){
 	    sleep(3);
@@ -1665,7 +1708,7 @@ else{
 	}
     }
 
-    if($rsem && $htseq){
+    if($rsem){
 	`/bin/mkdir -m 775 -p $output/transcript/rsem/clustering`;	
 	if(!-e "$output/progress/$pre\_$uID\_CLUSTERING_RSEM.done" || $ran_rmatrix){
 	    sleep(3);
@@ -1675,6 +1718,8 @@ else{
 	    `/bin/touch $output/progress/$pre\_$uID\_CLUSTERING_RSEM.done`;
 	}
     }
+=end CLUSTER
+=cut
 }
 
 if($r1adaptor){
@@ -1684,10 +1729,20 @@ if($r1adaptor){
 	my $standardParams = Schedule::queuing(%stdParams);
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeCutAdaptStats.py . '*CUTADAPT_STATS.txt' $output/metrics/$pre\_CutAdaptStats.txt`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_CAS.done`;
+	push @syncJobs, "$pre\_$uID\_MERGE_CAS";
     }
 }
-
 close LOG;
+
+my $sj = join(",", @syncJobs);
+my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSYNC", job_hold => "$sj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSYNC_3.log");
+my $standardParams = Schedule::queuing(%stdParams);
+my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1", mail => "$email");
+my $additionalParams = Schedule::additionalParams(%addParams);
+$ENV{'LSB_JOB_REPORT_MAIL'} = 'Y';
+`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /usr/bin/rsync -azvP --exclude 'intFiles' --exclude 'progress' $curDir $rsync`;
+`/bin/touch $output/progress/$pre\_$uID\_RSYNC.done`;
+
 
 
 sub verifyConfig{

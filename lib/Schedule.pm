@@ -135,11 +135,11 @@ sub lsf {
 	$cluster->job_name("");
     }
 
-    if($lsfParams{'job_hold'} =~ /^[a-zA-Z]/){
+    if($lsfParams{'job_hold'} =~ /^[a-zA-Z|,]/){
       ###$cluster->job_hold("-w \"post_done($lsfParams{'job_hold'})\"");
 	my @jobs = split(/,/, $lsfParams{'job_hold'});
 	my @holds = ();
-	foreach my $job (@jobs){
+	foreach my $job (@jobs){	    
 	    if(!$job){
 		next;
 	    }
@@ -171,8 +171,8 @@ sub lsf {
 	$cluster->cpu("-n 24");
     }
 
-    if($lsfParams{'mem'} =~ /^\d+$/){
-	$cluster->mem("-R \"rusage[mem=$lsfParams{'mem'}]\"");
+    if($lsfParams{'mem'} =~ /^(\d+)[Gg]?$/){
+	$cluster->mem("-R \"rusage[mem=$1]\"");
     }
     else{
 	###$cluster->mem("-R \"rusage[mem=$cluster->{mem}]\"");
@@ -185,6 +185,10 @@ sub lsf {
 
     if($lsfParams{'cluster_out'}){
 	$cluster ->cluster_out("-o $lsfParams{'cluster_out'}");
+    }
+
+    if($lsfParams{'cluster_error'}){
+	$cluster ->cluster_error("-e $lsfParams{'cluster_error'}");
     }
 }
 
@@ -217,10 +221,14 @@ sub additionalLSF {
     }
 
     if($addLSF{'iounits'} =~ /^\d+$/){
-	$cluster->mem("-R \"rusage[iounits=$addLSF{'iounits'}]\"");
+	$aLSF .= " -R \"rusage[iounits=$addLSF{'iounits'}]\"";
     }
     else{
-	$cluster->mem("-R \"rusage[iounits=10]\"");
+	$aLSF .=" -R \"rusage[iounits=10]\"";
+    }
+
+    if($addLSF{'mail'}){
+	$aLSF .= " -u \"$addLSF{'mail'}\" -N"
     }
 
     return $aLSF;
