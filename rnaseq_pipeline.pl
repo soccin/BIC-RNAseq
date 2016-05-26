@@ -287,9 +287,13 @@ if($comparisons || $samplekey || $deseq){
 	my @data = split(/\s+/, $_);
 	$samplekey_samples{$data[0]} = 1;
 	$samplekey_conditions{$data[1]} = 1;
-	if(!$mapping_samples{$data[0]} || !$sample_comparisons{$data[1]}){
-	    die "either sample $data[0] cannot be found in $map and/or condition $data[1] cannot be found in $comparisons $!";
+	if(!$mapping_samples{$data[0]}){
+	    die "sample $data[0] cannot be found in mapping file $map $!";
 	}
+
+	###if(!$sample_comparisons{$data[1]}){
+	   ### die "condition $data[1] cannot be found in comparisons file $comparisons $!";
+	###}
     }
     close SK;
 
