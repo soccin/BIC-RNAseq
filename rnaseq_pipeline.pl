@@ -252,6 +252,64 @@ foreach my $argnum (0 .. $#ARGV) {
 }
 
 
+if($standard_gene){
+    $star = 1;
+    $htseq = 1;
+}
+
+if($differential_gene){
+    $star = 1;
+    $htseq = 1;
+    $deseq = 1;
+}
+
+if($standard_transcript){
+    $rsem = 1;
+}
+
+if($differential_transcript){
+    $rsem = 1;
+    $deseq = 1;
+}
+
+
+if($star && !$htseq && !$dexseq){
+    $htseq = 1;
+}
+
+if($allfusions){
+    $chimerascan = 1;
+    $star_fusion = 1;
+    $mapsplice = 1;
+    $defuse = 1;
+    $fusioncatcher = 1;
+}
+
+if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
+    $detectFusions = 1;
+}
+
+if($comparisons || $samplekey){
+    if(-e $comparisons && -e $samplekey){
+	### GOING TO ASSUME THAT YOU WANT TO RUN DESEQ IF COMPARISONS & SAMPLEKEY FILE PROVIDED
+	### IN ORDER TO RUN DESEQ, MUST ALSO RUN HTSEQ
+	$deseq = 1;
+	$htseq = 1;
+    }
+    else{
+	die "COMPARISONS FILE $comparisons AND/OR SAMPLEKEY FILE $samplekey DON'T EXIST\nMUST PROVIDE BOTH COMPARISONS AND SAMPLEKEY FILES IN ORDER TO RUN DESEQ\n";
+    }
+}   
+
+if($deseq || $dexseq || $htseq || $cufflinks){
+    if(!$star && !$tophat){
+	$star = 1;
+
+	my @currentTime = &getTime();
+	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNER SPECIFIED SO DEFAULTING TO USING STAR\n";
+    }
+}
+
 my %mapping_samples = ();
 open(MA, "$map") or die "Can't open mapping file $map $!";
 while(<MA>){
@@ -552,64 +610,6 @@ elsif($species =~ /WBcel235/i){
     }
 }
 
-
-if($standard_gene){
-    $star = 1;
-    $htseq = 1;
-}
-
-if($differential_gene){
-    $star = 1;
-    $htseq = 1;
-    $deseq = 1;
-}
-
-if($standard_transcript){
-    $rsem = 1;
-}
-
-if($differential_transcript){
-    $rsem = 1;
-    $deseq = 1;
-}
-
-
-if($star && !$htseq && !$dexseq){
-    $htseq = 1;
-}
-
-if($allfusions){
-    $chimerascan = 1;
-    $star_fusion = 1;
-    $mapsplice = 1;
-    $defuse = 1;
-    $fusioncatcher = 1;
-}
-
-if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
-    $detectFusions = 1;
-}
-
-if($comparisons || $samplekey){
-    if(-e $comparisons && -e $samplekey){
-	### GOING TO ASSUME THAT YOU WANT TO RUN DESEQ IF COMPARISONS & SAMPLEKEY FILE PROVIDED
-	### IN ORDER TO RUN DESEQ, MUST ALSO RUN HTSEQ
-	$deseq = 1;
-	$htseq = 1;
-    }
-    else{
-	die "COMPARISONS FILE $comparisons AND/OR SAMPLEKEY FILE $samplekey DON'T EXIST\nMUST PROVIDE BOTH COMPARISONS AND SAMPLEKEY FILES IN ORDER TO RUN DESEQ\n";
-    }
-}   
-
-if($deseq || $dexseq || $htseq || $cufflinks){
-    if(!$star && !$tophat){
-	$star = 1;
-
-	my @currentTime = &getTime();
-	print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNER SPECIFIED SO DEFAULTING TO USING STAR\n";
-    }
-}
 
 open(MA, "$map") or die "Can't open mapping file $map $!";
 while(<MA>){
