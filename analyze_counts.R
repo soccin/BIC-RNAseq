@@ -55,6 +55,7 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
                       cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method='pooled')
                      }, error = function(x){
                       stop(paste("Both methods '",method,"' and 'pooled' failed.",sep=""))
+                      quit(save="no",status=15,runLast=TRUE)
                    }
             )
         }

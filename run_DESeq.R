@@ -154,6 +154,7 @@ run.DESeq<-function(counts.dat, conds, condA, condB, q.cut=0.05, fc.cut=2, count
                       cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,fitType=fitType,sharingMode=sharingMode,method='pooled')
                      }, error = function(x){
                       stop(paste("Both methods '",method,"' and 'pooled' failed.",sep=""))
+                      quit(save="no",status=15,runLast=TRUE)
                    }
             )
         }
