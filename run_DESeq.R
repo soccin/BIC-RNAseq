@@ -146,7 +146,21 @@ return(Res)
 run.DESeq<-function(counts.dat, conds, condA, condB, q.cut=0.05, fc.cut=2, count.cut=10,zeroaddQ=F, libsizeQ=F,percentile="100%",fitType="parametric",orderPvalQ=T,method="per-condition",sharingMode="maximum",gns=c())
 {
 
-cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,fitType=fitType,method=method,sharingMode=sharingMode)
+    cds <- tryCatch({
+        cds <- make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,fitType=fitType,sharingMode=sharingMode,method=method)
+        }, error = function(err){
+            warning(paste("method='",method,"' did not work.. trying method='pooled'",sep=""))
+            cds <- tryCatch({
+                      cds=make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,fitType=fitType,sharingMode=sharingMode,method='pooled')
+                     }, error = function(x){
+                      stop(paste("Both methods '",method,"' and 'pooled' failed.",sep=""))
+                   }
+            )
+        }
+    )
+
+
+
 #vsd = getVarianceStabilizedData(cds)
 #dists=dist(t(vsd))
 
