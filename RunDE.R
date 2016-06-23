@@ -113,6 +113,13 @@ setwd(pd)
 ## if key file is given, create key and check for replicates
 if (exists("key.file")){
     key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
+    ##remove samples to be excluded
+    ex = grep("_EXCLUDE_",key[,2])
+    if(length(ex)>0){
+        key = key[-ex,]
+    }
+    print(key)
+
     key[,1] = make.names(key[,1])    
     conds=key[,2]
 
