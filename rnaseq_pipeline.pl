@@ -575,12 +575,6 @@ elsif($species =~ /fly|dm3/i){
     else{
         $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang74'; 
     }
-    if($r1adaptor){
-        $starDB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/star/2.4.1d/ensembl/v20151123/overhang49';
-    }
-    else{
-        $starDB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/star/2.4.1d/ensembl/v20151123/overhang74';
-    }
 }
 elsif($species =~ /WBcel235/i){
     $species = 'WBcel235';
