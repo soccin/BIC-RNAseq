@@ -2,16 +2,16 @@
 
 usage <- function(){
 
-    usage.str = "\nUsage: Rscript RunDE.R 
+    usage.str = "\nUsage: Rscript RunDE.R
     \"bin='[Required: directory containing source R code]'\"
     \"counts.file='[Required: absolute path to htseq counts file]'\"
 
     \"key.file='[Required for differential expression analysis: absolute path to key file]'\"
     \"comps=[Required for differential expression analysis: vector containing all comparisons to be made based on conditions in key file
              Must be in the following format: c('CondA - CondB','CondA - CondC','CondB - CondC')]\"
-    \"species='[Required for gene set analysis: (hg19|human|mm9|mm10|mouse)] Note: only human or mouse currently supported; specific 
+    \"species='[Required for gene set analysis: (hg19|human|mm9|mm10|mouse)] Note: only human or mouse currently supported; specific
              build does not matter, as long as it is clearly human or mouse'\"
-    
+
     \"diff.exp=[Optional (default=TRUE): run differential expression analysis]\"
     \"GSA=[Optional (default=TRUE): run gene set analysis; if running GSA but not DESeq, BE SURE TO SET diff.exp.dir (see below) to point
               to existing DESeq results directory.]\"
@@ -33,7 +33,7 @@ usage <- function(){
     \"sharingMode=[Optional (default='maximum'): 'maximum'|'fit-only'|'gene-est-only', insert description here]\"
     \"zeroaddQ=[Optional (default=T): T|F, insert description here]\"
     \"libsizeQ=[Optional (default=F): T|F, insert description here]\"
-    
+
     \n\n"
     cat(usage.str)
 }
@@ -120,7 +120,7 @@ if (exists("key.file")){
     }
     print(key)
 
-    key[,1] = make.names(key[,1])    
+    key[,1] = make.names(key[,1])
     conds=key[,2]
 
     t=table(conds)
@@ -129,9 +129,9 @@ if (exists("key.file")){
             cat(c("No replicates found for condition \"",cond,"\". Setting no.replicates=TRUE\n"))
             no.replicates=TRUE
         }
-    }   
-} 
-    
+    }
+}
+
 if (no.replicates){
     fitType = 'local'
     method = 'blind'

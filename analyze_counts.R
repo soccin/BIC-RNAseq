@@ -10,7 +10,7 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
 
     #########################################
     ## read and reformat raw counts file
-    ## use unique identifiers as rownames (e.g., ensembl IDs) 
+    ## use unique identifiers as rownames (e.g., ensembl IDs)
     ## but keep gene symbols (if given) for later use
     #########################################
     cat("    Reformatting raw counts...\n")
@@ -25,7 +25,7 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     }
 
     ## TEMP FOR KALLISTO TESTING
-    ## filter out any rows with zero counts 
+    ## filter out any rows with zero counts
     #HTSeq.dat=HTSeq.dat[apply(HTSeq.dat, 1, function(row) all(row >10 )),]
 
     if(!is.null(key)){
@@ -37,8 +37,8 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     ## for kallisto counts, round floats to integers
     counts.dat=round(matrix2numeric(HTSeq.dat))
 
-    ## if no conditions given, create a vector of one mock 
-    ## condition needed for make.cds  
+    ## if no conditions given, create a vector of one mock
+    ## condition needed for make.cds
     if(is.null(conds)){
         conds=rep('s',length(samps))
     }
@@ -92,9 +92,9 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     setwd(output.dir)
     write.dat(dat,file.name="counts_scaled_DESeq.xls")
 
-    ######################################### 
+    #########################################
     ## if specified, run quantile method of normalization
-    ######################################### 
+    #########################################
     if(norm.quantile){
         cat("    Getting quantile-normalized counts...\n")
         counts.log.dat=log2(counts.dat+1)
@@ -110,9 +110,9 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
         }
         cat("    Writing quantile-normalized counts...\n")
         write.dat(dat,file.name="counts_scaled_quantile.xls")
-    } 
+    }
 
-    ## counts.scaled will be used for clustering and 
+    ## counts.scaled will be used for clustering and
     ## counts.dat will be used differential expression
     counts = list()
     counts$scaled = counts.scaled
@@ -136,13 +136,16 @@ cluster.samples <- function(counts.scaled,output.dir=output.dir,conds=conds){
         conds=rep('s',length(colnames(counts.scaled)))
     }
 
-    counts2hclust=log2(counts.scaled+1)
+    pseudo=min(counts.scaled[counts.scaled>0])
+    counts2hclust=log2(counts.scaled+pseudo)
 
     ########################################
     ## Hierarchical clustering
     ########################################
     sink("/dev/null")
     pdf.hclust(counts2hclust,file.name="counts_DESeqscaled_clust.pdf",title="All counts scaled using DESeq method")
+    pdf.hclust(counts2hclust,file.name="counts_DESeqscaled_clust__SampleNums.pdf",
+        title="All counts scaled using DESeq method",sample.labels=seq(ncol(counts2hclust)))
     sink()
 
     ########################################
@@ -153,6 +156,11 @@ cluster.samples <- function(counts.scaled,output.dir=output.dir,conds=conds){
     plot(md, col=as.factor(conds),main="",lwd=2.5,cex=1.5)
     legend(-200, 70, levels(as.factor(conds)),col=as.factor(levels(as.factor(conds))),pch=1,cex=1.2)
     text(md,colnames(counts2hclust),cex=0.9)
+    dev.off()
+
+    pdf("MDS_plot__SampleNums.pdf",width=18,height=12)
+    plot(md, col=0,main="",lwd=2.5,cex=1.5)
+    text(md,as.character(seq(nrow(md))),cex=0.8)
     dev.off()
 
     return
@@ -193,7 +201,7 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
 
     ## assign IDs as rownames
     rownames(dat) = dat[,1]
-    
+
     if ("GeneSymbol" %in% colnames(dat)){
         idHeader = "GeneSymbol"
     } else {
@@ -221,7 +229,7 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
 
         ## remove any rows that have NAs
         htmp.dat = htmp.dat[complete.cases(htmp.dat),]
-        ## as long as gene symbols are unique, assign them 
+        ## as long as gene symbols are unique, assign them
         ## as rownames; if not, we'll have to average values
         ## for genes that occur multiple times
         rownames(htmp.dat)=htmp.dat[,idHeader]

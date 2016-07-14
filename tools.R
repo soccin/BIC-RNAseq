@@ -32,12 +32,12 @@ length(x)
 
 plus.paste<-function(str.v,plus.str="+")
 {
-	if(length(str.v)>1)	
+	if(length(str.v)>1)
 	{
 		tmp=str.v[1]
 		for(nn in 2:length(str.v))
         	 tmp=paste(tmp,str.v[nn],sep=plus.str)
-	
+
 	return(tmp)
 	}
 	return(str.v)
@@ -46,7 +46,7 @@ plus.paste<-function(str.v,plus.str="+")
 split.plus<-function(x.str)
 {
 		if(length(grep("\\+",x.str))>=1)
-	  		return(unlist(strsplit(x.str,"\\+")))  
+	  		return(unlist(strsplit(x.str,"\\+")))
 
 return(x.str)
 }
@@ -54,7 +54,7 @@ return(x.str)
 remove.dupl.entries<-function(InputDat,str="")
 {
 	tmp=apply(InputDat,1,plus.paste,plus.str=str)
-	return(InputDat[-which(duplicated(tmp)),])	
+	return(InputDat[-which(duplicated(tmp)),])
 }
 
 
@@ -127,7 +127,7 @@ read.counts<-function(file.name,header = FALSE, sep = "", skip = 0,col.gns=NULL)
 	counts.dat=rr(file.name,header = header, sep = sep, skip = skip)
     if(col.gns==1 | col.gns==2)
     	counts.dat=counts.dat[,-col.gns]
-    		
+
 	counts.dat=make.rownames(counts.dat)
 	counts.dat=removeBadF(counts.dat)
 	return(matrix2numeric(counts.dat))
@@ -152,13 +152,18 @@ read.key<-function(key.file,header=T,sep="\t")
 	key=as.matrix(read.csv(key.file,header=header,sep=sep))
 	rownames(key)=key[,1]
     return(key)
-}    
+}
 
 
-pdf.hclust<-function(dat,file.name="tmp.pdf",title="",width=26,height=16,lwd=3,cex.main=3,cex.lab=3,cex=3,xlab="",ylab="")
+pdf.hclust<-function(dat,file.name="tmp.pdf",title="",width=26,height=16,lwd=3,
+    cex.main=3,cex.lab=3,cex=3,xlab="",ylab="",sample.labels=NULL)
 {
-	pdf(file.name, width=width,height=height)
-	plot(hclust(dist(t(dat))), lwd=lwd, main=paste(title), cex.main=cex.main, xlab=xlab,ylab=ylab, cex.lab=cex.lab, cex=cex)
+    if(is.null(sample.labels)){
+        sample.labels=colnames(dat)
+    }
+	pdf(file.name,width=width,height=height)
+	plot(hclust(dist(t(dat))), lwd=lwd, main=paste(title), cex.main=cex.main,
+        xlab=xlab,ylab=ylab, cex.lab=cex.lab, cex=cex, labels=sample.labels)
 dev.off()
 }
 
@@ -172,39 +177,39 @@ dev.off()
 pdf.sam<-function(dat,file.name="tmp.pdf",title="")
 {
 	pdf(file.name)
-	
+
 	sam1=sammon(dist(t(dat)),trace=FALSE)
 	plot(sam1$points,lwd=2,cex.main=1.5, xlab="",ylab="",cex.lab=1.5,cex=1.5, main=paste(title))
 	text(sam1$points, labels = colnames(dat), cex=1.5)
 
     dev.off()
 }
-    	
+
     	make.matrix<-function(mat,row.names="",col.names="")
 {
 	if(length(mat)==0)
 	   return(NULL)
-	   
+
 	if(is.matrix(mat))
 	  {
 	  	mat1=mat
 	  	#if(row.names!="")
 	  	#   rownames(mat)=row.names
 	  	#if(!col.names!="")
-	  	#  colnames(mat)=col.names   
+	  	#  colnames(mat)=col.names
 	  }
 	  if(is.vector(mat))#!is.matrix(mat))
 	   	mat1=matrix(mat,nrow=1)
-	   		
+
 	   if(length(col.names)==ncol(mat1))
 		   			colnames(mat1)=col.names
-		   			
-	   
+
+
 	   if(length(row.names)==nrow(mat1))
 			   		rownames(mat1)=row.names
-		   	
+
 	   return(mat1)
-		
+
 
 }
 
@@ -212,18 +217,18 @@ rbind2mat<-function(mat1,mat2)
 {
 		if(is.null(mat1) & !is.null(mat2))
 		  return(mat2)
-		  
+
 	    if(!is.null(mat1) & is.null(mat2))
-		  return(mat1)   		
-    	
+		  return(mat1)
+
     	if(!is.null(mat1) & !is.null(mat2))
-  	     { 
+  	     {
   	     	if(ncol(mat1)!=ncol(mat2))
   	     		return("Error")
   	     	tmp=as.matrix(rbind(mat1,mat2))
   	     	rownames(tmp)=c(rownames(mat1),rownames(mat2))
-  	     	return(tmp) 		
-  	     } 		
+  	     	return(tmp)
+  	     }
 }
 
 
@@ -231,14 +236,14 @@ rbind2mat<-function(mat1,mat2)
 
 standardize.proc<-function(dat)
 {
-	dat2=sweep(dat,1,apply(dat,1,mean),"-") 
+	dat2=sweep(dat,1,apply(dat,1,mean),"-")
 	#make sure the mean per gene across all samples is 0
 
    sd <- apply(as.matrix(dat2), 1, sd)
    dat3 <- dat2
    for(i in 1:nrow(dat2))
    		dat3[i,] <- dat2[i,]/sd[i]
-   	
+
       return(dat3)
 }
 
@@ -269,19 +274,19 @@ for(nn in 1:ncol(inds))
 {
 	pair=inds[,nn]
 	vals=as.matrix(rbind(vals,dat[pair[1],]*dat[pair[2],]))
-	labls=c(labls,paste(rownames(dat)[pair[1]],"_",rownames(dat)[pair[2]],sep="")) 
+	labls=c(labls,paste(rownames(dat)[pair[1]],"_",rownames(dat)[pair[2]],sep=""))
 }
 vals=matrix2numeric(make.colnames(vals))
 rownames(vals)=labls
 
-return(vals)	
+return(vals)
 }
 
 
 len<-function(x)
   length(x)
-  
-  
+
+
 remove.NAs<-function(v)
 {
 	return(v[!is(v)])
@@ -309,7 +314,7 @@ len.which<-function(v, cut.off,alt="l")
 	if(alt=="g")
    	{
    		return(length(which(v>=cut.off)))
-   	}	
+   	}
    	if(alt=="l")
    	{
    		return(length(which(v<=cut.off)))
@@ -318,12 +323,12 @@ len.which<-function(v, cut.off,alt="l")
 
 
 
-### remove hsa ### 
+### remove hsa ###
 #remove.sub<-function(x, substr="hsa"){
 #	 tmp=NULL
 #	 for(n in 1:length(x)){
 #	 	   if(length(grep(substr,x[n]))>0){
-#	 	   	 tmp = c(tmp, unlist(strsplit(x[n],substr))[[2]]) 
+#	 	   	 tmp = c(tmp, unlist(strsplit(x[n],substr))[[2]])
 #	 	   	}
 #	 	   	if(length(grep(substr,x[n]))==0){
 #           tmp = c(tmp, x[n])
@@ -337,9 +342,9 @@ tmp=NULL
 for(n in 1:length(x)){
 #print(paste("n=",n))
 if(length(grep(substr,x[n]))>0)
-{ 
+{
   #print(paste("new name=",unlist(strsplit(x[n],substr))))
-  tmp = c(tmp, unlist(strsplit(x[n],substr))[[part2take]]) 
+  tmp = c(tmp, unlist(strsplit(x[n],substr))[[part2take]])
 }
 if(length(grep(substr,x[n]))==0)
 {
@@ -355,8 +360,8 @@ get.this.samples<-function(the.sample,runs)
 {
 	return(runs[grep(the.sample,runs)])
 }
-	
-	
+
+
 get.samples <- function(samples, runs){
 	       return(apply(as.matrix(samples), 1, get.this.samples, runs=runs))
 	}
@@ -364,14 +369,14 @@ get.samples <- function(samples, runs){
 
 get.this.sample.nu<-function(the.sample,runs)
 {
-	n1 = grep(the.sample,runs) 
+	n1 = grep(the.sample,runs)
 	if(length(n1)==1)
 	{return(n1)}
 	if(length(n1)!=1)
 	{return(NA)}
 }
-	
-	
+
+
 get.samples.nu <- function(samples, runs){
 	       return(apply(as.matrix(samples), 1, get.this.sample.nu, runs=runs))
 	}
@@ -402,8 +407,8 @@ mytable<-function(v)
 {
 	c(length(which(v==-1)), length(which(v==0)), length(which(v==1)))
 }
-	
-	
+
+
 	how.many.gr<-function(v, cut.off=0.6)
 {
 	length(which(v>=cut.off))
@@ -417,9 +422,9 @@ how.many.ls<-function(v, cut.off=-0.6)
 
 rescale<-function(v)
 {
-	m1=min(v,na.rm=TRUE) 
-	m2=max(v,na.rm=TRUE) 
-	
+	m1=min(v,na.rm=TRUE)
+	m2=max(v,na.rm=TRUE)
+
 	return((v-m1)/(m2-m1))
 }
 
@@ -444,11 +449,11 @@ for(i in 1:length(x))
 	  tmp=paste(tmp,x[i], str, sep="")
 }
 return(tmp)
-	
+
 	}
-	
-	
-	
+
+
+
 ### from a vector X return numbers from the grep(X, Y[n]) ###
 
 grepvector<-function(X, Y,no.doubles=TRUE){
@@ -471,10 +476,10 @@ grepvector<-function(X, Y,no.doubles=TRUE){
 make.subset.colnames<-function(dat, vars)
 {
      col.num = grepvector(colnames(dat),vars)
-     
+
      	   return(dat[,col.num])
 
-	}   
+	}
 
 
 matrix2round<-function(dat){
@@ -491,7 +496,7 @@ matrix2integer<-function(dat){
 	rownames(res)=rownames(dat)
 	colnames(res)=colnames(dat)
 	return(res)
-	
+
 }
 
 ### look for missing values ###
@@ -521,7 +526,7 @@ make.conds<-function(conds,condA.str,condB.str,condA,condB)
 	h=conds
 	h[grep(condA.str,h)]=condA
 	h[grep(condB.str,h)]=condB
-	
+
 	return(h)
 }
 
@@ -588,7 +593,7 @@ average.by.name<-function(dat){
 }
 
 ### this is averaging for a two-column matrix:
-### 1st column has names and the other values to be averaged=Fold-changes 
+### 1st column has names and the other values to be averaged=Fold-changes
 average.by.name2<-function(dat,func2use="mean")
 {
 	print(paste("dim",dim(dat)))
@@ -601,9 +606,9 @@ average.by.name2<-function(dat,func2use="mean")
 			 if(func2use=="mean")
            val <- mean(as.numeric(dat[kk,2]))
 		   if(func2use=="min")
-		      val <- min(as.numeric(dat[kk,2])) #for p-values! 
+		      val <- min(as.numeric(dat[kk,2])) #for p-values!
 		     if(func2use=="max")
-		      val <- max(as.numeric(dat[kk,2])) #for p-values!   
+		      val <- max(as.numeric(dat[kk,2])) #for p-values!
 
 		}
 		if(length(kk)==1){
@@ -620,25 +625,25 @@ average.by.name2<-function(dat,func2use="mean")
  log2_2fc<-function(fc){
  # this function trasnfers log2 FC
  # to the form that Nick uses for investigators
- 
+
     if(fc<0){return(-1/2^fc)}
-    if(fc>0){return(1/2^fc)} 
+    if(fc>0){return(1/2^fc)}
    }
 
 
 remove.last.space<-function(str){
 res=str
 
-if(length(grep(" ", str))>0)	
+if(length(grep(" ", str))>0)
 		res=unlist(strsplit(str," "))[[1]]
-		
-return(res)		
+
+return(res)
 }
 
 
 get.array.nu<-function(s){
 	tt<-unlist(strsplit(unlist(strsplit(s,".CEL")),"_"))
-	return(tt[length(tt)]) 
+	return(tt[length(tt)])
 }
 
 
@@ -667,11 +672,11 @@ matrix2floor<-function(dat)
 
 maploc<-function(probe_id)
 {
-    x=toTable(hgu133a2CHRLOC[probe_id])    
+    x=toTable(hgu133a2CHRLOC[probe_id])
     if(nrow(x)>1){
     	   x = x[1,]
     	}
-    	x$start_location=abs(x$start_location)   
+    	x$start_location=abs(x$start_location)
     	return(as.matrix(x))
  }
 
@@ -679,29 +684,29 @@ maploc<-function(probe_id)
 ### limma analysis ###
 limma.analysis<-function(dat, groups, comp.groups,q.cut=0.05, lfc=log2(2), lib2use="lumiHumanAll.db", write.tables=T, write.gnlists=T, all.genes=TRUE)
 {
-### all.genes=FALSE 
+### all.genes=FALSE
 ### is a flag to write down only differentially expressed genes
 ### if all.genes=TRUE
-### all genes, and their fold-changes are written 
+### all genes, and their fold-changes are written
 
 design <- model.matrix(~0+groups)
 colnames(design) = levels(groups)
 fit=lmFit(dat,design)
  contrast.matrix <- makeContrasts(contrasts=comp.groups, levels=design)
- fit2 <- contrasts.fit(fit, contrast.matrix) 
+ fit2 <- contrasts.fit(fit, contrast.matrix)
  fit2 <- eBayes(fit2)
- 
+
  res=decideTests(fit2,p.value=q.cut,lfc=lfc)
  coefs=colnames(res)
- 
+
  ### go to geneSymbols in res ###
  TABs = vector(length=length(coefs),mode="list")
  Gene.Lists.UP = vector(length=length(coefs),mode="list")
  Gene.Lists.DOWN = vector(length=length(coefs),mode="list")
- 
+
  for(nn in 1:length(coefs)){
  print(paste("analyzing", coefs[nn], sep=" "))
- if(all.genes){ #to output all genes 
+ if(all.genes){ #to output all genes
  	   tab<-topTable(fit2, coef = coefs[nn], adjust = "BH", number=nrow(fit2), sort.by='logFC')
  	   }
  	   if(!all.genes) #to output only DE genes
@@ -717,16 +722,16 @@ fit=lmFit(dat,design)
  TABs[[nn]]<- tab2
  colnames(TABs[[nn]])=c("GeneSymbol",h[c(2,5,6)])
 
- ### add here the cut-offs ##3 
+ ### add here the cut-offs ##3
  tmp=coefs[nn]
  tmp=unlist(strsplit(tmp, " - "))
  file.name=paste(tmp[1], "_vs_", tmp[2], ".txt",sep="")
  if(write.tables)
- {  
+ {
  	  write.table(as.matrix(TABs[[nn]]), file=file.name,col.names=T,row.names=F,quote=F,sep="\t")
-     
+
   }
-  
+
  ###GeneLists###
  if(write.gnlists)
  {
@@ -740,14 +745,14 @@ fit=lmFit(dat,design)
  tmp=unlist(strsplit(tmp, " - "))
  file.name=paste("UP_gns", tmp[1], "_vs_", tmp[2], ".txt",sep="")
  write.table(as.vector(Gene.Lists.UP[[nn]]), file=file.name,col.names=F,row.names=F,quote=F,sep="\t")
- 
+
   }else
   {
   	  print(paste("no UP DE genes"))
   	}
-  
+
  gg2=rownames(res)[which(res[,nn]==-1) ]
- 
+
  if(length(gg2)>=1){
  gns.down= as.vector(getSYMBOL(gg2, lib2use))
  gns.down=unique(gns.down[!is.na(gns.down)])
@@ -761,10 +766,10 @@ fit=lmFit(dat,design)
   {
   	  print(paste("no DOWN DE genes"))
   	}
- 
- 
- 
-  
+
+
+
+
   }
 }
 return(res)
@@ -773,33 +778,33 @@ return(res)
 
 limma.analysis4Sam<-function(dat, groups, comp.groups,q.cut=0.05, lfc=log2(2), lib2use="lumiHumanAll.db", write.tables=T, write.gnlists=T, all.genes=TRUE, affyFC=TRUE, more.infoQ=TRUE, add.expr.conds=TRUE)
 {
-### all.genes=FALSE 
+### all.genes=FALSE
 ### is a flag to write down only differentially expressed genes
 ### if all.genes=TRUE
-### all genes, and their fold-changes are written 
+### all genes, and their fold-changes are written
 
 design <- model.matrix(~0+groups)
 colnames(design) = levels(groups)
 fit=lmFit(dat,design)
  contrast.matrix <- makeContrasts(contrasts=comp.groups, levels=design)
- fit2 <- contrasts.fit(fit, contrast.matrix) 
+ fit2 <- contrasts.fit(fit, contrast.matrix)
  fit2 <- eBayes(fit2)
- 
+
  res=decideTests(fit2,p.value=q.cut,lfc=lfc)
- 
+
  coefs=colnames(res)
- 
+
  ### go to geneSymbols in res ###
 
  TABs = vector(length=length(coefs),mode="list")
  Gene.Lists.UP = vector(length=length(coefs),mode="list")
  Gene.Lists.DOWN = vector(length=length(coefs),mode="list")
- 
+
  for(nn in 1:length(coefs)){
  print(paste("analyzing", coefs[nn], sep=" "))
  condA = unlist(strsplit(coefs[nn]," - "))[[1]]
  condB = unlist(strsplit(coefs[nn]," - "))[[2]]
- if(all.genes){ #to output all genes 
+ if(all.genes){ #to output all genes
  	   tab<-topTable(fit2, coef = coefs[nn], adjust = "BH", number=nrow(fit2), sort.by='logFC')
  	   }
  	   if(!all.genes) #to output only DE genes
@@ -827,40 +832,40 @@ fit=lmFit(dat,design)
       	start.loc=NULL
   	     for(ii in 1:length(maploc))
   	       {
-  	       	
+
   	     	   pr=c(pr,names(maploc)[ii])
   	     	   strt.tmp=maploc[[ii]][1]
   	     	   chr.tmp=NA
   	     	   if(!is.na(strt.tmp)){
   	     	   	  chr.tmp=names(maploc[[ii]])[1]
   	     	     }
-  	     	     
+
             chrID = c(chrID, chr.tmp)
             start.loc=c(start.loc, abs(strt.tmp))
-  	     	} 
+  	     	}
   	     gene.info=toTable(hgu133a2GENENAME[rownames(tab2)])
   	     rownames(gene.info)=gene.info[,1]
   	     gene.info=gene.info[rownames(tab2),2]
   	     gene.info=cbind(gene.info, chrID, start.loc)
-  	
+
  	#add mean expression in each condition
    meanA = apply(dat[,which(colnames(dat)==condA)],1,mean)[rownames(tab2)]
  	 meanB = apply(dat[,which(colnames(dat)==condB)],1,mean)[rownames(tab2)]
    tab2 = as.matrix(cbind(rownames(tab2),tab2, meanA, meanB,gene.info))
    colnames(tab2)=c("ProbeID", "GeneSymbol", "FC", "FDR", paste("mean_expr_",condA,sep=""),paste("mean_expr_",condB,sep=""),"GeneDescr", "ChrID", "StartLoc")
-    
+
  TABs[[nn]]<- tab2
- 
- ### add here the cut-offs ##3 
+
+ ### add here the cut-offs ##3
  tmp=coefs[nn]
  tmp=unlist(strsplit(tmp, " - "))
  file.name=paste(tmp[1], "_vs_", tmp[2], ".txt",sep="")
  if(write.tables)
- {  
+ {
  	  write.table(as.matrix(TABs[[nn]]), file=file.name,col.names=T,row.names=F,quote=F,sep="\t")
-     
+
   }
-  
+
  ###GeneLists###
  if(write.gnlists)
  {
@@ -874,14 +879,14 @@ fit=lmFit(dat,design)
  tmp=unlist(strsplit(tmp, " - "))
  file.name=paste("UP_gns", tmp[1], "_vs_", tmp[2], ".txt",sep="")
  write.table(as.vector(Gene.Lists.UP[[nn]]), file=file.name,col.names=F,row.names=F,quote=F,sep="\t")
- 
+
   }else
   {
   	  print(paste("no UP DE genes"))
   	}
-  
+
  gg2=rownames(res)[which(res[,nn]==-1) ]
- 
+
  if(length(gg2)>=1){
  gns.down= as.vector(getSYMBOL(gg2, lib2use))
  gns.down=unique(gns.down[!is.na(gns.down)])
@@ -905,10 +910,10 @@ log2FC <- function(x) {
 }
 
 rn <- function(x, digits = 3){
-  if (is.null(x)) 
+  if (is.null(x))
     NULL
   else {
-    if (is.matrix(x) && ncol(x) == 1) 
+    if (is.matrix(x) && ncol(x) == 1)
       x <- x[, 1]
     round(x, digits = digits)
   }
@@ -934,7 +939,7 @@ jj6= which(res[,k1]!=-1 & res[,k2]==-1)
 
 ll = max(c(length(jj1), length(jj2), length(jj3), length(jj4), length(jj5), length(jj6)))
 
-nn = rep(" ", ll) #max number of genes in this venn diagram... 
+nn = rep(" ", ll) #max number of genes in this venn diagram...
 tmp = nn
 tmp[1:length(jj1)]=gns[jj1]
 out=tmp
@@ -963,7 +968,7 @@ tmp[1:length(jj6)]=gns[jj6]
 out=as.matrix(cbind(out,tmp))
 
 
-colnames(out)=c(paste("UP", s1,"AND", s2,sep="_"), paste("DOWN", s1, "AND", s2, sep="_"), paste("UP", s1,"NOT", s2,sep="_"), paste("DOWN", s1,"NOT", s2,sep="_"), 
+colnames(out)=c(paste("UP", s1,"AND", s2,sep="_"), paste("DOWN", s1, "AND", s2, sep="_"), paste("UP", s1,"NOT", s2,sep="_"), paste("DOWN", s1,"NOT", s2,sep="_"),
 paste("NOT", s1,"UP", s2,sep="_"), paste("NOT", s1,"DOWN", s2,sep="_"))
 
 write.table(out, file=paste(fl.name,".xls",sep=""), col.names=T,row.names=F,quote=F,sep="\t")
@@ -985,11 +990,11 @@ run.limma<-function(dat, groups, comp.groups,q.cut=q.cut, lfc=lfc)
 	colnames(design) = levels(groups)
 	fit=lmFit(dat,design)
 	contrast.matrix <- makeContrasts(comp.groups,levels=design)
-	fit2 <- contrasts.fit(fit, contrast.matrix) 
+	fit2 <- contrasts.fit(fit, contrast.matrix)
 	fit2 <- eBayes(fit2)
 	res=decideTests(fit2,p.value=q.cut,lfc=lfc)
 	tab<-topTable(fit2, coef = comp.groups, adjust = "fdr", number=nrow(fit2))
-	
+
 	return(list(res=res,fit=fit2,tab=tab))
 }
 
@@ -1005,8 +1010,8 @@ write.limmaresults2file<-function(tab,groups,lib.file,file2write){
   write.table(tabb, file=file2write,row.names=FALSE, col.names=TRUE,sep="\t")
 
 	}
-	
-	
+
+
 	 make.table <- function(tab, gene.symbs,col2choose=c(2,5)){
 	 g1 <- tab[,1]
 	 for(i in 1:length(g1)){
@@ -1018,10 +1023,10 @@ write.limmaresults2file<-function(tab,groups,lib.file,file2write){
 	 }
 	 colnames(tab.dat) <- c("ID", "GeneSymb", colnames(tab)[col2choose])
 	 rownames(tab.dat)=rep("", nrow(tab.dat))
-	 
+
 	 return(tab.dat)
 	 }
-	 
+
 	 make.table.from.two <- function(tab1, tab2, gene.symbs, title1, title2){
 	 g1 <- tab1[,1]
 	 for(i in 1:length(g1)){
@@ -1037,20 +1042,20 @@ write.limmaresults2file<-function(tab,groups,lib.file,file2write){
 	 }
 	 colnames(tab.dat) <- c("ID", "GeneSymb", paste("logFC",title1), paste("logFC",title2), paste("adjPval",title1), paste("adjPval",title2))
 	 rownames(tab.dat)=rep("", nrow(tab.dat))
-	 
+
 	 return(tab.dat)
 	 }
 
 
 ### auxiliary functions ###
 ### this is a little auxiliary function that takes things/names in the vector
-### and puts them into a string 
+### and puts them into a string
 vector2str<-function(vv)
 {
 	res=""
 	for(nn in 1:length(vv))
-		res=paste(res,vv[nn],sep=",")		
-		
+		res=paste(res,vv[nn],sep=",")
+
 	return(res)
 }
 
