@@ -66,7 +66,7 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
 
     #cat(c("        Dim counts.scaled:",dim(counts.scaled),"\n"))
     counts.log.dat=log2(counts.scaled+1)
-    dat=2^counts.log.dat
+    dat=2^counts.log.dat-1
     if (!is.null(key)){
         #cat(c("        Key is not null\n"))
         key[,1] = make.names(key[,1]) ## remove any invalid characters
