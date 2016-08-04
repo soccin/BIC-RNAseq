@@ -760,9 +760,9 @@ foreach my $sample (keys %samp_libs_run){
 		    }
 
 		    if($grl == 0){
-			`/bin/zcat $output/intFiles/$sample/$lib/$run/$readPair[0] >$output/intFiles/$readPair[0]`;
+			my $readO = `/bin/gzip -cd $output/intFiles/$sample/$lib/$run/$readPair[0] | head -2`;
 			### discard reads less than half of original read length by cutadapt
-			my $readO = `/usr/bin/head -2 $output/intFiles/$readPair[0]`;
+			#my $readO = `/usr/bin/head -2 $output/intFiles/$readPair[0]`;
 			chomp $readO;
 			my @dataO = split(/\n/, $readO);
 			my $readLength = length($dataO[1]);

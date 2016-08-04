@@ -236,6 +236,7 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
         htmp.dat = htmp.dat[,-1]
 
         ## from matrix
+        htmp.dat[htmp.dat==0] = 1
         htmp.dat = as.matrix(log2(htmp.dat))
 
         ## take only the top 100 genes in order to make heatmap legible
