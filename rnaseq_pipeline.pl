@@ -420,6 +420,8 @@ my $STAR_FUSION_GENOME_LIB = '';
 my $CHIMERASCAN_FP_FILTER = '';
 my $RSEM_DB = '';
 
+my $STAR_MAX_MEM = 100;
+
 if($species =~ /human|hg19/i){
     $species = 'hg19';
     $REF_SEQ = '/ifs/depot/assemblies/H.sapiens/hg19/hg19.fasta';
@@ -450,6 +452,8 @@ if($species =~ /human|hg19/i){
 	    $starDB = '/ifs/depot/assemblies/H.sapiens/hg19/index/star/2.4.1d/gencode/v18/overhang74';
 	}
     }
+
+    $STAR_MAX_MEM = 35;
 }
 elsif($species =~ /mouse|mm10/i){
     $species = 'mm10';
@@ -474,6 +478,8 @@ elsif($species =~ /mouse|mm10/i){
     else{
 	$starDB = '/ifs/depot/assemblies/M.musculus/mm10/index/star/2.4.1d/gencode/vM8/overhang74';
     }
+
+    $STAR_MAX_MEM = 30;
 }
 elsif($species =~ /mm9/i){
     $species = 'mm9';
@@ -498,6 +504,8 @@ elsif($species =~ /mm9/i){
     else{
 	$starDB = '/ifs/depot/assemblies/M.musculus/mm9/index/star/2.4.1d/ensembl/v67/overhang74';
     }
+
+    $STAR_MAX_MEM = 30;
 }
 elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $species = 'hybrid';
@@ -515,6 +523,8 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     else{
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang74';
     }
+
+    $STAR_MAX_MEM = 60;
 }
 elsif($species =~ /zebrafish|zv10/i){
     $species = 'zv10';
@@ -534,6 +544,8 @@ elsif($species =~ /zebrafish|zv10/i){
     $REF_FLAT = "$Bin/data/refFlat__zv10.txt.gz";
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/zv10/star/zv10_v83_ensembl';
     $KALLISTO_INDEX = '';
+
+    $STAR_MAX_MEM = 30;
 }
 elsif($species =~ /zv9/i){
     $species = 'zv9';
@@ -552,6 +564,8 @@ elsif($species =~ /zv9/i){
     $RIBOSOMAL_INTERVALS = '';
     $REF_FLAT = '';
     $KALLISTO_INDEX = '';
+
+    $STAR_MAX_MEM = 30;
 }
 elsif($species =~ /fly|dm3/i){
     $species = 'dm3';
@@ -575,6 +589,8 @@ elsif($species =~ /fly|dm3/i){
     else{
         $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang74'; 
     }
+
+    $STAR_MAX_MEM = 30;
 }
 elsif($species =~ /WBcel235/i){
     $species = 'WBcel235';
@@ -602,6 +618,8 @@ elsif($species =~ /WBcel235/i){
     else{
         $starDB = '/ifs/depot/assemblies/custom/C.elegans/WBcel235/index/star/2.4.1d/ensembl/v20151123/overhang74';
     }
+
+    $STAR_MAX_MEM = 30;
 }
 
 
@@ -1025,7 +1043,7 @@ foreach my $sample (keys %samp_libs_run){
 	my $star1pj = '';
 	if(!-e "$output/progress/$pre\_$uID\_STAR_1PASS_$sample.done" || $ran_gz){
 	    sleep(3);
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_1PASS_$sample", job_hold => "$gzj", cpu => "12", mem => "40", cluster_out => "$output/progress/$pre\_$uID\_STAR_1PASS_$sample.log");
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_1PASS_$sample", job_hold => "$gzj", cpu => "12", mem => "$STAR_MAX_MEM", cluster_out => "$output/progress/$pre\_$uID\_STAR_1PASS_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_1PASS_ $star_outSAMstrandField --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
 	    `/bin/touch $output/progress/$pre\_$uID\_STAR_1PASS_$sample.done`;
@@ -1068,7 +1086,7 @@ foreach my $sample (keys %samp_libs_run){
 	    my $star2pj = '';
 	    if(!-e "$output/progress/$pre\_$uID\_STAR_2PASS_$sample.done" || $ran_sgg2){
 		sleep(3);
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_2PASS_$sample", job_hold => "$sgg2j", cpu => "12", mem => "40", cluster_out => "$output/progress/$pre\_$uID\_STAR_2PASS_$sample.log");
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_2PASS_$sample", job_hold => "$sgg2j", cpu => "12", mem => "$STAR_MAX_MEM", cluster_out => "$output/progress/$pre\_$uID\_STAR_2PASS_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $output/intFiles/$sample/star2passGG --readFilesIn $inReads --runThreadN 12 --outFileNamePrefix $output/intFiles/$sample/$sample\_STAR_2PASS_ $star_outSAMstrandField --outFilterIntronMotifs RemoveNoncanonical --outSAMattributes All --outSAMunmapped Within --readFilesCommand zcat`;
 		`/bin/touch $output/progress/$pre\_$uID\_STAR_2PASS_$sample.done`;
