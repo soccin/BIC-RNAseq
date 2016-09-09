@@ -513,7 +513,7 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $GTF = "$Bin/data/gencode.v18.annotation.gtf";
     $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
-    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19.interval_file";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19_mm10.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/hg19/star/hg19_v19_gencode';
 
