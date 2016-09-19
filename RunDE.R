@@ -9,8 +9,8 @@ usage <- function(){
     \"key.file='[Required for differential expression analysis: absolute path to key file]'\"
     \"comps=[Required for differential expression analysis: vector containing all comparisons to be made based on conditions in key file
              Must be in the following format: c('CondA - CondB','CondA - CondC','CondB - CondC')]\"
-    \"species='[Required for gene set analysis: (hg19|human|mm9|mm10|mouse)] Note: only human or mouse currently supported; specific
-             build does not matter, as long as it is clearly human or mouse'\"
+    \"species='[Required for gene set analysis: (hg19|human|hybrid|mm9|mm10|mouse)] Note: only human, hybrid, or mouse currently supported; specific
+             build does not matter, as long as it is clearly human or mouse. Hybrid will be run as human'\"
 
     \"diff.exp=[Optional (default=TRUE): run differential expression analysis]\"
     \"GSA=[Optional (default=TRUE): run gene set analysis; if running GSA but not DESeq, BE SURE TO SET diff.exp.dir (see below) to point

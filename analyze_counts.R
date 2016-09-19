@@ -257,7 +257,7 @@ make.generic.heatmaps <- function(diff.exp.dir,norm.counts.file){
 
 run.gene.set.analysis <- function(species,bin,gsa.dir,deseq.res.dir,min.gns.nu=5,max.gns.nu=1000,pval.cutoff=0.1,nPerm=1e4,fcQ=T,fc2keep=log2(1.5),frac2keep=4){
 
-    if (species %in% c("hg19","hg18")){
+    if (species %in% c("hg19","hg18","hybrid")){
         species = "human"
     }
     if (species %in% c("mm9","mm10")){
