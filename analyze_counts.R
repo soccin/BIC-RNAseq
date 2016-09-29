@@ -14,7 +14,7 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     ## but keep gene symbols (if given) for later use
     #########################################
     cat("    Reformatting raw counts...\n")
-    HTSeq.dat=rr(counts.file,header=T)
+    HTSeq.dat=rr(counts.file,header=T, sep="\t")
     HTSeq.dat=make.rownames(HTSeq.dat)
     gns = NULL
     if ("GeneSymbol" %in% colnames(HTSeq.dat)){
