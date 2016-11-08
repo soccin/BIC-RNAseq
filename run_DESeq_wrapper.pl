@@ -44,6 +44,7 @@ if(!$gsa_out){
 }
 
 if($clusterOnly){
+    print "COMMAND: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"$run_gsa\" \"clustering.dir='$cluster_out'\"\n";
     `$R/Rscript $bin/RunDE.R "bin='$bin'" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'"`;
 }
 else{

@@ -151,7 +151,8 @@ counts=normalize.counts(counts.file=counts.file,
                         percentile=percentile,
                         method=method,
                         bin=bin,
-                        key=key)
+                        key=key,
+                        fitType=fitType)
 cat("    Done!\n\n")
 
 ############################

@@ -48,7 +48,7 @@ normalize.counts <- function(counts.file,output.dir=output.dir,conds=conds,count
     cat("    Making CDS...\n")
 
     cds <- tryCatch({
-        cds <- make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method=method)
+        cds <- make.cds(counts.dat=counts.dat,conds=conds,count.cut=count.cut,libsizeQ=libsizeQ,percentile=percentile,method=method,fitType=fitType)
         }, error = function(err){
             warning(paste("method='",method,"' did not work.. trying method='pooled'",sep=""))
             cds <- tryCatch({
