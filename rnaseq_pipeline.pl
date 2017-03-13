@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript);
+my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript);
 
 $pre = 'TEMP';
 $output = "results";
@@ -46,6 +46,7 @@ my $rsync = "/ifs/solres/$uID";
 GetOptions ('map=s' => \$map,
 	    'pre=s' => \$pre,
 	    'config=s' => \$config,
+            'request=s' => \$request,
 	    'samplekey=s' => \$samplekey,
 	    'comparisons=s' => \$comparisons,
 	    'h|help' => \$help,
@@ -84,14 +85,15 @@ GetOptions ('map=s' => \$map,
             'no_replicates' => \$no_replicates) or exit(1);
 
 
-if(!$map || !$species || !$strand || !$config || !$scheduler || $help){
+if(!$map || !$species || !$strand || !$config || !$request || !$scheduler || $help){
     print <<HELP;
 
-    USAGE: rnaseq_pipeline.pl -map MAP -species SPECIES -strand STRAND -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS -scheduler SCHEDULER
+    USAGE: rnaseq_pipeline.pl -map MAP -species SPECIES -strand STRAND -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS -scheduler SCHEDULER -request REQUEST
 	* MAP: file listing sample mapping information for processing (REQUIRED)
 	* SPECIES: only hg19, mouse (mm10; default) and human-mouse hybrid (hybrid) currently supported (REQUIRED)
 	* STRAND: library strand; valid options are none, forward, reverse (REQUIRED)
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
+        * REQUEST: file containing all request information including PI, Investigator and ProjectID (REQUIRED)
 	* SCHEDULER: currently support for SGE and LSF (REQUIRED)
 	* PRE: output prefix (default: TEMP)
 	* STANDARD_GENE: standard analysis - star alignment, htseq gene count
@@ -152,6 +154,9 @@ if($map){
 }
 if($config){
     $commandLine .= " -config $config";
+}
+if($request){
+    $commandLine .= " -request $request";
 }
 if($strand){
     $commandLine .= " -strand $strand";
@@ -729,16 +734,24 @@ my @crm = ();
 my @crm_tophat = ();
 my @asm = ();
 my @asm_tophat = ();
+my @ism = ();
+my @ism_tophat = ();
 my @cag_jids = ();
 my $ran_cag = 0;
 my $ran_tophatcrm = 0;
 my @tophatcrm_jids = ();
 my $ran_tophatasm = 0;
+my $ran_tophatism = 0;
+my $ran_tophatism_merge = 0;
 my @tophatasm_jids = ();
+my @tophatism_jids = ();
 my $ran_starcrm = 0;
 my @starcrm_jids = ();
 my $ran_starasm = 0;
 my @starasm_jids = ();
+my $ran_starism = 0;
+my $ran_starism_merge = 0;
+my @starism_jids = ();
 my $ran_tophathtseq = 0;
 my @tophathtseq_jids = ();
 my $ran_tophatdexseq = 0;
@@ -1030,6 +1043,17 @@ foreach my $sample (keys %samp_libs_run){
 	    $ran_tophatasm = 1;
 	}
 	push @asm_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_AlignmentSummaryMetrics.txt";
+
+        if(!-e "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done" || $ran_reorder){
+            sleep(3);
+            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_ISM_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.log");
+            my $standardParams = Schedule::queuing(%stdParams);
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectInsertSizeMetrics METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE INPUT=$output/gene/alignments/tophat2/$pre\_$sample\.bam OUTPUT=$output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt HISTOGRAM_FILE=$output/intFiles/tophat2/$sample/$pre\_$sample\_InsertSizeHistogram.txt`;
+            `/bin/touch $output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done`;
+            push @tophatism_jids, "$pre\_$uID\_TOPHAT_ISM_$sample";
+            $ran_tophatism = 1;
+        }
+        push @ism_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt";
     }
 
     my $starOut = '';    
@@ -1194,6 +1218,19 @@ foreach my $sample (keys %samp_libs_run){
 	    $ran_starasm = 1;
 	}
 	push @asm, "-metrics $output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt";
+
+       my @starism = (); 
+       if(!-e "$output/progress/$pre\_$uID\_STAR_ISM_$sample.done" || $ran_staraddrg){
+            sleep(3);
+            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_ISM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_STAR_ISM_$sample.log");
+            my $standardParams = Schedule::queuing(%stdParams);
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectInsertSizeMetrics METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE INPUT=$output/gene/alignments/$pre\_$sample\.bam OUTPUT=$output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt HISTOGRAM_FILE=$output/intFiles/$pre\_$sample\_InsertSizeHistogram.txt`;
+            `/bin/touch $output/progress/$pre\_$uID\_STAR_ISM_$sample.done`;
+            push @starism_jids, "$pre\_$uID\_STAR_ISM_$sample";
+            $ran_starism = 1;
+        }
+        push @ism, "-metrics $output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt";
+
     }
 
     if($detectFusions){
@@ -1535,6 +1572,35 @@ if($star){
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_ASM_STAR.done`;
 	push @syncJobs, "$pre\_$uID\_MERGE_ASM_STAR";
     }
+
+    my $ismfiles = join(" ", @ism);
+    my $sismj = join(",", @starism_jids);
+
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_ISM_STAR.done" || $ran_starism){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_ISM_STAR", job_hold => "$sismj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_ISM_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $ismfiles ">$output/metrics/$pre\_InsertSizeMetrics.txt"`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_ISM_STAR.done`;
+        $ran_starism_merge = 1;
+        push @syncJobs, "$pre\_$uID\_MERGE_ISM_STAR";
+    }
+
+    if (!-e "$output/progress/$pre\_$uID\_GEO_STAR.done" || $ran_starism_merge){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GEO_STAR", job_hold => "$pre\_$uID\_MERGE_ISM_STAR", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_GEO_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        my $prepGeoCmd = "$Bin/prepGEO.pl -map $map -pre $pre -species $species -config $config -strand $strand -request $request";
+        if($htseq){
+            $prepGeoCmd .= " -htseq";
+        }
+        if($deseq){
+            $prepGeoCmd .= " -deseq";
+        }
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $prepGeoCmd`; 
+        `/bin/touch $output/progress/$pre\_$uID\_GEO_STAR.done`;
+        push @syncJobs, "$pre\_$uID\_GEO_STAR";
+    }
 }
 
 my $ran_thmatrix = 0;
@@ -1588,6 +1654,37 @@ if($tophat){
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_ASM_TOPHAT.done`;
 	push @syncJobs, "$pre\_$uID\_MERGE_ASM_TOPHAT";
     }
+
+    my $ismfiles_tophat = join(" ", @ism_tophat);
+    my $tismj = join(",", @tophatism_jids);
+
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_ISM_TOPHAT.done" || $ran_tophatism){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_ISM_TOPHAT", job_hold => "$tismj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_ISM_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $ismfiles_tophat ">$output/metrics/tophat2/$pre\_InsertSizeMetrics.txt"`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_ISM_TOPHAT.done`;
+        push @syncJobs, "$pre\_$uID\_MERGE_ISM_TOPHAT";
+        $ran_tophatism_merge = 1;
+    }
+
+    if (!-e "$output/progress/$pre\_$uID\_GEO_TOPHAT.done" || $ran_tophatism_merge){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GEO_TOPHAT", job_hold => "$pre\_$uID\_MERGE_ISM_TOPHAT", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_GEO_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        my $prepGeoCmd = "$Bin/prepGEO.pl -map $map -pre $pre -species $species -config $config -strand $strand -request $request -aligner tophat";
+        if($htseq){
+            $prepGeoCmd .= " -htseq";
+        }
+        if($deseq){
+            $prepGeoCmd .= " -deseq";
+        }        
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $prepGeoCmd`; 
+        `/bin/touch $output/progress/$pre\_$uID\_GEO_TOPHAT.done`;
+        push @syncJobs, "$pre\_$uID\_GEO_TOPHAT";
+    }
+
+
 }
 
 
