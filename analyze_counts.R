@@ -285,7 +285,7 @@ run.gene.set.analysis <- function(species,bin,gsa.dir,deseq.res.dir,min.gns.nu=5
 
     pd=getwd()
     setwd(deseq.res.dir)
-    fls=grep("ALL",dir(),value=T)
+    fls=grep("^ALL",dir(),value=T)
     AllGSARes = list()
     for (gs in gs.names.list){
         gs.name = remove.sub(gs,"\\.gmt",part2take=1)

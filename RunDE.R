@@ -114,7 +114,7 @@ setwd(pd)
 if (exists("key.file")){
     key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
     ##remove samples to be excluded
-    ex = grep("_EXCLUDE_",key[,2])
+    ex = grep("EXCLUDE_",key[,2],ignore.case=TRUE)
     if(length(ex)>0){
         key = key[-ex,]
     }

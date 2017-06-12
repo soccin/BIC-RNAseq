@@ -520,8 +520,14 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
     $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19_mm10.interval_file";
     $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
-    $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/hg19/star/hg19_v19_gencode';
-
+    $RSEM_DB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/rsem/1.2.25/gencode/v18/hg19_mm10';
+    $BOWTIE_INDEX = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/bowtie/1.1.1/hg19_mm10_bowtie';
+    $BOWTIE2_INDEX = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/bowtie/2.2.4/hg19_mm10_bowtie2';
+    $KALLISTO_INDEX = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/kallisto/v0.42.1/gencode/v18/gencode.v18.annotation.gtf.fasta.idx';
+    $STAR_FUSION_GENOME_LIB = "$STAR_FUSION/Hg19_CTAT_resource_lib";
+    $CHIMERASCAN_INDEX = "/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/chimerascan/0.4.5a";
+    $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19_bodymap_false_positive_chimeras.txt";
+    $chrSplits = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/chromosomes';
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang49';
     }
@@ -1235,7 +1241,7 @@ foreach my $sample (keys %samp_libs_run){
 
     if($detectFusions){
 	`/bin/mkdir -m 775 -p $output/fusion`;
-	if($species =~ /hg19|human/i){	
+	if($species =~ /hg19|human|hybrid/i){	
 	    my @fusions = ();
 	    my $r1_files = join(" ", @R1);
 	    my $r2_files = join(" ", @R2);
@@ -1266,7 +1272,7 @@ foreach my $sample (keys %samp_libs_run){
 	    }	
 
 	    my $zcat2j = join(",", @zcat2_jids);
-	    if($chimerascan){
+	    if($chimerascan && $species =~ /human|hg19/i){   ## do not run for hybrid genomes until we debug hanging issue
 		### NOTE: CHIMERASCAN ONLY WORKS FOR PE READS
 		if($samp_pair{$sample} eq "PE"){
 		    `/bin/mkdir -m 775 -p $output/fusion/chimerascan`;
@@ -1310,7 +1316,7 @@ foreach my $sample (keys %samp_libs_run){
 		push @fusions, "--star $output/fusion/star_fusion/$sample/star-fusion.fusion_candidates.final.abridged";
 	    }
 
-	    if($mapsplice){
+	    if($mapsplice && $species =~ /human|hg19/i){ ## do not run for hybrid genomes until we debug
 		`/bin/mkdir -m 775 -p $output/fusion/mapsplice`;
 		`/bin/mkdir -m 775 -p $output/fusion/mapsplice/$sample`;
 
@@ -1333,7 +1339,7 @@ foreach my $sample (keys %samp_libs_run){
 	    if($defuse){
 		### NOTE: DEFUSE ONLY WORKS FOR PE READS
 		my $defuse_config = '';
-		if($species =~ /human|hg19/i){
+		if($species =~ /human|hg19|hybrid/i){
 		    $defuse_config = "$DEFUSE/scripts/config_homo_sapiens.txt";
 		}
 		elsif($species =~ /mouse|mm10/i){
