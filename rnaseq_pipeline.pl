@@ -528,6 +528,7 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $CHIMERASCAN_INDEX = "/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/chimerascan/0.4.5a";
     $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19_bodymap_false_positive_chimeras.txt";
     $chrSplits = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/chromosomes';
+
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang49';
     }
@@ -1275,6 +1276,8 @@ foreach my $sample (keys %samp_libs_run){
 	    if($chimerascan && $species =~ /human|hg19/i){   ## do not run for hybrid genomes until we debug hanging issue
 		### NOTE: CHIMERASCAN ONLY WORKS FOR PE READS
 		if($samp_pair{$sample} eq "PE"){
+		    my $ran_chimerascan = 0;
+		    my $chimerascanj = '';
 		    `/bin/mkdir -m 775 -p $output/fusion/chimerascan`;
 		    `/bin/mkdir -m 775 -p $output/fusion/chimerascan/$sample`;
 		
@@ -1290,14 +1293,25 @@ foreach my $sample (keys %samp_libs_run){
 			my $standardParams = Schedule::queuing(%stdParams);
 			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $CHIMERASCAN/chimerascan_run.py -p 6 --quals solexa --multihits=10 --filter-false-pos=$CHIMERASCAN_FP_FILTER $CHIMERASCAN_INDEX $output/intFiles/$sample/$sample\_v2_R1.fastq $output/intFiles/$sample/$sample\_v2_R2.fastq $output/fusion/chimerascan/$sample/`;
 			`/bin/touch $output/progress/$pre\_$uID\_CHIMERASCAN_$sample.done`;
+			$chimerascanj = "$pre\_$uID\_CHIMERASCAN_$sample";
 			push @fusion_jids, "$pre\_$uID\_CHIMERASCAN_$sample";
+			$ran_chimerascan = 1;
 			$ran_fusion = 1;
+		    }
+
+		    if(!-e "$output/progress/$pre\_$uID\_CHIMERASCAN_$sample\_CLEANUP.done" || $ran_chimerascan){
+			my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CHIMERASCAN_$sample\_CLEANUP", job_hold => "$chimerascanj", cpu => "1", mem => "2", cluster_out => "$output/progress/$pre\_$uID\_CHIMERASCAN_$sample\_CLEANUP.log");
+			my $standardParams = Schedule::queuing(%stdParams);
+			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/rm -rf $output/fusion/chimerascan/$sample/log $output/fusion/chimerascan/$sample/tmp`;
+			`/bin/touch $output/progress/$pre\_$uID\_CHIMERASCAN_$sample\_CLEANUP.done`;
 		    }
 		    push @fusions, "--chimerascan $output/fusion/chimerascan/$sample/chimeras.bedpe";
 		}
 	    }
 
 	    if($star_fusion){
+		my $ran_star_fusion = 0;
+		my $star_fusionj = '';
 		my $inReads = "--left_fq $output/intFiles/$sample/$sample\_v2_R1.fastq";	
 		if($samp_pair{$sample} eq "PE"){
 		    $inReads .= " --right_fq $output/intFiles/$sample/$sample\_v2_R2.fastq";
@@ -1310,13 +1324,24 @@ foreach my $sample (keys %samp_libs_run){
 		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $STAR_FUSION/STAR-Fusion --genome_lib_dir $STAR_FUSION_GENOME_LIB $inReads --output_dir $output/fusion/star_fusion/$sample`;
 
 		    `/bin/touch $output/progress/$pre\_$uID\_STAR_FUSION_$sample.done`;
+		    $star_fusionj = "$pre\_$uID\_STAR_FUSION_$sample";
 		    push @fusion_jids, "$pre\_$uID\_STAR_FUSION_$sample";
+		    $ran_star_fusion = 1;
 		    $ran_fusion = 1;
+		}
+		 
+		if(!-e "$output/progress/$pre\_$uID\_STAR_FUSION_$sample\_CLEANUP.done" || $ran_star_fusion){
+		    my %stdParams = (scheduler => "$scheduler", job_name => "pre\_$uID\_STAR_FUSION_$sample\_CLEANUP", job_hold => "$star_fusionj", cpu => "1", mem => "2", cluster_out => "$output/progress/$pre\_$uID\_STAR_FUSION_$sample\_CLEANUP.log");
+		    my $standardParams = Schedule::queuing(%stdParams);
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/rm -rf $output/fusion/star_fusion/$sample/_STARpass1/ $output/fusion/star_fusion/$sample/_STARgenome/ $output/fusion/star_fusion/$sample/_STARtmp/ $output/fusion/star_fusion/$sample/star-fusion.predict.intermediates_dir/ $output/fusion/star_fusion/$sample/star-fusion.filter.intermediates_dir/`;
+		    `/bin/touch $output/progress/$pre\_$uID\_STAR_FUSION_$sample\_CLEANUP.done`;
 		}
 		push @fusions, "--star $output/fusion/star_fusion/$sample/star-fusion.fusion_candidates.final.abridged";
 	    }
 
 	    if($mapsplice && $species =~ /human|hg19/i){ ## do not run for hybrid genomes until we debug
+		my $ran_mapsplice = 0;
+		my $mapsplicej = '';
 		`/bin/mkdir -m 775 -p $output/fusion/mapsplice`;
 		`/bin/mkdir -m 775 -p $output/fusion/mapsplice/$sample`;
 
@@ -1330,15 +1355,26 @@ foreach my $sample (keys %samp_libs_run){
 		    my $standardParams = Schedule::queuing(%stdParams);
 		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $MAPSPLICE/mapsplice.py -p 6 --bam --fusion-non-canonical -c $chrSplits -x $BOWTIE_INDEX -o $output/fusion/mapsplice/$sample $inReads --gene-gtf $GTF`;
 		    `/bin/touch $output/progress/$pre\_$uID\_MAPSPLICE_$sample.done`;
+		    $mapsplicej = "$pre\_$uID\_MAPSPLICE_$sample";
 		    push @fusion_jids, "$pre\_$uID\_MAPSPLICE_$sample";
+		    $ran_mapsplice = 1;
 		    $ran_fusion = 1;
 		}
+
+		if(!-e "$output/progress/$pre\_$uID\_MAPSPLICE_$sample\_CLEANUP.done" || $ran_mapsplice){
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MAPSPLICE_$sample\_CLEANUP", job_hold => "$mapsplicej", cpu => "1", mem => "2", cluster_out => "$output/progress/$pre\_$uID\_MAPSPLICE_$sample\_CLEANUP.log");
+		    my $standardParams = Schedule::queuing(%stdParams);
+		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/rm -rf $output/fusion/mapsplice/$sample/logs/`;
+		    `/bin/touch $output/progress/$pre\_$uID\_MAPSPLICE_$sample\_CLEANUP.done`;
+		}		
 		push @fusions, "--mapsplice $output/fusion/mapsplice/$sample/fusions_well_annotated.txt";
 	    }
 
 	    if($defuse){
 		### NOTE: DEFUSE ONLY WORKS FOR PE READS
 		my $defuse_config = '';
+		my $ran_defuse = 0;
+		my $defusej = '';
 		if($species =~ /human|hg19|hybrid/i){
 		    $defuse_config = "$DEFUSE/scripts/config_homo_sapiens.txt";
 		}
@@ -1355,8 +1391,17 @@ foreach my $sample (keys %samp_libs_run){
 			my $standardParams = Schedule::queuing(%stdParams);
 			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $DEFUSE/scripts/defuse.pl --config $defuse_config --output $output/fusion/defuse/$sample --parallel 12 --1fastq $output/intFiles/$sample/$sample\_v2_R1.fastq --2fastq $output/intFiles/$sample/$sample\_v2_R2.fastq`;
 			`/bin/touch $output/progress/$pre\_$uID\_DEFUSE_$sample.done`;
+			$defusej = "$pre\_$uID\_DEFUSE_$sample";
 			push @fusion_jids, "$pre\_$uID\_DEFUSE_$sample";
+			$ran_defuse = 1;
 			$ran_fusion = 1;
+		    }
+
+		    if(!-e "$output/progress/$pre\_$uID\_DEFUSE_$sample\_CLEANUP.done" || $ran_defuse){
+			my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DEFUSE_$sample\_CLEANUP", job_hold => "$defusej", cpu => "1", mem => "2", cluster_out => "$output/progress/$pre\_$uID\_DEFUSE_$sample\_CLEANUP.log");
+			my $standardParams = Schedule::queuing(%stdParams);
+			`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/rm -rf $output/fusion/defuse/$sample/jobs/ $output/fusion/defuse/$sample/log/`;
+			`/bin/touch $output/progress/$pre\_$uID\_DEFUSE_$sample\_CLEANUP.done`;
 		    }
 		    push @fusions, "--defuse $output/fusion/defuse/$sample/results.filtered.tsv";
 		}
