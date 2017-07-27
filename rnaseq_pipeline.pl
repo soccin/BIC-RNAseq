@@ -424,6 +424,7 @@ my $KALLISTO_INDEX = '';
 my $STAR_FUSION_GENOME_LIB = '';
 my $CHIMERASCAN_FP_FILTER = '';
 my $RSEM_DB = '';
+my $QC_BED = '';
 
 my $STAR_MAX_MEM = 100;
 
@@ -431,6 +432,7 @@ if($species =~ /human|hg19/i){
     $species = 'hg19';
     $REF_SEQ = '/ifs/depot/assemblies/H.sapiens/hg19/hg19.fasta';
     $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
+    $QC_BED = "$Bin/data/hg19_GENCODE_GENE_V19_comprehensive.bed";
     $CHIMERASCAN_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/chimerascan/0.4.5a';
     $BOWTIE_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/1.0.0/hg19_bowtie';
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/hg19_bowtie2';
@@ -463,6 +465,7 @@ if($species =~ /human|hg19/i){
 elsif($species =~ /mouse|mm10/i){
     $species = 'mm10';
     $REF_SEQ = '/ifs/depot/assemblies/M.musculus/mm10/mm10.fasta';
+    $QC_BED = "$Bin/data/mm10_GENCODE_VM9_basic.bed";
     $GTF = "$Bin/data/gencode.vM8.annotation.gtf";
     #$DEXSEQ_GTF = "$Bin/data/Mus_musculus.GRCm38.80_canonical_chromosomes.dexseq.gtf";
     $geneNameConversion = "$Bin/data/gencodeM8IDToGeneName.txt";
@@ -676,6 +679,7 @@ elsif($strand =~ /reverse/i){
 `/bin/mkdir -m 775 -p $output/gene/alignments`;
 `/bin/mkdir -m 775 -p $output/metrics`;
 `/bin/mkdir -m 775 -p $output/metrics/crm`;
+`/bin/mkdir -m 775 -p $output/metrics/images`;
 
 my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
 my $additionalParams = Schedule::additionalParams(%addParams);
@@ -743,8 +747,10 @@ my @asm = ();
 my @asm_tophat = ();
 my @ism = ();
 my @ism_tophat = ();
+my $ran_tophat = 0;
 my @cag_jids = ();
 my $ran_cag = 0;
+my @thro_jids = ();
 my $ran_tophatcrm = 0;
 my @tophatcrm_jids = ();
 my $ran_tophatasm = 0;
@@ -752,6 +758,11 @@ my $ran_tophatism = 0;
 my $ran_tophatism_merge = 0;
 my @tophatasm_jids = ();
 my @tophatism_jids = ();
+my $ran_rseqc = 0;
+my $ran_rseqc_merge = 0;
+my $ran_plots = 0;
+my @rseqc_jids = ();
+my $ran_picard_metrics = 0;
 my $ran_starcrm = 0;
 my @starcrm_jids = ();
 my $ran_starasm = 0;
@@ -759,6 +770,8 @@ my @starasm_jids = ();
 my $ran_starism = 0;
 my $ran_starism_merge = 0;
 my @starism_jids = ();
+my $ran_star = 0;
+my @staraddrg_jids = ();
 my $ran_tophathtseq = 0;
 my @tophathtseq_jids = ();
 my $ran_tophatdexseq = 0;
@@ -771,6 +784,9 @@ my $ran_rceg = 0;
 my @rce_jids = ();
 my $ran_kallisto = 0;
 my @kallisto_jids = ();
+my @qcplot_jids = ();
+my @qcpdf_jids = ();
+my $projReadLength = 50;
 
 foreach my $sample (keys %samp_libs_run){
     my @R1 = ();
@@ -804,6 +820,10 @@ foreach my $sample (keys %samp_libs_run){
 			chomp $readO;
 			my @dataO = split(/\n/, $readO);
 			my $readLength = length($dataO[1]);
+                        if($readLength != $projReadLength){
+                            print "WARNING: fastqs have variable read lengths\n";
+                        }
+                        $projReadLength = $readLength;
 			$minReadLength = int(0.5*$readLength);
 			$grl = 1;
 		    }
@@ -945,7 +965,6 @@ foreach my $sample (keys %samp_libs_run){
 	    $inReads .= " $r2_gz_files";
 	}
 	
-	my $ran_tophat = 0;
 	my $tophatj = '';
 	if(!-e "$output/progress/$pre\_$uID\_TOPHAT_$sample.done" || $ran_gz){
 	    sleep(3);
@@ -959,14 +978,17 @@ foreach my $sample (keys %samp_libs_run){
 
 	my $ran_reorder = 0;
 	my $reorderj = '';
-	if(!-e "$output/progress/$pre\_$uID\_TOPHAT_$sample.done" || $ran_tophat){
-	    sleep(3);
+        #if(!-e "$output/progress/$pre\_$uID\_TOPHAT_$sample.done" || $ran_tophat){   ## THIS LOOKS LIKE A BUG - NOT SURE IF I INTRODUCED IT, BUT I'M CHANGING IT - CJ
+        if(!-e "$output/progress/$pre\_$uID\_REORDER_$sample.done" || $ran_tophat){
+            sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_REORDER_$sample", job_hold => "$tophatj", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_REORDER_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar ReorderSam I=$output/intFiles/tophat2/$sample/accepted_hits.bam O=$output/gene/alignments/tophat2/$pre\_$sample\.bam REFERENCE=$REF_SEQ VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true`;
-	    `/bin/touch $output/progress/$pre\_$uID\_TOPHAT_$sample.done`;
+	    `/bin/touch $output/progress/$pre\_$uID\_REORDER_$sample.done`; ## bug fix - CJ
+            `ln -s $output/gene/alignments/tophat2/$pre\_$sample\.bai $output/gene/alignments/tophat2/$pre\_$sample\.bam.bai`;
 	    $reorderj = "$pre\_$uID\_REORDER_$sample";
 	    $ran_reorder = 1;
+            push @thro_jids, $reorderj;
 	}
 	
 	if($cufflinks){
@@ -1061,10 +1083,23 @@ foreach my $sample (keys %samp_libs_run){
             $ran_tophatism = 1;
         }
         push @ism_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt";
+
+        if(!-e "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.done" || $ran_reorder){
+            `ln -s $output/gene/alignments/tophat2/$pre\_$sample\.bai $output/gene/alignments/tophat2/$pre\_$sample\.bam.bai`;
+            sleep(3);
+            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_TOPHAT_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.log");
+            my $standardParams = Schedule::queuing(%stdParams);
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/qc/rseqc.pl -pre $pre -config $config -bam $output/gene/alignments/tophat2/$pre\_$sample\.bam -bed $QC_BED -sample $sample -intdir $output/intFiles/$sample -outdir $output/metrics/images -progdir $output/progress -scheduler $scheduler -readlen $projReadLength -layout $samp_pair{$sample}`;
+            `/bin/touch $output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.done`;
+            push @rseqc_jids, "$pre\_$uID\_RSEQC_TOPHAT_$sample";
+            push @qcpdf_jids, "$pre\_$uID\_RSEQC_TOPHAT_$sample";
+            $ran_rseqc = 1;
+        }
     }
 
     my $starOut = '';    
     if($star){
+        $ran_star = 1;
 	my $inReads = "$r1_gz_files";	
 	if($samp_pair{$sample} eq "PE"){
 	    $inReads .= " $r2_gz_files";
@@ -1145,8 +1180,10 @@ foreach my $sample (keys %samp_libs_run){
 	    my $standardParams = Schedule::queuing(%stdParams);
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Xms256m -Xmx10g -XX:-UseGCOverheadLimit -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar AddOrReplaceReadGroups I=$starOut O=$output/gene/alignments/$pre\_$sample\.bam SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT TMP_DIR=/scratch/$uID CREATE_INDEX=true RGID=$sample\_1 RGLB=_1 RGPL=Illumina RGPU=$sample\_1 RGSM=$sample`;
 	    `/bin/touch $output/progress/$pre\_$uID\_STAR_AORRG_$sample.done`;
+            `ln -s $output/gene/alignments/$pre\_$sample\.bai $output/gene/alignments/$pre\_$sample\.bam.bai`;
 	    $staraddrgj = "$pre\_$uID\_STAR_AORRG_$sample";
-	    $ran_staraddrg = 1;	
+	    $ran_staraddrg = 1;
+            push @staraddrg_jids, $staraddrgj;
 	}
 
 	if($cufflinks){
@@ -1237,6 +1274,17 @@ foreach my $sample (keys %samp_libs_run){
             $ran_starism = 1;
         }
         push @ism, "-metrics $output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt";
+
+        if(!-e "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.done" || $ran_staraddrg){
+            sleep(3);
+            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_STAR_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.log");
+            my $standardParams = Schedule::queuing(%stdParams);
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/qc/rseqc.pl -pre $pre -config $config -bam $output/gene/alignments/$pre\_$sample\.bam -bed $QC_BED -sample $sample -intdir $output/intFiles/$sample -outdir $output/metrics/images -progdir $output/progress -scheduler $scheduler -readlen $projReadLength -layout $samp_pair{$sample} -sync`;
+            `/bin/touch $output/progress/$pre\_$uID\_RSEQC_STAR_$sample.done`;
+            push @rseqc_jids, "$pre\_$uID\_RSEQC_STAR_$sample";
+            push @qcpdf_jids, "$pre\_$uID\_RSEQC_STAR_$sample";
+            $ran_rseqc = 1;
+        }
 
     }
 
@@ -1610,6 +1658,19 @@ if($star){
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $crmfiles ">$output/metrics/$pre\_CollectRnaSeqMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_CRM_STAR.done`;
 	push @syncJobs, "$pre\_$uID\_MERGE_CRM_STAR";
+        push @qcplot_jids, "$pre\_$uID\_MERGE_CRM_STAR";
+        $ran_picard_metrics = 1;
+    }
+
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_STAR.done" || $ran_starcrm){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CRM_HIST_STAR", job_hold => "$scrmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeCollectRnaSeqHistograms.py $output/intFiles _CollectRnaSeqMetrics.txt $output/metrics/$pre\_CollectRnaSeqHistograms.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_CRM_HIST_STAR.done`;
+        push @syncJobs, "$pre\_$uID\_MERGE_CRM_HIST_STAR";
+        push @qcplot_jids, "$pre\_$uID\_MERGE_CRM_HIST_STAR";
+        $ran_picard_metrics = 1;
     }
 
     my $asmfiles = join(" ", @asm);
@@ -1622,6 +1683,8 @@ if($star){
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $asmfiles ">$output/metrics/$pre\_AlignmentSummaryMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_ASM_STAR.done`;
 	push @syncJobs, "$pre\_$uID\_MERGE_ASM_STAR";
+        push @qcplot_jids, "$pre\_$uID\_MERGE_ASM_STAR";
+        $ran_picard_metrics = 1;
     }
 
     my $ismfiles = join(" ", @ism);
@@ -1635,6 +1698,7 @@ if($star){
         `/bin/touch $output/progress/$pre\_$uID\_MERGE_ISM_STAR.done`;
         $ran_starism_merge = 1;
         push @syncJobs, "$pre\_$uID\_MERGE_ISM_STAR";
+        push @qcplot_jids, "$pre\_$uID\_MERGE_ISM_STAR";
     }
 
     if (!-e "$output/progress/$pre\_$uID\_GEO_STAR.done" || $ran_starism_merge){
@@ -1651,6 +1715,118 @@ if($star){
         `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $prepGeoCmd`; 
         `/bin/touch $output/progress/$pre\_$uID\_GEO_STAR.done`;
         push @syncJobs, "$pre\_$uID\_GEO_STAR";
+    }
+
+    my $sargj = join(",",@staraddrg_jids);
+
+
+    ##### THE GENE_BODY_COVERAGE MODULE TAKES >24 HOURS, SO NOT SURE IF IT'S WORTH EVER KEEPING IT,
+    ##### BUT AT LEAST LEAVING IT OUT FOR NOW
+
+    #if(!-e "$output/progress/$pre\_$uID\_RSEQC_GBC_STAR.done" || $ran_star){
+    #    sleep(3);
+    #    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_GBC_STAR", job_hold => "$sargj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_GBC_STAR.log");
+    #    my $standardParams = Schedule::queuing(%stdParams);
+    #    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/geneBody_coverage.py -r $QC_BED -i $output/gene/alignments/ -o $output/intFiles/$pre\_RSEQC_STAR_geneBody_coverage`;
+    #    `/bin/touch $output/progress/$pre\_$uID\_RSEQC_GBC_STAR.done`;
+
+        ## move only the output pdf file to delivered results
+    #    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_GBC_STAR_MV", job_hold => "$pre\_$uID\_RSEQC_GBC_STAR", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_GBC_STAR_MV.log");
+    #    my $standardParams = Schedule::queuing(%stdParams);
+    #    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams mv $output/intFiles/$pre\_RSEQC_STAR_geneBody_coverage*.pdf $output/metrics/images`;
+    #    push @qcpdf_jids, "$pre\_$uID\_RSEQC_GBC_STAR_MV";
+    #}
+
+    ## merge read distribution
+    my $rseqcj = join(",",@rseqc_jids);
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_STAR.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_RD_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_STAR.log");
+         my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py read_distribution $output/intFiles _read_distribution.txt $output/metrics/$pre\_rseqc_read_distribution.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_RD_STAR.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_RD_STAR";
+        $ran_rseqc_merge = 1;
+    }
+
+    ## merge clipping profiles
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_STAR.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_CP_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py clipping_profile $output/intFiles .clipping_profile.xls $output/metrics/$pre\_rseqc_clipping_profiles`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_CP_STAR.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_CP_STAR";
+        $ran_rseqc_merge = 1;
+    }
+
+    ## merge GC content
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_STAR.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_GC_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py gc_content $output/intFiles GC.xls $output/metrics/$pre\_rseqc_gc_content.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_GC_STAR.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_GC_STAR";
+        $ran_rseqc_merge = 1;
+    }
+
+    ## merge bam stats
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_STAR.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_BS_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py bam_stats $output/intFiles bam_stat.txt $output/metrics/$pre\_rseqc_bam_stats.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_BS_STAR.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_BS_STAR";
+        $ran_rseqc_merge = 1;
+    }
+
+    ## merge insertion profiles
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_STAR.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_IP_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_STAR.log");
+         my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py insertion_profile $output/intFiles .insertion_profile.xls $output/metrics/$pre\_rseqc_insertion_profiles`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_IP_STAR.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_IP_STAR";
+        $ran_rseqc_merge = 1;
+    }
+
+    ## merge deletion profiles
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_DP_STAR", job_hold => "$rseqcj", DPu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py deletion_profile $output/intFiles .deletion_profile.txt $output/metrics/$pre\_rseqc_deletion_profiles.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_DP_STAR";
+        $ran_rseqc_merge = 1;
+    }
+
+    ## Plot merged RSEQC files
+    if(!-e "$output/progress/$pre\_$uID\_QC_PLOT_STAR.done" || $ran_rseqc_merge || $ran_picard_metrics){
+        sleep(3);
+        my $qcplotj = join(",",@qcplot_jids);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QC_PLOT_STAR", job_hold => "$qcplotj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QC_PLOT_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/qc/plot_metrics.R $output/metrics $output/metrics/images $pre`;
+        `/bin/touch $output/progress/$pre\_$uID\_QC_PLOT_STAR.done`;
+        push @qcpdf_jids, "$pre\_$uID\_QC_PLOT_STAR";
+        $ran_plots = 1;
+    }
+
+    ## QCPDF containing plots of merged data
+    if(!-e "$output/progress/$pre\_$uID\_QCPDF_STAR.done" || $ran_rseqc || $ran_plots){
+        sleep(3);
+        my $qcpdfj = join(",",@qcpdf_jids);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QCPDF_STAR", job_hold => "$qcpdfj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QCPDF_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        my $svnRev = `svn info $Bin | grep Revision | cut -d " " -f 2`;
+        chomp $svnRev;
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -cp .:lib/* -jar $Bin/qc/QCPDF.jar -rf $request -v $svnRev -d $output/metrics -o $output/metrics`;
+        `/bin/touch $output/progress/$pre\_$uID\_QCPDF_STAR.done`;
+        push @syncJobs, "$pre\_$uID\_QCPDF_STAR";
     }
 }
 
@@ -1692,6 +1868,19 @@ if($tophat){
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $crmfiles_tophat ">$output/metrics/tophat2/$pre\_CollectRnaSeqMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_CRM_TOPHAT.done`;
 	push @syncJobs, "$pre\_$uID\_MERGE_CRM_TOPHAT";
+        push @qcpdf_jids, "$pre\_$uID\_MERGE_CRM_TOPHAT";
+        $ran_picard_metrics = 1;
+    }
+
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_TOPHAT.done" || $ran_starcrm){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CRM_HIST_TOPHAT", job_hold => "$tcrmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/mergeCollectRnaSeqHistograms.py $output/intFiles _CollectRnaSeqMetrics.txt $output/metrics`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_CRM_HIST_TOPHAT.done`;
+        push @syncJobs, "$pre\_$uID\_MERGE_CRM_HIST_TOPHAT";
+        push @qcplot_jids, "$pre\_$uID\_MERGE_CRM_HIST_TOPHAT";
+        $ran_picard_metrics = 1;
     }
 
     my $asmfiles_tophat = join(" ", @asm_tophat);
@@ -1704,6 +1893,8 @@ if($tophat){
 	`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/mergePicardMetrics.pl $asmfiles_tophat ">$output/metrics/tophat2/$pre\_AlignmentSummaryMetrics.txt"`;
 	`/bin/touch $output/progress/$pre\_$uID\_MERGE_ASM_TOPHAT.done`;
 	push @syncJobs, "$pre\_$uID\_MERGE_ASM_TOPHAT";
+        push @qcplot_jids, "$pre\_$uID\_MERGE_ASM_TOPHAT";
+        $ran_picard_metrics = 1;
     }
 
     my $ismfiles_tophat = join(" ", @ism_tophat);
@@ -1735,7 +1926,106 @@ if($tophat){
         push @syncJobs, "$pre\_$uID\_GEO_TOPHAT";
     }
 
+    my $throj = join(",",@thro_jids);
+    #if(!-e "$output/progress/$pre\_$uID\_RSEQC_GBC_TOPHAT.done" || $ran_tophat){
+    #    sleep(3);
+    #    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_GBC_TOPHAT", job_hold => "$throj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_GBC_TOPHAT.log");
+    #    my $standardParams = Schedule::queuing(%stdParams);
+    #    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/geneBody_coverage.py -r $QC_BED -i $output/gene/alignments/ -o $output/intFiles/$pre\_RSEQC_TOPHAT_geneBody_coverage`;
+    #    `/bin/touch $output/progress/$pre\_$uID\_RSEQC_GBC_TOPHAT.done`;
 
+    #    ## move only the output pdf file to delivered results
+    #    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_GBC_TOPHAT_MV", job_hold => "$pre\_$uID\_RSEQC_GBC_TOPHAT", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_GBC_TOPHAT_MV.log");
+    #    my $standardParams = Schedule::queuing(%stdParams);
+    #    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams mv $output/intFiles/$pre\_RSEQC_TOPHAT_geneBody_coverage*.pdf $output/metrics/images`;
+    #    push @qcpdf_jids, "$pre\_$uID\_RSEQC_GBC_TOPHAT_MV";
+    #}
+
+    ## merge read distribution
+    my $rseqcj = join(",",@rseqc_jids);
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT.log");
+         my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py read_distribution $output/intFiles _read_distribution.txt $output/metrics/$pre\_rseqc_read_distribution.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT";
+    }
+
+    ## merge clipping profiles
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py clipping_profile $output/intFiles .clipping_profile.xls $output/metrics/$pre\_rseqc_clipping_profiles`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT";
+    }
+
+    ## merge GC content
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py gc_content $output/intFiles GC.xls $output/metrics/$pre\_rseqc_gc_content.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT";
+    }
+
+    ## merge bam stats
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py bam_stats $output/intFiles bam_stat.txt $output/metrics/$pre\_rseqc_bam_stats.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT";
+    }
+
+    ## merge insertion profiles
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT.log");
+         my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py insertion_profile $output/intFiles .insertion_profile.xls $output/metrics/$pre\_rseqc_insertion_profiles`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT";
+    }
+
+    ## merge deletion profiles
+    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT.done" || $ran_rseqc){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT", job_hold => "$rseqcj", DPu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py deletion_profile $output/intFiles .deletion_profile.txt $output/metrics/$pre\_rseqc_deletion_profiles.txt`;
+        `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT.done`;
+        push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT";
+    }
+
+    if(!-e "$output/progress/$pre\_$uID\_QC_PLOT_TOPHAT.done" || $ran_rseqc || $ran_picard_metrics){
+        sleep(3);
+        my $qcplotj = join(",",@qcplot_jids);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QC_PLOT_TOPHAT", job_hold => "$qcplotj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QC_PLOT_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/qc/plot_metrics.R $output/metrics $output/metrics $pre`;
+        `/bin/touch $output/progress/$pre\_$uID\_QC_PLOT_TOPHAT.done`;
+        push @qcpdf_jids, "$pre\_$uID\_QC_PLOT_TOPHAT";
+        $ran_plots = 1;
+    }
+
+    ## QC PDF
+    if(!-e "$output/progress/$pre\_$uID\_QCPDF_TOPHAT.done" || $ran_rseqc || $ran_plots){
+        sleep(3);
+        my $qcpdfj = join(",",@qcpdf_jids);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QCPDF_TOPHAT", job_hold => "$qcpdfj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QCPDF_TOPHAT.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        my $svnRev = `svn info $Bin | grep Revision | cut -d " " -f 2`;
+        chomp $svnRev;
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -jar $Bin/qc/QCPDF.jar -rf $request -v $svnRev -d $output/metrics -o $output/metrics`;
+        `/bin/touch $output/progress/$pre\_$uID\_QCPDF_TOPHAT.done`;
+        push @syncJobs, "$pre\_$uID\_QCPDF_TOPHAT";
+    }
+ 
 }
 
 

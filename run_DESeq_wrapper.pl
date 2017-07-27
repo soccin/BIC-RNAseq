@@ -44,8 +44,8 @@ if(!$gsa_out){
 }
 
 if($clusterOnly){
-    print "COMMAND: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"$run_gsa\" \"clustering.dir='$cluster_out'\"\n";
-    `$R/Rscript $bin/RunDE.R "bin='$bin'" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'"`;
+    print "COMMAND: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"$run_gsa\" \"clustering.dir='$cluster_out'\"\n";
+    `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'"`;
 }
 else{
     open(COMP, "$comparisons") || die "Can't open comparisons file $comparisons $!";
@@ -64,8 +64,8 @@ else{
         $reps = "no.replicates=TRUE";
     }
 
-    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"\n";
+    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\"  \"pre='$pre'\"  \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\" \"pre='$pre'\"\n";
 
 
-    `$R/Rscript $bin/RunDE.R "bin='$bin'" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "$run_gsa" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps"`;
+    `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "pre='$pre'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "$run_gsa" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps"`;
 }
