@@ -350,7 +350,7 @@ if(diff.exp){
       #
       if(heatmaps & !is.null(de.res$filtered) & length(rownames(de.res$filtered)) > 0){
         genes <- de.res$DEgenes
-        out.file <- file.path(img.dir,
+        out.file <- file.path(diff.exp.fig.dir,
                               paste(pre,"_",condA,"_vs_",condB,"_heatmap.pdf",sep="")
                     )
         bic.standard.heatmap(norm.counts.mat,condA,condB,genes=genes,file=out.file)
