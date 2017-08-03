@@ -2,8 +2,8 @@
 
 use strict;
 use Getopt::Long qw(GetOptions);
-use FindBin qw($Bin);
-use lib "$Bin/lib";
+#use FindBin qw($Bin);
+#use lib "$Bin/lib";
 use Schedule;
 use Cluster;
 
@@ -36,7 +36,7 @@ GetOptions ('pre=s' => \$pre,
 if(!$config || !$sample || !$bam || !$outdir || !$bed || !$intdir || !$progdir || !$scheduler){
 print <<HELP;
 
-    USAGE: rseqc.pl -config CONFIG -bin BIN -bam BAM -sample SAMPLE -intdir INTDIR -outdir OUTDIR -progdir PROGDIR -scheduler SCHEDULER
+    USAGE: rseqc.pl -config CONFIG -bam BAM -sample SAMPLE -intdir INTDIR -outdir OUTDIR -progdir PROGDIR -scheduler SCHEDULER
         *           CONFIG:  file containing configuration, specifically path to python
         *              BAM:  bam file contianing final alignments for one sample
         *           SAMPLE:  sample name (e.g., s_SAMPLE_1)
@@ -287,7 +287,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_ID_$sample.done" || $forceall){
 
 if($sync){
     foreach my $rseqc_jid (@rseqc_jids){
-        `$Bin/jobSync $scheduler $rseqc_jid`;
+        `jobSync $scheduler $rseqc_jid`;
     } 
 }
 
