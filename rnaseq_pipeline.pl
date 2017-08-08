@@ -786,7 +786,6 @@ my $ran_kallisto = 0;
 my @kallisto_jids = ();
 my @qcplot_jids = ();
 my @qcpdf_jids = ();
-my $projReadLength = 50;
 
 foreach my $sample (keys %samp_libs_run){
     my @R1 = ();
@@ -794,6 +793,7 @@ foreach my $sample (keys %samp_libs_run){
     my $readsFlag = 0;
     my $grl = 0;
     my $minReadLength = -1;
+    my $sampReadLength = 0;
     foreach my $lib (keys %{$samp_libs_run{$sample}}){
 	foreach my $run (keys %{$samp_libs_run{$sample}{$lib}}){	    
 	    open(READS, "$output/intFiles/$sample/$lib/$run/files_$sample\_$lib\_$run") || die "Can't open $output/intFiles/$sample/$lib/$run/files_$sample\_$lib\_$run $!";
@@ -820,10 +820,10 @@ foreach my $sample (keys %samp_libs_run){
 			chomp $readO;
 			my @dataO = split(/\n/, $readO);
 			my $readLength = length($dataO[1]);
-                        if($readLength != $projReadLength){
+                        if($sampReadLength > 0 & $readLength != $sampReadLength){
                             print "WARNING: fastqs have variable read lengths\n";
                         }
-                        $projReadLength = $readLength;
+                        $sampReadLength = $readLength;
 			$minReadLength = int(0.5*$readLength);
 			$grl = 1;
 		    }
@@ -1089,7 +1089,7 @@ foreach my $sample (keys %samp_libs_run){
             sleep(3);
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_TOPHAT_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.log");
             my $standardParams = Schedule::queuing(%stdParams);
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl -I $Bin/lib $Bin/qc/rseqc.pl -pre $pre -config $config -bam $output/gene/alignments/tophat2/$pre\_$sample\.bam -bed $QC_BED -sample $sample -intdir $output/intFiles/$sample -outdir $output/metrics/images -progdir $output/progress -scheduler $scheduler -readlen $projReadLength -layout $samp_pair{$sample}`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl -I $Bin/lib $Bin/qc/rseqc.pl -pre $pre -config $config -bam $output/gene/alignments/tophat2/$pre\_$sample\.bam -bed $QC_BED -sample $sample -intdir $output/intFiles/$sample -outdir $output/metrics/images -progdir $output/progress -scheduler $scheduler -readlen $sampReadLength -layout $samp_pair{$sample}`;
             `/bin/touch $output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.done`;
             push @rseqc_jids, "$pre\_$uID\_RSEQC_TOPHAT_$sample";
             push @qcpdf_jids, "$pre\_$uID\_RSEQC_TOPHAT_$sample";
@@ -1279,7 +1279,7 @@ foreach my $sample (keys %samp_libs_run){
             sleep(3);
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_STAR_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.log");
             my $standardParams = Schedule::queuing(%stdParams);
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl -I $Bin/lib $Bin/qc/rseqc.pl -pre $pre -config $config -bam $output/gene/alignments/$pre\_$sample\.bam -bed $QC_BED -sample $sample -intdir $output/intFiles/$sample -outdir $output/metrics/images -progdir $output/progress -scheduler $scheduler -readlen $projReadLength -layout $samp_pair{$sample} -sync`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl -I $Bin/lib $Bin/qc/rseqc.pl -pre $pre -config $config -bam $output/gene/alignments/$pre\_$sample\.bam -bed $QC_BED -sample $sample -intdir $output/intFiles/$sample -outdir $output/metrics/images -progdir $output/progress -scheduler $scheduler -readlen $sampReadLength -layout $samp_pair{$sample} -sync`;
             `/bin/touch $output/progress/$pre\_$uID\_RSEQC_STAR_$sample.done`;
             push @rseqc_jids, "$pre\_$uID\_RSEQC_STAR_$sample";
             push @qcpdf_jids, "$pre\_$uID\_RSEQC_STAR_$sample";

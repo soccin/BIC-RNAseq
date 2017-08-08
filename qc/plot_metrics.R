@@ -14,6 +14,7 @@ cat(c("\n++++++++++++++++ Plot BIC RNA-Seq QC Metrics ++++++++++++++++\n\n"))
 pd <- getwd()
 pre <- "" ## by default, no file prefix
 col.pal <- "Spectral"
+err.code <- 0
 
 ###################################
 ## get user input
@@ -75,16 +76,33 @@ if(!is.null(file)){
 
   cat("Plotting alignment distribution...")
   file.name <- paste(pre,"picard_alignment_distribution.pdf",sep="_")
-  bic.plot.alignment.distribution(crm,col.pal=col.pal,file=file.name)
-
+  tryCatch({
+      bic.plot.alignment.distribution(crm,col.pal=col.pal,file=file.name)
+    }, error = function(e) {
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )
   file.name <- paste(pre,"picard_alignment_distribution_percentage.pdf",sep="_")
-  bic.plot.alignment.distribution(crm,pct=TRUE,col.pal=col.pal,file=file.name)
+  tryCatch({
+      bic.plot.alignment.distribution(crm,pct=TRUE,col.pal=col.pal,file=file.name)
+    }, error = function(e){
+      message(paste0("\n\tERROR: ",e,"\n"))
+      err.code <- 1
+    }
+  )  
+
   cat("Done.\n")
 
   cat("Plotting coverage bias...")
   file.name <- paste(pre,"picard_5prime3prime_bias.pdf",sep="_")
-  bic.plot.5prime3prime.bias(crm,col.pal=col.pal,file=file.name)
-
+  tryCatch({
+      bic.plot.5prime3prime.bias(crm,col.pal=col.pal,file=file.name)
+    }, error = function(e){
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )
   cat("Done.\n")
 } else {
   cat(paste("WARNING: No file matching pattern '",pattern,"' found.\n",sep=""))
@@ -102,11 +120,21 @@ if(!is.null(file)){
 
   cat("Plotting alignment summary...")
   file.name <- paste(pre,"picard_alignment_summary.pdf",sep="_")
-  bic.plot.alignment.summary(asm,col.pal=col.pal,file=file.name)
-
+  tryCatch({
+      bic.plot.alignment.summary(asm,col.pal=col.pal,file=file.name)
+    }, error = function(e){
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )
   file.name <- paste(pre,"picard_alignment_summary_percentage.pdf",sep="_")
-  bic.plot.alignment.summary(asm,pct=TRUE,col.pal=col.pal,file=file.name)
-
+  tryCatch({
+      bic.plot.alignment.summary(asm,pct=TRUE,col.pal=col.pal,file=file.name)
+    }, error = function(e){
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )
   cat("Done.\n")
 } else {
   cat(paste("WARNING: No file matching pattern '",pattern,"' found.\n",sep=""))
@@ -125,8 +153,13 @@ if(!is.null(file)){
   cat("Plotting normalized coverage...")
   file.name <- paste(pre,"picard_coverage.pdf",sep="_")
   #bic.plot.coverage(cov,file=file.name)
-  bic.plot.rseqc.line.chart(cov,"Normalized Coverage",file=file.name)
-
+  tryCatch({
+      bic.plot.rseqc.line.chart(cov,"Normalized Coverage",file=file.name)
+    }, error = function(e){
+      message(paste0("\n\tERROR: ",e,"\n"))
+      err.code <- 1
+    }
+  )
   cat("Done.\n")
 } else {
   cat(paste("WARNING: No file matching pattern '",pattern,"' found.\n",sep=""))
@@ -150,7 +183,13 @@ file2 <- bic.non.empty.file.found(metrics.dir,pattern)
 
     cat("Plotting RSeQC Insertion profiles...")
     file.name <- file.path(qc.dir,paste(pre,"rseqc_insertion_profiles.pdf",sep="_"))
-    bic.plot.rseqc.line.chart(ip,"Read 1",ip2,"Read 2",main="Insertion Profiles",file=file.name)
+    tryCatch({
+        bic.plot.rseqc.line.chart(ip,"Read 1",ip2,"Read 2",main="Insertion Profiles",file=file.name)
+      }, error = function(e){
+          message(paste0("\n\tERROR: ",e,"\n"))
+          err.code <- 1
+      }
+    )
     cat("Done.\n")
   } else {
     cat(paste("WARNING: No file matching pattern '",pattern,"' found.\n",sep=""))
@@ -171,7 +210,13 @@ if(!is.null(file)){
 
   cat("Plotting RSeQC Deletion profiles...")
   file.name <- file.path(qc.dir,paste(pre,"rseqc_deletion_profiles.pdf",sep="_"))
-  bic.plot.rseqc.line.chart(dat,"Deletion Profiles",file=file.name)
+  tryCatch({
+      bic.plot.rseqc.line.chart(dat,"Deletion Profiles",file=file.name)
+    }, error = function(e){
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )  
   cat("Done.\n")
 } else {
   cat(paste("WARNING: No file matching pattern '",pattern,"' found.\n",sep=""))
@@ -196,7 +241,13 @@ if(!is.null(file)){
 
     cat("Plotting RSeQC Insertion profiles...")
     file.name <- file.path(qc.dir,paste(pre,"rseqc_clipping_profiles.pdf",sep="_"))
-    bic.plot.rseqc.line.chart(dat,"Read 1",dat2,"Read 2",main="Clipping Profiles",file=file.name)
+    tryCatch({
+        bic.plot.rseqc.line.chart(dat,"Read 1",dat2,"Read 2",main="Clipping Profiles",file=file.name)
+      }, error = function(e){
+          message(paste0("\n\tERROR: ",e,"\n"))
+          err.code <- 1
+      }
+    )  
     cat("Done.\n")
   } else {
     cat(paste("WARNING: No file matching pattern '",pattern,"'' found.\n",sep=""))
@@ -218,7 +269,13 @@ if(!is.null(file)){
     
   cat("Plotting RSeQC GC content...")
   file.name <- file.path(qc.dir,paste(pre,"rseqc_gc_content.pdf",sep="_"))
-  bic.plot.rseqc.line.chart(dat,"GC content",file=file.name)
+  tryCatch({
+      bic.plot.rseqc.line.chart(dat,"GC content",file=file.name)
+    }, error = function(e){
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )  
   cat("Done.\n")
 } else {
     cat(paste("WARNING: No file matching pattern '",pattern,"' found.\n",sep=""))
@@ -241,12 +298,24 @@ if(!is.null(file)){
   rd$Samples <- rownames(rd)
   cat("Plotting RSeQC read distribution metrics...")
   file.name <- file.path(qc.dir,paste(pre,"rseqc_read_distribution.pdf",sep="_"))
-  bic.plot.read.distribution(rd,file=file.name)
+  tryCatch({
+      bic.plot.read.distribution(rd,file=file.name)
+    }, error = function(e){
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )  
   cat("Done.\n")
 
   cat("Plotting RSeQC read distribution by percentage...")
   file.name <- paste(pre,"rseqc_read_distribution_percentage.pdf",sep="_")
-  bic.plot.read.distribution(rd,file=file.name,pct=TRUE)
+  tryCatch({
+      bic.plot.read.distribution(rd,file=file.name,pct=TRUE)
+    }, error = function(e){
+        message(paste0("\n\tERROR: ",e,"\n"))
+        err.code <- 1
+    }
+  )  
   cat("Done.\n")
 
 } else {
