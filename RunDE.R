@@ -155,7 +155,7 @@ cat("Done.\n")
 if (exists("key.file")){
     dir.create(diff.exp.dir,showWarnings=FALSE,mode="0755")
     dir.create(diff.exp.fig.dir,showWarnings=FALSE,mode="0755")
-    dir.create(diff.exp.rdat.dir,showWarnings=TRUE,mode="0755")
+    dir.create(diff.exp.rdat.dir,showWarnings=FALSE,mode="0755")
     key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
     ##remove samples to be excluded
     ex = grep("_EXCLUDE_",key[,2])
@@ -197,9 +197,9 @@ cds <- bic.get.deseq.cds(formatted.counts$raw,
 save(cds,file=file.path(diff.exp.rdat.dir,"cds.Rdata"),compress=TRUE)
 
 ################################################################################
-####                                  QC                                    ####
+####                           clustering & QC                              ####
 ################################################################################
-cat("Running QC...")
+cat("Running clustering and QC...")
 setwd(pd)
 tmp <- capture.output(
          suppressMessages(
@@ -218,13 +218,13 @@ tmp <- capture.output(
            )
          )
        )
-tmp <- capture.output(
-         suppressMessages(
-           bic.deseq.plot.pca(cds,
-                              file=file.path(clustering.dir,paste0(pre,"_PCA.pdf"))
-           )
-         )
-       )
+#tmp <- capture.output(
+#         suppressMessages(
+#           bic.deseq.plot.pca(cds,
+#                              file=file.path(clustering.dir,paste0(pre,"_PCA.pdf"))
+#           )
+#         )
+#       )
 tmp <- capture.output(
          suppressMessages(
            bic.plot.dispersion.estimates(cds,
@@ -329,7 +329,7 @@ if(diff.exp){
       ## format and write DE results to file
       ##
       cat("    Writing results for DE genes to file...")
-      file.name <- paste(diff.exp.fig.dir,
+      file.name <- paste(diff.exp.dir,
                          paste("ResDESeq_",condA,"_vs_",condB,".xls",sep=""),
                          sep="/")
       bic.write.deseq.results(de.res$filtered,file.name=file.name,orderPvalQ=orderPvalQ)
@@ -339,7 +339,7 @@ if(diff.exp){
       ## write All DE results to file
       ##
       cat("    Writing results for ALL genes to file...")
-      file.name <- paste(diff.exp.fig.dir,
+      file.name <- paste(diff.exp.dir,
                          paste("ALLResDESeq_",condA,"_vs_",condB,".xls",sep=""),
                          sep="/")
       bic.write.deseq.results(de.res$all.res,file.name=file.name,orderPvalQ=orderPvalQ)
