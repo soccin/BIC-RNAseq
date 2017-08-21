@@ -91,10 +91,10 @@ def print_matrix(matrix, all_y, metric_name, outfile):
     return
     
 def merge_stats(args):
-    stats = {"insertion_profile" : Stat("insertion_profile","Position",["Read-1","Read-2"],parse_insertion_profiles,"column"),
+    stats = {"insertion_profile" : Stat("insertion_profile","Position",["Position"],parse_insertion_profiles,"column"),
              "deletion_profile" : Stat("deletion_profile","Position",["read_position"],parse_deletion_profiles,"column"),
              "gc_content" : Stat("gc_content","GC%",["GC%"],parse_gc_content,"column"),
-             "clipping_profile" : Stat("clipping_profile","Position",["Read-1","Read-2"],parse_clipping_profiles,"column"),
+             "clipping_profile" : Stat("clipping_profile","Position",["Position"],parse_clipping_profiles,"column"),
              "bam_stats" : Stat("bam_stats","Stat",["Total"],parse_bam_stats,"row"),
              "duplication_rate" : Stat("duplication_rate","Occurrence",["Occurrence"],parse_duplication_rate,"column"),
              "read_distribution" : Stat("read_distribution","Group",["Group"],parse_read_distribution,"row")
@@ -121,8 +121,13 @@ def merge_stats(args):
             all_y = []
             matrix = OrderedDict()
             of = outfile
-            if len(stat.header_patterns) > 1:
-                of = outfile + "_" + hp + ".txt"
+            indivReads = False            
+
+            if stat.name in ["insertion_profile","clipping_profile"]:
+                matrix["Read-1"] = OrderedDict()
+                matrix["Read-2"] = OrderedDict()
+                indivReads = True
+
             for file in files:
                 samp = sample_id(file)
                 if file_empty(file):
@@ -131,18 +136,23 @@ def merge_stats(args):
                     print >> sys.stderr, "WARNING: Duplicate sample found! Skipping " + file
                     continue
                 print file
-                ## insertion profile files have Read-1 info, then
-                ## read-2 info in the same file, so for that reason
-                ## only, we loop through the two header patterns
+
                 with open(file,'r') as fl:        
+                    read = None
                     while not hp in fl.readline():
-                        next
+                        continue
+                    if indivReads:
+                        read = "Read-1"
                     for line in fl:
                         line = line.strip()
+                        if line in ["Read-1:","Read-2:"]:
+                            read = line[:-1]
+                            continue
                         if not (line and len(line.split()) > 1):
                             continue
                         metric,value = stat.parse_method(line)
                         if metric and value:
+                            print metric, value
                             try:
                                 metric = int(float(metric))
                             except:
@@ -153,14 +163,33 @@ def merge_stats(args):
                             else:
                                 x = metric
                                 y = samp
-                            if not x in matrix:
-                                matrix[x] = OrderedDict()
-                            if not y in matrix[x]:
-                                matrix[x][y] = 0
-                            matrix[x][y] = value
+
+                            if indivReads:
+                                if not read:
+                                    print "What the hell?"
+                                    break
+                                if not x in matrix[read]:
+                                    matrix[read][x] = OrderedDict()
+                                if not y in matrix[read][x]:
+                                    matrix[read][x][y] = 0
+                                matrix[read][x][y] = value
+
+                            else:
+                                if not x in matrix:
+                                    matrix[x] = OrderedDict()
+                                if not y in matrix[x]:
+                                    matrix[x][y] = 0
+                                matrix[x][y] = value
+                            
                             if not y in all_y:
                                 all_y.append(y)
-            print_matrix(matrix, all_y, stat.metric, of)
+            if indivReads:
+                for r in matrix.keys():
+                    if matrix[r]:
+                        of = outfile + "_" + r + ".txt"
+                        print_matrix(matrix[r], all_y, stat.metric, of)
+            else:
+                print_matrix(matrix, all_y, stat.metric, of)
         print "\n"
     else:
         print >> sys.stderr, "No files matching pattern " + pattern + " found."

@@ -316,6 +316,7 @@ if($deseq || $dexseq || $htseq || $cufflinks){
 }
 
 my %mapping_samples = ();
+my %ism_samples = ();
 open(MA, "$map") or die "Can't open mapping file $map $!";
 while(<MA>){
     chomp;
@@ -325,6 +326,11 @@ while(<MA>){
     $mapping_samples{$data[1]} = 1;
     if(!-d $data[3]){
 	die "$data[3] does not exist\n";
+    }
+    ## keep track of PE/SE for InsertSizeMetrics
+    if($data[4] eq "PE"){
+        print "ADDING $data[1] to list of PE samples for ISM\n";
+        $ism_samples{$data[1]} = 1;
     }
 }
 close MA;
@@ -1073,16 +1079,18 @@ foreach my $sample (keys %samp_libs_run){
 	}
 	push @asm_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_AlignmentSummaryMetrics.txt";
 
-        if(!-e "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done" || $ran_reorder){
-            sleep(3);
-            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_ISM_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.log");
-            my $standardParams = Schedule::queuing(%stdParams);
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectInsertSizeMetrics METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE INPUT=$output/gene/alignments/tophat2/$pre\_$sample\.bam OUTPUT=$output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt HISTOGRAM_FILE=$output/intFiles/tophat2/$sample/$pre\_$sample\_InsertSizeHistogram.txt`;
-            `/bin/touch $output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done`;
-            push @tophatism_jids, "$pre\_$uID\_TOPHAT_ISM_$sample";
-            $ran_tophatism = 1;
+        if(exists $ism_samples{$sample}){
+            if(!-e "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done" || $ran_reorder){
+                sleep(3);
+                my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_ISM_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.log");
+                my $standardParams = Schedule::queuing(%stdParams);
+                `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectInsertSizeMetrics METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE INPUT=$output/gene/alignments/tophat2/$pre\_$sample\.bam OUTPUT=$output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt HISTOGRAM_FILE=$output/intFiles/tophat2/$sample/$pre\_$sample\_InsertSizeHistogram.txt`;
+                `/bin/touch $output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done`;
+                push @tophatism_jids, "$pre\_$uID\_TOPHAT_ISM_$sample";
+                $ran_tophatism = 1;
+            }
+            push @ism_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt";
         }
-        push @ism_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt";
 
         if(!-e "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.done" || $ran_reorder){
             `ln -s $output/gene/alignments/tophat2/$pre\_$sample\.bai $output/gene/alignments/tophat2/$pre\_$sample\.bam.bai`;
@@ -1263,18 +1271,19 @@ foreach my $sample (keys %samp_libs_run){
 	}
 	push @asm, "-metrics $output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt";
 
-       my @starism = (); 
-       if(!-e "$output/progress/$pre\_$uID\_STAR_ISM_$sample.done" || $ran_staraddrg){
-            sleep(3);
-            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_ISM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_STAR_ISM_$sample.log");
-            my $standardParams = Schedule::queuing(%stdParams);
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectInsertSizeMetrics METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE INPUT=$output/gene/alignments/$pre\_$sample\.bam OUTPUT=$output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt HISTOGRAM_FILE=$output/intFiles/$pre\_$sample\_InsertSizeHistogram.txt`;
-            `/bin/touch $output/progress/$pre\_$uID\_STAR_ISM_$sample.done`;
-            push @starism_jids, "$pre\_$uID\_STAR_ISM_$sample";
-            $ran_starism = 1;
+        if(exists $ism_samples{$sample}){
+           print "Running ISM for $sample\n";
+           if(!-e "$output/progress/$pre\_$uID\_STAR_ISM_$sample.done" || $ran_staraddrg){
+               sleep(3);
+               my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_ISM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_STAR_ISM_$sample.log");
+               my $standardParams = Schedule::queuing(%stdParams);
+               `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -Djava.io.tmpdir=/scratch/$uID -jar $PICARD/picard.jar CollectInsertSizeMetrics METRIC_ACCUMULATION_LEVEL=null METRIC_ACCUMULATION_LEVEL=SAMPLE INPUT=$output/gene/alignments/$pre\_$sample\.bam OUTPUT=$output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt HISTOGRAM_FILE=$output/intFiles/$pre\_$sample\_InsertSizeHistogram.txt`;
+               `/bin/touch $output/progress/$pre\_$uID\_STAR_ISM_$sample.done`;
+               push @starism_jids, "$pre\_$uID\_STAR_ISM_$sample";
+               $ran_starism = 1;
+           }
+           push @ism, "-metrics $output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt";
         }
-        push @ism, "-metrics $output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt";
-
         if(!-e "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.done" || $ran_staraddrg){
             sleep(3);
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_STAR_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.log");
