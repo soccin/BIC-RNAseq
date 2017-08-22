@@ -329,7 +329,6 @@ while(<MA>){
     }
     ## keep track of PE/SE for InsertSizeMetrics
     if($data[4] eq "PE"){
-        print "ADDING $data[1] to list of PE samples for ISM\n";
         $ism_samples{$data[1]} = 1;
     }
 }
@@ -1272,7 +1271,6 @@ foreach my $sample (keys %samp_libs_run){
 	push @asm, "-metrics $output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt";
 
         if(exists $ism_samples{$sample}){
-           print "Running ISM for $sample\n";
            if(!-e "$output/progress/$pre\_$uID\_STAR_ISM_$sample.done" || $ran_staraddrg){
                sleep(3);
                my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_ISM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_STAR_ISM_$sample.log");
