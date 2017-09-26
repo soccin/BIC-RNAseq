@@ -148,7 +148,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.done" || $forceall){
 ### read GC
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.done" || $forceall){
     print "Running read_GC.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RGC_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RGC_$sample", cpu => "1", mem => "4", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);    
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/read_GC.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RGC_$sample.done`;
@@ -180,7 +180,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.done" || $forceall){
 ### read quality
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.done" || $forceall){
     print "Running read_quality.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "300", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RQ_$sample.done`;
@@ -260,7 +260,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_JA_$sample.done" || $forceall){
 ### junction saturation
 if(!-e "$progdir/$pre\_$uID\_RSEQC_JS_$sample.done" || $forceall){
     print "Running junction_saturation.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JS_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JS_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JS_$sample", cpu => "1", mem => "8", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JS_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/junction_saturation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_JS_$sample.done`;

@@ -5,6 +5,7 @@ usage <- function(){
     \"metrics.dir    = '[Required: directory containing metrics files]'\"
     \"qc.dir         = '[Required: directory to which PDF files should be saved]'\"
     \"pre            = '[Optional: file prefix for all output files]'\"
+    \"Rlibs          = '[Optional: path to local R libraries]'
     \n\n"
     cat(usage.str)
 }
@@ -15,6 +16,7 @@ pd <- getwd()
 pre <- "" ## by default, no file prefix
 col.pal <- "Spectral"
 err.code <- 0
+Rlibs <- NULL
 
 ###################################
 ## get user input
@@ -31,8 +33,15 @@ if(length(args)==0){
 
 metrics.dir <- args[1]
 qc.dir <- args[2]
-if(length(args)==3){
+if(length(args)>=3){
   pre <- args[3]
+  if(length(args)>=4){
+    Rlibs <- args[4]
+  }
+} 
+ 
+if(!is.null(Rlibs)){
+  .libPaths(c(Rlibs,.libPaths()))
 }
 
 #####################################
@@ -53,6 +62,7 @@ if (!exists("qc.dir")){
 ### Load BIC's rnaseq library
 #####################################
 cat("Loading bicrnaseq library...")
+cat("Rlibs: ",Rlibs,"\n")
 tmp <- capture.output(suppressMessages(library(bicrnaseq)))
 cat("Done.\n")
 

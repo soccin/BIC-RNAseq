@@ -15,6 +15,7 @@ usage <- function(){
                         Note: only human or mouse currently supported; specific
                         build does not matter, as long as it is clearly human or mouse'\"
 
+    \"Rlibs          = [Optional (default=NULL): path to R libraries\"
     \"pre            = [Optional (default='TEMP'): prefix for all output files]\"
     \"diff.exp       = [Optional (default=TRUE): run differential expression analysis]\"
     \"GSA            = [Optional (default=TRUE): run gene set analysis; if running GSA 
@@ -89,7 +90,8 @@ counts.file       <- NULL
 
 norm.counts       <- NULL
 cds               <- NULL
-
+mds.labels        <- FALSE
+Rlibs             <- NULL
  
 ################################################################################
 ####   get user input
@@ -104,10 +106,13 @@ for(i in 1:length(args)){
     eval(parse(text=args[i]))
 }
 
+if(!is.null(Rlibs)){
+  .libPaths(c(Rlibs,.libPaths()))
+}
+
 diff.exp.fig.dir  <- file.path(diff.exp.dir,"figures")
 diff.exp.rdat.dir <- file.path(diff.exp.dir,"Rdata")
 gsa.rdat.dir      <- file.path(gsa.dir,"Rdata")
-
 
 if(test){
   ## run everything to test
@@ -142,7 +147,7 @@ if (GSA && exists("key.file") && exists("comps") && !exists("species")){
 ####   only load lib if input is valid
 ################################################################################
 cat("Loading bicrnaseq library...")
-tmp <- capture.output(suppressMessages(library(bicrnaseq,lib.loc="/home/byrne/R_libs")))
+tmp <- capture.output(suppressMessages(library(bicrnaseq,lib.loc=Rlibs)))
 cat("Done.\n")
 
 
@@ -183,6 +188,7 @@ formatted.counts <- bic.format.htseq.counts(counts.file,key=key)
 ## needed for normalization
 if(is.null(conds)){
   conds <- rep("s",length(colnames(HTSeq.dat)))
+  mds.labels <- TRUE
 }
 
 ## get DESeq countDataSet
@@ -263,7 +269,7 @@ if(exists("norm.counts.mat") && !is.null("norm.counts.mat")){
       stop(err)
     })
   file.name <- file.path(clustering.dir,paste0(pre,"_counts_scaled_MDS.pdf"))
-  bic.mds.clust.samples(norm.counts.mat,file=file.name,conds=conds)
+  bic.mds.clust.samples(norm.counts.mat,file=file.name,conds=conds,labels=mds.labels)
   cat("Done.\n")
 } else {
   cat("ERROR: Can not find normalized counts matrix. Can not cluster samples.\n")
@@ -351,7 +357,7 @@ if(diff.exp){
       if(heatmaps & !is.null(de.res$filtered) & length(rownames(de.res$filtered)) > 0){
         genes <- de.res$DEgenes
         out.file <- file.path(diff.exp.fig.dir,
-                              paste(pre,"_",condA,"_vs_",condB,"_heatmap.pdf",sep="")
+                              paste(pre,"_heatmap_",condA,"_vs_",condB,".pdf",sep="")
                     )
         bic.standard.heatmap(norm.counts.mat,condA,condB,genes=genes,file=out.file)
       }
@@ -362,13 +368,13 @@ if(diff.exp){
       if(GSA){
         if(exists("species") & !is.null(species)){
           gsa.res <- bic.run.gsa(species,de.res$all.res) 
-          if(!is.null(gsa.res$up)){
+          if(!is.null(gsa.res$dn)){
             out.file <- file.path(gsa.dir,
                               paste("GeneSet_Dn_",condA,"_vs_",condB,".xls",sep="")
                         )
             bic.write.dat(gsa.res$dn,file=out.file)
           }
-          if(!is.null(gsa.res$dn)){
+          if(!is.null(gsa.res$up)){
             out.file <- file.path(gsa.dir,
                               paste("GeneSet_Up_",condA,"_vs_",condB,".xls",sep="")
                         )
@@ -378,7 +384,7 @@ if(diff.exp){
         }
       }
     }
-    save(all_results,file=file.path(diff.exp.rdat.dir,"all_DE_results.Rdata"),compress=T)
+    #save(all_results,file=file.path(diff.exp.rdat.dir,"all_DE_results.Rdata"),compress=T)
   } else{
      cat("No sample key or comparisons found. Can not run differential 
           expression analysis.\n")
