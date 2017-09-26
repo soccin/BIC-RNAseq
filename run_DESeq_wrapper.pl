@@ -4,7 +4,7 @@ use strict;
 use Getopt::Long qw(GetOptions);
 
 
-my ($config, $bin, $species, $counts, $samplekey, $comparisons, $clusterOnly, $diff_out, $count_out, $cluster_out, $gsa_out, $help, $no_replicates);
+my ($config, $bin, $species, $counts, $samplekey, $comparisons, $clusterOnly, $diff_out, $count_out, $cluster_out, $gsa_out, $help, $no_replicates, $Rlibs);
 
 my $pre = 'TEMP';
 GetOptions ('pre=s' => \$pre,
@@ -20,6 +20,7 @@ GetOptions ('pre=s' => \$pre,
 	    'gsa_out=s' => \$gsa_out,
  	    'clusterOnly' => \$clusterOnly,
             'no_replicates' => \$no_replicates,
+            'Rlibs=s' => \$Rlibs,
 	    'help' => \$help) or exit(1);
 
 my $R = '';
@@ -37,6 +38,7 @@ while(<CONFIG>){
 }
 close CONFIG;
 
+`export R_LIBS=$Rlibs:\$R_LIBS`;
 
 my $run_gsa = "gsa.dir='$gsa_out'";
 if(!$gsa_out){ 
@@ -44,8 +46,8 @@ if(!$gsa_out){
 }
 
 if($clusterOnly){
-    print "COMMAND: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"$run_gsa\" \"clustering.dir='$cluster_out'\"\n";
-    `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'"`;
+    print "COMMAND: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"$run_gsa\" \"clustering.dir='$cluster_out'\" \"Rlibs='$Rlibs'\" \n";
+    `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'" "Rlibs=$Rlibs"`;
 }
 else{
     open(COMP, "$comparisons") || die "Can't open comparisons file $comparisons $!";
@@ -64,9 +66,9 @@ else{
         $reps = "no.replicates=TRUE";
     }
 
-    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\"  \"pre='$pre'\"  \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\" \"pre='$pre'\"\n";
+    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\"  \"pre='$pre'\"  \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\" \"pre='$pre'\" \"Rlibs='$Rlibs'\"\n";
 
-    my $exit_code = system("$R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"pre='$pre'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"");
+    my $exit_code = system("$R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"pre='$pre'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"" "Rlibs='$Rlibs'");
 
     if($exit_code != 0)
     {
