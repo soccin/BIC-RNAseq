@@ -331,6 +331,9 @@ while(<MA>){
     if($data[4] eq "PE"){
         $ism_samples{$data[1]} = 1;
     }
+
+    `/bin/cp $map $output/`;
+
 }
 close MA;
 
@@ -345,6 +348,8 @@ if($comparisons || $samplekey || $deseq){
 	$sample_comparisons{$data[1]} = 1;
     }
     close SC;
+    `/bin/cp $comparisons $output/`;
+
     
     my %samplekey_samples = ();
     my %samplekey_conditions = ();
@@ -364,6 +369,8 @@ if($comparisons || $samplekey || $deseq){
 	###}
     }
     close SK;
+    `/bin/cp $samplekey $output/`;
+
 
     foreach my $ms (keys %mapping_samples){
 	if(!$samplekey_samples{$ms}){
