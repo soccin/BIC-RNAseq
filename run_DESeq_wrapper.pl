@@ -68,7 +68,7 @@ else{
 
     print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\"  \"pre='$pre'\"  \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\" \"pre='$pre'\" \"Rlibs='$Rlibs'\"\n";
 
-    my $exit_code = system("$R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"pre='$pre'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"" "Rlibs='$Rlibs'");
+    my $exit_code = system("$R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"pre='$pre'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\"" \"Rlibs='$Rlibs'\"");
 
     if($exit_code != 0)
     {
