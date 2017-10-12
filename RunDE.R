@@ -187,7 +187,9 @@ formatted.counts <- bic.format.htseq.counts(counts.file,key=key)
 ## if no conditions given, create a vector of one mock condition, 
 ## needed for normalization
 if(is.null(conds)){
-  conds <- rep("s",length(colnames(HTSeq.dat)))
+  conds <- rep("s",length(colnames(formatted.counts)))
+  mds.labels <- TRUE
+} else if(length(colnames(formatted.counts)) < 20){
   mds.labels <- TRUE
 }
 
@@ -220,17 +222,17 @@ tmp <- capture.output(
          suppressMessages(
            bic.sample.to.sample.distances(cds,
                                          conds,
-                                         file=file.path(clustering.dir,paste0(pre,"_heatmap_sample_to_sample_distances.pdf"))
+                                         file=file.path(sub("/$","",clustering.dir),paste0(pre,"_heatmap_sample_to_sample_distances.pdf"))
            )
          )
        )
-#tmp <- capture.output(
-#         suppressMessages(
-#           bic.deseq.plot.pca(cds,
-#                              file=file.path(clustering.dir,paste0(pre,"_PCA.pdf"))
-#           )
-#         )
-#       )
+tmp <- capture.output(
+         suppressMessages(
+           bic.deseq.plot.pca(cds,
+                              file=file.path(clustering.dir,paste0(pre,"_PCA.pdf"))
+           )
+         )
+       )
 tmp <- capture.output(
          suppressMessages(
            bic.plot.dispersion.estimates(cds,

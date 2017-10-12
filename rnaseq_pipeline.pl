@@ -40,6 +40,9 @@ my $priority_group = "Pipeline";
 my $uID = `/usr/bin/id -u -n`;
 chomp $uID;
 
+my $svnRev = `svn info $Bin | grep Revision | cut -d " " -f 2`;
+chomp $svnRev;
+
 my $email = "$uID\@cbio.mskcc.org";
 my $rsync = "/ifs/solres/$uID";
 
@@ -1636,6 +1639,7 @@ foreach my $sample (keys %samp_libs_run){
 
 my $ran_shmatrix = 0;
 my $shmatrixj = '';
+my $ran_deseq = 0;
 if($star){
     if($htseq){
 	my $starhtseqj = join(",", @starhtseq_jids);
@@ -1836,9 +1840,7 @@ if($star){
         my $qcpdfj = join(",",@qcpdf_jids);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QCPDF_STAR", job_hold => "$qcpdfj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QCPDF_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
-        my $svnRev = `svn info $Bin | grep Revision | cut -d " " -f 2`;
-        chomp $svnRev;
-        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -cp .:lib/* -jar $Bin/qc/QCPDF.jar -rf $request -v $svnRev -d $output/metrics -o $output/metrics`;
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -cp .:lib/*:lib/java/* -jar $Bin/lib/java/PDFReport.jar -rf $request -v $svnRev -d $output/metrics -o $output/metrics`;
         `/bin/touch $output/progress/$pre\_$uID\_QCPDF_STAR.done`;
         push @syncJobs, "$pre\_$uID\_QCPDF_STAR";
     }
@@ -2033,9 +2035,7 @@ if($tophat){
         my $qcpdfj = join(",",@qcpdf_jids);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QCPDF_TOPHAT", job_hold => "$qcpdfj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QCPDF_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
-        my $svnRev = `svn info $Bin | grep Revision | cut -d " " -f 2`;
-        chomp $svnRev;
-        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -jar $Bin/qc/QCPDF.jar -rf $request -v $svnRev -d $output/metrics -o $output/metrics`;
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -jar $Bin/lib/java/PDFReport.jar -rf $request -v $svnRev -d $output/metrics -o $output/metrics`;
         `/bin/touch $output/progress/$pre\_$uID\_QCPDF_TOPHAT.done`;
         push @syncJobs, "$pre\_$uID\_QCPDF_TOPHAT";
     }
@@ -2095,7 +2095,17 @@ if($deseq){
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering -gsa_out $output/gene/gsa -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_STAR";
+            $ran_deseq = 1;
 	}
+
+        if(!-e "$output/progress/$pre\_$uID\_DESeqPDF_STAR.done" || $ran_deseq){
+            sleep(3);
+            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeqPDF_STAR", job_hold => "$pre\_$uID\_DESeq_STAR", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeqPDF_STAR.log");
+            my $standardParams = Schedule::queuing(%stdParams);
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $JAVA/java -cp .:lib/*:lib/java/* -jar $Bin/lib/java/PDFReport.jar -rf $request -v $svnRev -cd $output/gene/clustering -df $output/gene/differentialExpression_gene/figures -o $output/gene/differentialExpression_gene`;
+            `/bin/touch $output/progress/$pre\_$uID\_DESeqPDF_STAR.done`;
+            push @syncJobs, "$pre\_$uID\_DESeqPDF_STAR"; 
+        }
     }
 
     if($tophat){
