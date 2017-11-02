@@ -318,6 +318,8 @@ if($deseq || $dexseq || $htseq || $cufflinks){
     }
 }
 
+`/bin/mkdir -m 775 -p $output`;
+
 my %mapping_samples = ();
 my %ism_samples = ();
 open(MA, "$map") or die "Can't open mapping file $map $!";
@@ -687,7 +689,6 @@ elsif($strand =~ /reverse/i){
 }
 
 
-`/bin/mkdir -m 775 -p $output`; 
 `/bin/mkdir -m 775 -p $output/intFiles`; 
 `/bin/mkdir -m 775 -p $output/progress`;
 `/bin/mkdir -m 775 -p $output/gene`;
