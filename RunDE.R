@@ -338,7 +338,7 @@ if(diff.exp){
       ##
       cat("    Writing results for DE genes to file...")
       file.name <- paste(diff.exp.dir,
-                         paste("ResDESeq_",condA,"_vs_",condB,".xls",sep=""),
+                         paste("ResDESeq_",condB,"_vs_",condA,".xls",sep=""),
                          sep="/")
       bic.write.deseq.results(de.res$filtered,file.name=file.name,orderPvalQ=orderPvalQ)
       cat("Done.\n")
@@ -348,7 +348,7 @@ if(diff.exp){
       ##
       cat("    Writing results for ALL genes to file...")
       file.name <- paste(diff.exp.dir,
-                         paste("ALLResDESeq_",condA,"_vs_",condB,".xls",sep=""),
+                         paste("ALLResDESeq_",condB,"_vs_",condA,".xls",sep=""),
                          sep="/")
       bic.write.deseq.results(de.res$all.res,file.name=file.name,orderPvalQ=orderPvalQ)
       cat("Done.\n")
@@ -372,13 +372,13 @@ if(diff.exp){
           gsa.res <- bic.run.gsa(species,de.res$all.res) 
           if(!is.null(gsa.res$dn)){
             out.file <- file.path(gsa.dir,
-                              paste("GeneSet_Dn_",condA,"_vs_",condB,".xls",sep="")
+                              paste("GeneSet_Dn_",condB,"_vs_",condA,".xls",sep="")
                         )
             bic.write.dat(gsa.res$dn,file=out.file)
           }
           if(!is.null(gsa.res$up)){
             out.file <- file.path(gsa.dir,
-                              paste("GeneSet_Up_",condA,"_vs_",condB,".xls",sep="")
+                              paste("GeneSet_Up_",condB,"_vs_",condA,".xls",sep="")
                         )
             bic.write.dat(gsa.res$up,file=out.file)
           }

@@ -99,7 +99,6 @@ def makeMatrix(args):
                                 matrix[insertSize] = {}
                             if not samp in matrix[insertSize]:
                                 matrix[insertSize][samp] = count                        
-
         printMatrix(matrix,allSamps,outFile)            
 
     else:
