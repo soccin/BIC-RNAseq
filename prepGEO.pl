@@ -261,9 +261,10 @@ print $GEO "title\n";
 
 foreach my $ms(keys %mapping_samples){
     print $GEO $ms . "\n";
-    my $del_bam = $delivery_path . "/gene/alignments/" . $proj . "_" . $ms . ".bam";
+    #my $del_bam = $delivery_path . "/gene/alignments/" . $proj . "_" . $ms . ".bam";
+    my $del_bam = "../../../gene/alignments/" . $proj . "_" . $ms . ".bam";
     my $geo_bam = $rawDir . "/" . $ms . ".bam";
-    `ln -s $del_bam $geo_bam`;
+    `cd $rawDir; ln -s $del_bam $geo_bam`;
 }
 print "Done.\n";
 
@@ -379,6 +380,7 @@ foreach my $ms(keys %mapping_samples){
 
     my $geobam = $ms . ".bam"; ## bam file name to be uploaded to geo
     my $curbam = $output . "/gene/alignments/" . $pre . "_" . $ms . ".bam";  ## path to bam in current working directory
+    #my $curbam = "../../../gene/alignments/" . $pre . "_" . $ms . ".bam"; ## path to bam in current working directory
     print "\n    Getting md5sum...";
     my $bammd5 = `md5sum $curbam | awk '{ print \$1 }'`;
     chomp $bammd5;
