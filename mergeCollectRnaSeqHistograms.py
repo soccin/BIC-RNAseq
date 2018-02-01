@@ -45,11 +45,11 @@ def printMatrix(matrix,allSamps,outFile):
 
     with open(outFile,'w') as out:
         print>>out,header
-        for insertSize in matrix.keys():
+        for position in matrix.keys():
             for samp in allSamps:
-                if not samp in matrix[insertSize]:
-                    matrix[insertSize][samp] = 0 
-            print>>out,"\t".join([str(x) for x in [insertSize]+[matrix[insertSize][samp] for samp in allSamps]])
+                if not samp in matrix[position]:
+                    matrix[position][samp] = 0 
+            print>>out,"\t".join([str(x) for x in [position]+[matrix[position][samp] for samp in allSamps]])
     return
 
 def makeMatrix(args):
@@ -82,6 +82,26 @@ def makeMatrix(args):
                 print>>sys.stderr, "WARNING: This file is empty!"
             else:
                 with open(file,'r') as fl:
+                    lines = fl.read()
+                    if not "## HISTOGRAM" in lines:
+                        print>>sys.stderr, "WARNING: No histogram in file %s" %file
+                        lines = lines.split("\n")
+                        for x in range(len(lines)):
+                            if lines[x].startswith("## METRICS"):
+                                tmp = dict(zip(lines[x+1].split("\t"),lines[x+2].split("\t")))
+                                samp = tmp["SAMPLE"]
+                                if samp in allSamps:
+                                    print "ERROR: sample %s found multiple times!!" %samp
+                                else:
+                                    allSamps.append(samp)
+                        position = "0"
+                        count = 0
+                        if not position in matrix:
+                            matrix[position] = {}
+                        if not samp in matrix[position]:
+                            matrix[position][samp] = count
+                        continue
+                with open(file,'r') as fl:
                     while not "## HISTOGRAM" in fl.readline():
                        next
                     samp = fl.readline().strip().split("\t")[1].split(".normalized_coverage")[0] 
@@ -93,12 +113,12 @@ def makeMatrix(args):
                     for line in fl:
                         if len(line.strip())>0:
                             cols = line.strip().split("\t")
-                            insertSize = cols[0]
+                            position = cols[0]
                             count = cols[1]
-                            if not insertSize in matrix:
-                                matrix[insertSize] = {}
-                            if not samp in matrix[insertSize]:
-                                matrix[insertSize][samp] = count                        
+                            if not position in matrix:
+                                matrix[position] = {}
+                            if not samp in matrix[position]:
+                                matrix[position][samp] = count                        
         printMatrix(matrix,allSamps,outFile)            
 
     else:
