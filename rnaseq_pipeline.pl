@@ -576,6 +576,7 @@ elsif($species =~ /zebrafish|zv10/i){
     $REF_FLAT = "$Bin/data/refFlat__zv10.txt.gz";
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/zv10/star/zv10_v83_ensembl';
     $KALLISTO_INDEX = '';
+    $QC_BED = "$Bin/data/zv10_ENSEMBL_201780417.bed";
 
     $STAR_MAX_MEM = 30;
 }
