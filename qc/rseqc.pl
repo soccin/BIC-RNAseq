@@ -306,4 +306,5 @@ if($sync){
     } 
 }
 
+`sleep 10`;
 exit(0);
