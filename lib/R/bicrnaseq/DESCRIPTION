@@ -1,6 +1,6 @@
 Package: bicrnaseq
 Title: MSKCC Bioinformatics Core RNASeq
-Version: 0.0.11
+Version: 0.0.2
 Author: Caitlin Jones [aut, cre]
 Maintainer: Caitlin Jones <byrne@cbio.mskcc.org>
 Description: All things RNASeq, as implemented by the Bioinformatics Core. Includes
@@ -19,10 +19,10 @@ LazyData: true
 RoxygenNote: 6.0.1
 Suggests: testthat, knitr, rmarkdown
 VignetteBuilder: knitr
-Built: R 3.2.0; ; 2017-10-11 23:44:05 UTC; unix
+Built: R 3.2.0; ; 2018-04-28 00:18:08 UTC; unix
 RemoteType: local
-RemoteUrl: /home/byrne/myRpackages/forks/bicrnaseq
-RemoteSha: NA
+RemoteUrl: /home/byrne/myRpackages/bicrnaseq
+RemoteSha: 3a74d39c32
 RemoteBranch: master
 RemoteUsername: caitlinjones
 RemoteRepo: bicrnaseq
