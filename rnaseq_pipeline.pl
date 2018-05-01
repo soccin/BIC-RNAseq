@@ -548,6 +548,7 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $CHIMERASCAN_INDEX = "/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/chimerascan/0.4.5a";
     $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19_bodymap_false_positive_chimeras.txt";
     $chrSplits = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/chromosomes';
+    $QC_BED = "$Bin/data/hg19_GENCODE_GENE_V19_comprehensive.bed";
 
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang49';
@@ -576,7 +577,7 @@ elsif($species =~ /zebrafish|zv10/i){
     $REF_FLAT = "$Bin/data/refFlat__zv10.txt.gz";
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/zv10/star/zv10_v83_ensembl';
     $KALLISTO_INDEX = '';
-    $QC_BED = "$Bin/data/zv10_ENSEMBL_201780417.bed";
+    $QC_BED = "$Bin/data/zv10_ENSEMBL_20180417.bed";
 
     $STAR_MAX_MEM = 30;
 }
@@ -2088,13 +2089,17 @@ if($deseq){
 	###`/common/sge/bin/lx24-amd64/qsub -N $pre\_$uID\_DESeq_STAR -hold_jid $pre\_$uID\_MATRIX_HTSEQ_STAR -pe alloc 1 -l virtual_free=1G $Bin/qCMD $R/Rscript $Bin/RunDE.R \"\\\"bin='$Bin'\\\"\" \"\\\"species='$species'\\\"\" \"\\\"proj.id='$pre'\\\"\" \"\\\"diff.exp.dir='$output/differentialExpression_gene'\\\"\" \"\\\"counts.file='$output/gene/counts_gene/$pre\_htseq_all_samples.txt'\\\"\" \"\\\"counts.dir='$output/gene/counts_gene'\\\"\" \"\\\"clustering.dir='$output/clustering'\\\"\" \"\\\"gsa.dir='$output/gsa'\\\"\" \"\\\"key.file='$samplekey'\\\"\" \"\\\"comps=c($cmpStr)\\\"\"`;
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_STAR.done" || $ran_shmatrix){
             my $reps = '';
+            my $gsa_out = "-gsa_out $output/gene/gsa";
             if($no_replicates){
                 $reps = '-no_replicates';
+            }
+            if($species !~ /mouse|m10|human|hg19|b37/i){
+                $gsa_out = '';
             }
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering -gsa_out $output/gene/gsa -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering $gsa_out -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_STAR";
             $ran_deseq = 1;
@@ -2116,10 +2121,14 @@ if($deseq){
 	`/bin/mkdir -m 775 -p $output/gene/gsa/tophat2`;
 
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_TOPHAT.done" || $ran_thmatrix){
+            my $reps = '';
+            if($no_replicates){
+                $reps = '-no_replicates';
+            }
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_TOPHAT", job_hold => "$thmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_TOPHAT.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene/tophat2 -count_out $output/gene/counts_gene/tophat2 -cluster_out $output/gene/clustering/tophat2 -gsa_out $output/gene/gsa/tophat2 -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons -Rlibs $Bin/lib/R`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene/tophat2 -count_out $output/gene/counts_gene/tophat2 -cluster_out $output/gene/clustering/tophat2 -gsa_out $output/gene/gsa/tophat2 -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_TOPHAT.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_TOPHAT";
 	}
@@ -2131,10 +2140,14 @@ if($deseq){
 	`/bin/mkdir -m 775 -p $output/transcript/kallisto/clustering`;
 	
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_KALLISTO.done" || $ran_kmatrix){
+            my $reps = '';
+            if($no_replicates){
+                $reps = '-no_replicates';
+            }
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_KALLISTO.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/kallisto/differentialExpression_trans -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -species $species -counts $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/kallisto/differentialExpression_trans -count_out $output/transcript/kallisto/counts_trans -cluster_out $output/transcript/kallisto/clustering -config $config -bin $Bin -species $species -counts $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_KALLISTO.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_KALLISTO";
 	}
@@ -2145,10 +2158,14 @@ if($deseq){
 	`/bin/mkdir -m 775 -p $output/transcript/rsem/clustering`;
 	
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_RSEM.done" || $ran_rmatrix){
+            my $reps = '';
+            if($no_replicates){
+                $reps = '-no_replicates';
+            }
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_RSEM.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/rsem/differentialExpression_trans -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -species $species -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt -samplekey $samplekey -comparisons $comparisons`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/rsem/differentialExpression_trans -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -species $species -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_RSEM.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_RSEM";
 	}

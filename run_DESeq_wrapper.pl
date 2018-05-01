@@ -45,9 +45,12 @@ if(!$gsa_out){
     $run_gsa = "GSA=FALSE";
 }
 
+my $ec = 0;
+
 if($clusterOnly){
     print "COMMAND: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"$run_gsa\" \"clustering.dir='$cluster_out'\" \"Rlibs='$Rlibs'\" \n";
     `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'" "Rlibs=$Rlibs"`;
+    $ec = $? >> 8;
 }
 else{
     open(COMP, "$comparisons") || die "Can't open comparisons file $comparisons $!";
@@ -70,4 +73,8 @@ else{
 
 
     `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "pre='$pre'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "$run_gsa" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps" "Rlibs='$Rlibs'"`;
+
+    $ec = $? >> 8;
 }
+
+if($ec != 0){ die "Error(s) caught from RunDE.R"; }
