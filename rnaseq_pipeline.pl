@@ -2097,7 +2097,7 @@ if($deseq){
             if($species !~ /mouse|m10|human|hg19|b37|hybrid/i){
                 $gsa_out = '';
             }
-            if($species ~ /hybrid/i){
+            if($species =~ /hybrid/i){
                 $deseq_species = "human";
             }
 	    sleep(3);
