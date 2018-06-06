@@ -2090,16 +2090,20 @@ if($deseq){
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_STAR.done" || $ran_shmatrix){
             my $reps = '';
             my $gsa_out = "-gsa_out $output/gene/gsa";
+            my $deseq_species = $species; 
             if($no_replicates){
                 $reps = '-no_replicates';
             }
-            if($species !~ /mouse|m10|human|hg19|b37/i){
+            if($species !~ /mouse|m10|human|hg19|b37|hybrid/i){
                 $gsa_out = '';
+            }
+            if($species ~ /hybrid/i){
+                $deseq_species = "human";
             }
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
-	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering $gsa_out -config $config -bin $Bin -species $species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
+	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering $gsa_out -config $config -bin $Bin -species $deseq_species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_STAR";
             $ran_deseq = 1;
