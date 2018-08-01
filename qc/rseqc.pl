@@ -2,8 +2,8 @@
 
 use strict;
 use Getopt::Long qw(GetOptions);
-#use FindBin qw($Bin);
-#use lib "$Bin/lib";
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 use Schedule;
 use Cluster;
 
@@ -302,7 +302,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_ID_$sample.done" || $forceall){
 
 if($sync){
     foreach my $rseqc_jid (@rseqc_jids){
-        `jobSync $scheduler $rseqc_jid`;
+        `$Bin/jobSync $scheduler $rseqc_jid`;
     } 
 }
 
