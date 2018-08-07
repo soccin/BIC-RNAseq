@@ -1,0 +1,79 @@
+bic.add.rownames2dat    Add a column to matrix containing its row names
+bic.average.by.name     Average all values in a matrix that have the
+                        same 'name'
+bic.check.line.chart.data
+                        Check formatting of input to
+                        bic.plot.rseqc.line.chart()
+bic.check.picard.data   Validate data from PICARD CollectRnaSeqMetrics
+                        or AlignmentSummaryMetrics
+bic.check.read.distribution.data
+                        Check formatting of input to
+                        bic.plot.read.distribution()
+bic.deseq.heatmap       Draw a heatmap of counts table
+bic.deseq.normalize.htseq.counts
+                        Use DESeq to normalize raw HTSeq counts
+bic.deseq.plot.pca      Plot PCA
+bic.file2matrix         Read data file and return as a matrix
+bic.format.htseq.counts
+                        Read in raw HTSeq count file and format for
+                        analysis
+bic.get.deseq.cds       Normalize raw count matrix using DESeq scaling
+                        method
+bic.get.gene.sets       Get the gene sets that meet criteria set by cut
+                        offs
+bic.get.package.info    Get info for one or multiple packages installed
+                        in current R version
+bic.grid.arrange.shared.legend
+                        Arrange multiple plots on one page with one
+                        shared legend
+bic.hclust.samples      Plot heirachical clustering of all samples
+bic.join.strings        Convert a character vector to a delimited
+                        string
+bic.make.colnames       Remove a row from matrix to use the values as
+                        column names
+bic.make.rownames       Remove a column from a matrix and use its
+                        values as the matrix's rownames.
+bic.matrix2numeric      Convert all values in matrix to numeric
+bic.mds.clust.samples   Plot MDS clustering of all samples
+bic.non.empty.file.found
+                        Search for a non-empty file by pattern
+bic.pdf.hclust          Write PDF file containing heierarchical
+                        clustering tree
+bic.plot.5prime3prime.bias
+                        Plot coverage uniformity (5' and 3' bias)
+bic.plot.alignment.distribution
+                        Plot distibution of alignment across different
+                        genomic locations
+bic.plot.alignment.summary
+                        Plot numbers of mapped and unmapped reads for
+                        each sample
+bic.plot.coverage       Plot normalized coverage
+bic.plot.dispersion.estimates
+                        Plot dispersion estimates
+bic.plot.ma             Plot MA
+bic.plot.read.distribution
+                        Plot RSeQC read distribution stats
+bic.plot.rseqc.line.chart
+                        Plot RSeQC sequential metrics in a line graph
+bic.process.gsa.res     Format and filter results from piano::runGSA()
+bic.pval.histogram      Histogram of p-values
+bic.quantile.normalize.htseq.counts
+                        Use quantile normalization to normalize raw
+                        HTSeq counts
+bic.remove.sub          Remove a substring from a string
+bic.run.deseq.comparison
+                        Run a differential expression comparison
+                        between two conditions.
+bic.run.gsa             Run gene set analysis using the package 'piano'
+bic.sample.to.sample.distances
+                        Draw a heatmap showing sample-to-sample
+                        distances using variance stabilized data
+bic.scale.factor.quantile
+                        Non-deseq way to normalize counts(?)
+bic.standard.heatmap    Create PDF of generic red/green/black heatmap
+                        showing relative expression values
+bic.write.dat           Write file containing tab delimited data
+bic.write.deseq.results
+                        Write results for ALL genes and for DE genes
+bic.write.normalized.counts.file
+                        Write normalized counts matrix to file
