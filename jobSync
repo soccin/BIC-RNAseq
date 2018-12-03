@@ -41,7 +41,7 @@ elif [ "$QUEUE" == "SGE" ] || [ "$QUEUE" == "sge" ]; then
 
     QRSH=/common/sge/bin/lx24-amd64/qrsh
     USER=$(/usr/bin/whoami)
-    export TMPDIR=/ifs/data/${USER}/tmp
+    export TMPDIR=/ifs/work/${USER}/tmp
     mkdir -p $TMPDIR
     SEMAPHORE=$(mktemp -t QSYNC_XXXXXXXX)
     echo SYNC $JOBNAME >$SEMAPHORE
