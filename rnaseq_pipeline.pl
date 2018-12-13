@@ -131,8 +131,8 @@ if($output !~ /^\//){
     $output = "$curDir/$output";
 }
 
-if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|dm3|fly|WBcel235/i){
-    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), C.elegans (WBcel235) or zebrafish (zv9/zv10)";
+if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|dm3|fly|WBcel235|sacCer3/i){
+    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), C.elegans (WBcel235), yeast (sacCer3) or zebrafish (zv9/zv10)";
 }
 
 if($r1adaptor){
@@ -448,27 +448,27 @@ my $STAR_MAX_MEM = 100;
 if($species =~ /human|hg19/i){
     $species = 'hg19';
     $REF_SEQ = '/ifs/depot/assemblies/H.sapiens/hg19/hg19.fasta';
-    $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
-    $QC_BED = "$Bin/data/hg19_GENCODE_GENE_V19_comprehensive.bed";
+    $DEXSEQ_GTF = "$Bin/data/human/gencode.v18.annotation_dexseq.gtf";
+    $QC_BED = "$Bin/data/hg19/hg19_GENCODE_GENE_V19_comprehensive.bed";
     $CHIMERASCAN_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/chimerascan/0.4.5a';
     $BOWTIE_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/1.0.0/hg19_bowtie';
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/hg19_bowtie2';
     $chrSplits = '/ifs/depot/assemblies/H.sapiens/hg19/chromosomes';
-    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19.interval_file";
-    $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/hg19/ribosomal_hg19.interval_file";
+    $REF_FLAT = "$Bin/data/hg19/refFlat__hg19.txt.gz";
     $TRANS_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/gencode.v18.annotation';
     $TRANS_INDEX_DEDUP = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/deduplicated/gencode.v18.annotation.dedup';
     $TRANS_FASTA_DEDUP = '/ifs/depot/assemblies/H.sapiens/hg19/index/bowtie/2.2.4/transcriptome/gencode/v18/deduplicated/gencode.v18.annotation.dedup.fa';
-    $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
+    $geneNameConversion = "$Bin/data/human/gencode18IDToGeneName.txt";
     $KALLISTO_INDEX = '/ifs/depot/assemblies/H.sapiens/hg19/index/kallisto/v0.42.1/gencode/v18/gencode.v18.annotation.gtf.fasta.idx';
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/hg19/star/hg19_v19_gencode';
     $STAR_FUSION_GENOME_LIB = "$STAR_FUSION/Hg19_CTAT_resource_lib";
-    $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19_bodymap_false_positive_chimeras.txt";
+    $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19/hg19_bodymap_false_positive_chimeras.txt";
     if($lncrna){
-        $GTF = "$Bin/data/lncipedia.gtf";
+        $GTF = "$Bin/data/human/lncipedia.gtf";
         $starDB = '/ifs/depot/assemblies/H.sapiens/hg19/index/star/2.3.0e_r291/LNCipedia';
     } else {
-        $GTF = "$Bin/data/gencode.v18.annotation.gtf";
+        $GTF = "$Bin/data/human/gencode.v18.annotation.gtf";
 	if($r1adaptor){
 	    $starDB = '/ifs/depot/assemblies/H.sapiens/hg19/index/star/2.4.1d/gencode/v18/overhang49';
 	}
@@ -482,18 +482,18 @@ if($species =~ /human|hg19/i){
 elsif($species =~ /mouse|mm10/i){
     $species = 'mm10';
     $REF_SEQ = '/ifs/depot/assemblies/M.musculus/mm10/mm10.fasta';
-    $QC_BED = "$Bin/data/mm10_GENCODE_VM9_basic.bed";
-    $GTF = "$Bin/data/gencode.vM8.annotation.gtf";
+    $QC_BED = "$Bin/data/mm10/mm10_GENCODE_VM9_basic.bed";
+    $GTF = "$Bin/data/mm10/gencode.vM8.annotation.gtf";
     #$DEXSEQ_GTF = "$Bin/data/Mus_musculus.GRCm38.80_canonical_chromosomes.dexseq.gtf";
-    $geneNameConversion = "$Bin/data/gencodeM8IDToGeneName.txt";
+    $geneNameConversion = "$Bin/data/mm10/gencodeM8IDToGeneName.txt";
     $BOWTIE_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/1.1.1/mm10_bowtie';
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/mm10_bowtie2';
     $chrSplits = '/ifs/depot/assemblies/M.musculus/mm10/chromosomes';
     $TRANS_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/transcriptome/gencode/vM8/gencode.vM8.annotation';
     $TRANS_INDEX_DEDUP = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/transcriptome/gencode/vM8/deduplicated/gencode.vM8.annotation.dedup';
     $TRANS_FASTA_DEDUP = '/ifs/depot/assemblies/M.musculus/mm10/index/bowtie/2.2.4/transcriptome/gencode/vM8/deduplicated/gencode.vM8.annotation.dedup.fa';
-    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_mm10.interval_file";
-    $REF_FLAT = "$Bin/data/refFlat__mm10.txt.gz";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/mm10/ribosomal_mm10.interval_file";
+    $REF_FLAT = "$Bin/data/mm10/refFlat__mm10.txt.gz";
     $KALLISTO_INDEX = '/ifs/depot/assemblies/M.musculus/mm10/index/kallisto/v0.42.1/gencode/vM8/gencode.vM8.annotation.gtf.fasta.idx';
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/GRCm38/star/GRCm38_vM8_gencode';
 
@@ -509,17 +509,17 @@ elsif($species =~ /mouse|mm10/i){
 elsif($species =~ /mm9/i){
     $species = 'mm9';
     $REF_SEQ = '/ifs/depot/assemblies/M.musculus/mm9/mm9.fasta';
-    $GTF = "$Bin/data/Mus_musculus.NCBIM37.67_ENSEMBL.gtf";
-    $DEXSEQ_GTF = "$Bin/data/Mus_musculus.NCBIM37.67_ENSEMBL.dexseq.gtf";
-    $geneNameConversion = "$Bin/data/mm9Ensembl67IDToGeneName.txt";
+    $GTF = "$Bin/data/mm9/Mus_musculus.NCBIM37.67_ENSEMBL.gtf";
+    $DEXSEQ_GTF = "$Bin/data/mm9/Mus_musculus.NCBIM37.67_ENSEMBL.dexseq.gtf";
+    $geneNameConversion = "$Bin/data/mm9/mm9Ensembl67IDToGeneName.txt";
     $BOWTIE_INDEX = '/ifs/depot/assemblies/M.musculus/mm9/index/bowtie/1.0.0/mm9_bowtie';
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/M.musculus/mm9/index/bowtie/2.1.0/mm9_bowtie2';
     $chrSplits = '/ifs/depot/assemblies/M.musculus/mm9/chromosomes';
     $TRANS_INDEX = '/ifs/depot/assemblies/M.musculus/mm9/index/bowtie/2.1.0/transcriptome/ensembl/vTBD/ensembl';
     $TRANS_INDEX_DEDUP = '';
     $TRANS_FASTA_DEDUP = '';
-    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_MM9_assemblies.interval_file";
-    $REF_FLAT = "$Bin/data/refFlat__mm9.txt.gz";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/mm9/ribosomal_MM9_assemblies.interval_file";
+    $REF_FLAT = "$Bin/data/mm9/refFlat__mm9.txt.gz";
     $KALLISTO_INDEX = '';
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/mm9/star/mm9_vm1_gencode';
 
@@ -535,20 +535,20 @@ elsif($species =~ /mm9/i){
 elsif($species =~ /human-mouse|mouse-human|hybrid/i){
     $species = 'hybrid';
     $REF_SEQ = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/hg19_mm10.fasta';
-    $GTF = "$Bin/data/gencode.v18.annotation.gtf";
-    $DEXSEQ_GTF = "$Bin/data/gencode.v18.annotation_dexseq.gtf";
-    $geneNameConversion = "$Bin/data/gencode18IDToGeneName.txt";
-    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_hg19_mm10.interval_file";
-    $REF_FLAT = "$Bin/data/refFlat__hg19.txt.gz";
+    $GTF = "$Bin/data/human/gencode.v18.annotation.gtf";
+    $DEXSEQ_GTF = "$Bin/data/human/gencode.v18.annotation_dexseq.gtf";
+    $geneNameConversion = "$Bin/data/human/gencode18IDToGeneName.txt";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/hg19_mm10/ribosomal_hg19_mm10.interval_file";
+    $REF_FLAT = "$Bin/data/hg19/refFlat__hg19.txt.gz";
     $RSEM_DB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/rsem/1.2.25/gencode/v18/hg19_mm10';
     $BOWTIE_INDEX = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/bowtie/1.1.1/hg19_mm10_bowtie';
     $BOWTIE2_INDEX = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/bowtie/2.2.4/hg19_mm10_bowtie2';
     $KALLISTO_INDEX = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/kallisto/v0.42.1/gencode/v18/gencode.v18.annotation.gtf.fasta.idx';
     $STAR_FUSION_GENOME_LIB = "$STAR_FUSION/Hg19_CTAT_resource_lib";
     $CHIMERASCAN_INDEX = "/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/chimerascan/0.4.5a";
-    $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19_bodymap_false_positive_chimeras.txt";
+    $CHIMERASCAN_FP_FILTER = "$Bin/data/hg19/hg19_bodymap_false_positive_chimeras.txt";
     $chrSplits = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/chromosomes';
-    $QC_BED = "$Bin/data/hg19_GENCODE_GENE_V19_comprehensive.bed";
+    $QC_BED = "$Bin/data/hg19/hg19_GENCODE_GENE_V19_comprehensive.bed";
 
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang49';
@@ -562,36 +562,36 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
 elsif($species =~ /zebrafish|zv10/i){
     $species = 'zv10';
     $REF_SEQ = '/ifs/depot/assemblies/D.rerio/GRCz10/GRCz10.fasta';
-    $GTF = "$Bin/data/GRCz10.gtf";
+    $GTF = "$Bin/data/zv10/GRCz10.gtf";
     if($r1adaptor){
         $starDB = '/ifs/depot/assemblies/D.rerio/GRCz10/index/star/2.5.0a/ensembl/v83/overhang49';
     } else {
         $starDB = '/ifs/depot/assemblies/D.rerio/GRCz10/index/star/2.5.0a/ensembl/v83/overhang74';
     }
     $chrSplits = '/ifs/depot/assemblies/D.rerio/GRCz10/chromosomes';
-    $geneNameConversion = "$Bin/data/zv10EnsemblIDtoGeneName.txt";
+    $geneNameConversion = "$Bin/data/zv10/zv10EnsemblIDtoGeneName.txt";
     $TRANS_INDEX = '';
     $TRANS_INDEX_DEDUP = '';
     $TRANS_FASTA_DEDUP = '';
-    $RIBOSOMAL_INTERVALS = "$Bin/data/ribosomal_zv10.interval_file";
-    $REF_FLAT = "$Bin/data/refFlat__zv10.txt.gz";
+    $RIBOSOMAL_INTERVALS = "$Bin/data/zv10/ribosomal_zv10.interval_file";
+    $REF_FLAT = "$Bin/data/zv10/refFlat__zv10.txt.gz";
     $RSEM_DB = '/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/zv10/star/zv10_v83_ensembl';
     $KALLISTO_INDEX = '';
-    $QC_BED = "$Bin/data/zv10_ENSEMBL_20180417.bed";
+    $QC_BED = "$Bin/data/zv10/zv10_ENSEMBL_20180417.bed";
 
     $STAR_MAX_MEM = 30;
 }
 elsif($species =~ /zv9/i){
     $species = 'zv9';
     $REF_SEQ = '/ifs/depot/assemblies/D.rerio/zv9/zv9.fasta';
-    $GTF = "$Bin/data/zv9.gtf";
+    $GTF = "$Bin/data/zv9/zv9.gtf";
     if($r1adaptor){
         $starDB = '/ifs/depot/assemblies/D.rerio/zv9/index/star/2.4.1d/ensembl/v79/overhang49';
     } else {
         $starDB = '/ifs/depot/assemblies/D.rerio/zv9/index/star/2.4.1d/ensembl/v79/overhang74';
     }
     $chrSplits = '/ifs/depot/assemblies/D.rerio/zv9/chromosomes';
-    $geneNameConversion = "Bin/data/zv9EnsemblIDtoGeneName.txt";
+    $geneNameConversion = "Bin/data/zv9/zv9EnsemblIDtoGeneName.txt";
     $TRANS_INDEX = '';
     $TRANS_INDEX_DEDUP = '';
     $TRANS_FASTA_DEDUP = '';
@@ -604,7 +604,7 @@ elsif($species =~ /zv9/i){
 elsif($species =~ /fly|dm3/i){
     $species = 'dm3';
     $REF_SEQ = '/ifs/depot/assemblies/D.melanogaster/dm3/dm3.fasta';
-    $GTF = "$Bin/data/dm3.flybase_more150bp_CollapseGenes_20140925.gtf";
+    $GTF = "$Bin/data/dm3/dm3.flybase_more150bp_CollapseGenes_20140925.gtf";
     $DEXSEQ_GTF = "";
     $geneNameConversion = "";
     $BOWTIE_INDEX = '/ifs/depot/assemblies/D.melanogaster/dm3/index/bowtie/1.1.1/dm3_bowtie';
@@ -655,7 +655,42 @@ elsif($species =~ /WBcel235/i){
 
     $STAR_MAX_MEM = 30;
 }
+elsif($species =~ /yeast|s288c|R64|sacCer3/i){
+    $species = 'S288C_R64';
+    $REF_SEQ = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/S288C_R64.fasta';
+    $GTF = '/ifs/depot/annotation/S.cerevisiae/ensembl/v94/Saccharomyces_cerevisiae.R64-1-1.94.gtf';
+    $QC_BED = "$Bin/data/S288C_R64/Saccharomyces_cerevisiae.R64-1-1.94.bed";
+    $DEXSEQ_GTF = '';
+    $CHIMERASCAN_INDEX = '';
+    $BOWTIE_INDEX = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/index/bowtie/1.1.1/S288C_R64_bowtie';
+    $BOWTIE2_INDEX = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/index/bowtie/2.2.4/S288C_R64_bowtie';
+    $chrSplits = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/chromosomes';
+    
+    $RIBOSOMAL_INTERVALS = "$Bin/data/S288C_R64/ribosomal_S288C_R64_assemblies.interval_file";
+    $REF_FLAT = "$Bin/data/S288C_R64/Saccharomyces_cerevisiae.R64-1-1.94.dedup.refflat.gz";
 
+
+    $TRANS_INDEX = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/index/bowtie/2.2.4/transcriptome/ensembl/v94/Saccharomyces_cerevisiae.R64-1-1.94';
+    $TRANS_INDEX_DEDUP = '';
+    $TRANS_FASTA_DEDUP = '';
+
+    $geneNameConversion = "$Bin/data/S288C_R64/S288C_R64EnsemblIDToGeneName.txt";
+
+    $KALLISTO_INDEX = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/index/kallisto/v0.42.1/ensembl/v94/Saccharomyces_cerevisiae.R64-1-1.94';
+    $RSEM_DB = '';
+
+    $STAR_FUSION_GENOME_LIB = '';
+    $CHIMERASCAN_FP_FILTER = '';
+
+    if($r1adaptor){
+        $starDB = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/index/star/2.4.1d/ensembl/v94/overhang49';
+    }
+    else{
+        $starDB = '/ifs/depot/assemblies/S.cerevisiae/S288C_R64/index/star/2.4.1d/ensembl/v94/overhang74';
+    }
+
+    $STAR_MAX_MEM = 30;
+}
 
 open(MA, "$map") or die "Can't open mapping file $map $!";
 while(<MA>){
