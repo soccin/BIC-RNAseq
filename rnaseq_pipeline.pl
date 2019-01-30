@@ -131,7 +131,7 @@ if($output !~ /^\//){
     $output = "$curDir/$output";
 }
 
-if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|dm3|fly|WBcel235|sacCer3/i){
+if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|dm3|fly|WBcel235|sacCer3|rat|Rnor6|rn6/i){
     die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), C.elegans (WBcel235), yeast (sacCer3) or zebrafish (zv9/zv10)";
 }
 
@@ -559,6 +559,40 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
 
     $STAR_MAX_MEM = 60;
 }
+elsif($species =~ /rat|Rn6/i){
+    $species = 'Rn6';
+    $REF_SEQ = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/Rnor_6.0.fasta';
+    $GTF = "$Bin/data/rn6/Rattus_norvegicus.Rnor_6.0.92.gtf";
+
+    $geneNameConversion = "$Bin/data/rn6/rn6Ensembl92IDToGeneName.txt";
+
+
+    $BOWTIE_INDEX = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/index/bowtie/1.1.1/Rnor_6.0_bowtie';
+    $BOWTIE2_INDEX = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/index/bowtie/2.2.4/Rnor_6.0_bowtie2';
+    $chrSplits = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/chromosomes';
+    $TRANS_INDEX = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/index/bowtie/2.2.4/transcriptome/ensembl/v92/Rattus_norvegicus.Rnor_6.0.92';
+    $TRANS_INDEX_DEDUP = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/index/bowtie/2.2.4/transcriptome/ensembl/v92/deduplicated/Rattus_norvegicus.Rnor_6.0.92.gtf.dedup';
+    $TRANS_FASTA_DEDUP = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/index/bowtie/2.2.4/transcriptome/ensembl/v92/deduplicated/Rattus_norvegicus.Rnor_6.0.92.gtf.dedup.fa';
+    
+
+    $RIBOSOMAL_INTERVALS = "$Bin/data/rn6/ribosomal_Rnor6.interval_file";
+
+
+    $REF_FLAT = "$Bin/data/rn6/refFlat__rn6.txt";
+    $KALLISTO_INDEX = '';
+    $RSEM_DB = '';
+
+    if($r1adaptor){
+        $starDB = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/index/star/2.4.1d/ensembl/v92/overhang49';
+    }
+    else{
+        $starDB = '/ifs/depot/assemblies/R.norvegicus/Rnor_6.0/index/star/2.4.1d/ensembl/v92/overhang74';
+    }
+
+    $STAR_MAX_MEM = 30;
+}
+
+
 elsif($species =~ /zebrafish|zv10/i){
     $species = 'zv10';
     $REF_SEQ = '/ifs/depot/assemblies/D.rerio/GRCz10/GRCz10.fasta';
