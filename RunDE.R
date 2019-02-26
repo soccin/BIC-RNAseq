@@ -239,7 +239,7 @@ if(is.null(cds)){
       write(header,file=file.name,append=FALSE)
       write(header,file=file.name2,append=FALSE)
   }
-  stop("Zero differentially expressed genes found in all comparisons.")
+  quit(save="no", status=0)
 }
 save(cds,file=file.path(diff.exp.rdat.dir,"cds.Rdata"),compress=TRUE)
 
