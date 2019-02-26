@@ -134,7 +134,7 @@ if (!file.exists(counts.file)){
     cat(c("Error: counts file",counts.file,"doesn't exist.\n"))
     q()
 }
-if (exists("key.file") && !file.exists(key.file)){
+if (exists("key.file") && !is.null(key.file) && !file.exists(key.file)){
     cat(c("Error: key file",key.file,"doesn't exist.\n"))
     q()
 }
@@ -175,7 +175,7 @@ cat("Done.\n")
 ################################################################################
 #key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
 
-if (exists("key.file")){
+if (exists("key.file") && !is.null(key.file)){
     dir.create(diff.exp.dir,showWarnings=FALSE,mode="0755")
     dir.create(diff.exp.fig.dir,showWarnings=FALSE,mode="0755")
     dir.create(diff.exp.rdat.dir,showWarnings=FALSE,mode="0755")
@@ -197,7 +197,10 @@ if (exists("key.file")){
             no.replicates=TRUE
         }
     }
+} else {
+    key = NULL
 }
+
 
 ## format counts
 formatted.counts <- bic.format.htseq.counts(counts.file,key=key)
@@ -205,9 +208,9 @@ formatted.counts <- bic.format.htseq.counts(counts.file,key=key)
 ## if no conditions given, create a vector of one mock condition, 
 ## needed for normalization
 if(is.null(conds)){
-  conds <- rep("s",length(colnames(formatted.counts)))
+  conds <- rep("s",length(colnames(formatted.counts$raw)))
   mds.labels <- TRUE
-} else if(length(colnames(formatted.counts)) < 20){
+} else if(length(colnames(formatted.counts$raw)) < 20){
   mds.labels <- TRUE
 }
 
@@ -236,6 +239,7 @@ if(is.null(cds)){
       write(header,file=file.name,append=FALSE)
       write(header,file=file.name2,append=FALSE)
   }
+  stop("Zero differentially expressed genes found in all comparisons.")
 }
 save(cds,file=file.path(diff.exp.rdat.dir,"cds.Rdata"),compress=TRUE)
 
