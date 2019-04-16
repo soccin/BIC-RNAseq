@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript);
+my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript, $alignment_only);
 
 $pre = 'TEMP';
 $output = "results";
@@ -85,7 +85,8 @@ GetOptions ('map=s' => \$map,
  	    'priority_project=s' => \$priority_project,
  	    'priority_group=s' => \$priority_group,
             'lincrna_BROAD' => \$lincrna_BROAD,
-            'no_replicates' => \$no_replicates) or exit(1);
+            'no_replicates' => \$no_replicates,
+            'alignment_only' =>\$alignment_only) or exit(1);
 
 
 if(!$map || !$species || !$strand || !$config || !$request || !$scheduler || $help){
@@ -1078,7 +1079,7 @@ foreach my $sample (keys %samp_libs_run){
             push @thro_jids, $reorderj;
 	}
 	
-	if($cufflinks){
+	if($cufflinks && !$alignment_only){
 	    `/bin/mkdir -m 775 -p $output/cufflinks`;
 	    `/bin/mkdir -m 775 -p $output/cufflinks/tophat2`;
 	    `/bin/mkdir -m 775 -p $output/cufflinks/tophat2/$sample`;
@@ -1092,7 +1093,7 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	}
 	
-	if($htseq || $dexseq){
+	if(($htseq || $dexseq) && !$alignment_only){
 	    my $ran_tophatqns = 0;
 	    my $tophatqnsj = '';
 	    if(!-e "$output/progress/$pre\_$uID\_QNS_TOPHAT_$sample.done" || $ran_tophat){
@@ -1138,7 +1139,7 @@ foreach my $sample (keys %samp_libs_run){
 	}
 
 	`/bin/mkdir -m 775 -p $output/metrics/tophat2/crm`;
-	if(!-e "$output/progress/$pre\_$uID\_TOPHAT_CRM_$sample.done" || $ran_reorder){
+	if((!-e "$output/progress/$pre\_$uID\_TOPHAT_CRM_$sample.done" || $ran_reorder) && !$alignment_only){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_CRM_$sample", job_hold => "$reorderj", cpu => "1", mem => "3", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_CRM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
@@ -1149,7 +1150,7 @@ foreach my $sample (keys %samp_libs_run){
 	}	
 	push @crm_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_CollectRnaSeqMetrics.txt";
 
-	if(!-e "$output/progress/$pre\_$uID\_TOPHAT_ASM_$sample.done" || $ran_reorder){
+	if((!-e "$output/progress/$pre\_$uID\_TOPHAT_ASM_$sample.done" || $ran_reorder) && !$alignment_only){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_ASM_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_ASM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
@@ -1161,7 +1162,7 @@ foreach my $sample (keys %samp_libs_run){
 	push @asm_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_AlignmentSummaryMetrics.txt";
 
         if(exists $ism_samples{$sample}){
-            if(!-e "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done" || $ran_reorder){
+            if((!-e "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.done" || $ran_reorder) && !$alignment_only){
                 sleep(3);
                 my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_TOPHAT_ISM_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_TOPHAT_ISM_$sample.log");
                 my $standardParams = Schedule::queuing(%stdParams);
@@ -1173,7 +1174,7 @@ foreach my $sample (keys %samp_libs_run){
             push @ism_tophat, "-metrics $output/intFiles/tophat2/$pre\_$sample\_InsertSizeMetrics.txt";
         }
 
-        if(!-e "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.done" || $ran_reorder){
+        if((!-e "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.done" || $ran_reorder) && !$alignment_only){
             `ln -s $output/gene/alignments/tophat2/$pre\_$sample\.bai $output/gene/alignments/tophat2/$pre\_$sample\.bam.bai`;
             sleep(3);
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_TOPHAT_$sample", job_hold => "$reorderj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.log");
@@ -1275,7 +1276,7 @@ foreach my $sample (keys %samp_libs_run){
             push @staraddrg_jids, $staraddrgj;
 	}
 
-	if($cufflinks){
+	if($cufflinks && !$alignment_only){
 	    `/bin/mkdir -m 775 -p $output/cufflinks`;
 	    `/bin/mkdir -m 775 -p $output/cufflinks/$sample`;
 	    if(!-e "$output/progress/$pre\_$uID\_CUFFLINKS_STAR_$sample.done" || $ran_staraddrg){
@@ -1288,7 +1289,7 @@ foreach my $sample (keys %samp_libs_run){
 	    }
 	}
 
-	if($htseq || $dexseq){
+	if(($htseq || $dexseq) && !$alignment_only){
 	    my $ran_starqns = 0;
 	    my $starqnsj = '';
 	    if(!-e "$output/progress/$pre\_$uID\_QNS_STAR_$sample.done" || $ran_sp){
@@ -1329,7 +1330,7 @@ foreach my $sample (keys %samp_libs_run){
 	}
 
 	my @starcrm = ();
-	if(!-e "$output/progress/$pre\_$uID\_STAR_CRM_$sample.done" || $ran_staraddrg){
+	if((!-e "$output/progress/$pre\_$uID\_STAR_CRM_$sample.done" || $ran_staraddrg) && !$alignment_only){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_CRM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "3", cluster_out => "$output/progress/$pre\_$uID\_STAR_CRM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
@@ -1341,7 +1342,7 @@ foreach my $sample (keys %samp_libs_run){
 	push @crm, "-metrics $output/intFiles/$pre\_$sample\_CollectRnaSeqMetrics.txt";
 
 	my @starasm = ();
-	if(!-e "$output/progress/$pre\_$uID\_STAR_ASM_$sample.done" || $ran_staraddrg){
+	if((!-e "$output/progress/$pre\_$uID\_STAR_ASM_$sample.done" || $ran_staraddrg) && !$alignment_only){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_ASM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_STAR_ASM_$sample.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
@@ -1353,7 +1354,7 @@ foreach my $sample (keys %samp_libs_run){
 	push @asm, "-metrics $output/intFiles/$pre\_$sample\_AlignmentSummaryMetrics.txt";
 
         if(exists $ism_samples{$sample}){
-           if(!-e "$output/progress/$pre\_$uID\_STAR_ISM_$sample.done" || $ran_staraddrg){
+           if((!-e "$output/progress/$pre\_$uID\_STAR_ISM_$sample.done" || $ran_staraddrg) && !$alignment_only){
                sleep(3);
                my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_ISM_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_STAR_ISM_$sample.log");
                my $standardParams = Schedule::queuing(%stdParams);
@@ -1364,7 +1365,7 @@ foreach my $sample (keys %samp_libs_run){
            }
            push @ism, "-metrics $output/intFiles/$pre\_$sample\_InsertSizeMetrics.txt";
         }
-        if(!-e "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.done" || $ran_staraddrg){
+        if((!-e "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.done" || $ran_staraddrg) && !$alignment_only){
             sleep(3);
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_STAR_$sample", job_hold => "$staraddrgj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.log");
             my $standardParams = Schedule::queuing(%stdParams);
@@ -1377,7 +1378,7 @@ foreach my $sample (keys %samp_libs_run){
 
     }
 
-    if($detectFusions){
+    if($detectFusions && !$alignment_only){
 	`/bin/mkdir -m 775 -p $output/fusion`;
 	if($species =~ /hg19|human|hybrid/i){	
 	    my @fusions = ();
@@ -1592,7 +1593,7 @@ foreach my $sample (keys %samp_libs_run){
 	}
     }
 
-    if($kallisto || $rsem || $express){
+    if(($kallisto || $rsem || $express)  && !$alignment_only){
 	my $r1_gz_files1 = join(" ", @R1);
 	my $r2_gz_files1 = join(" ", @R2);
 	my $r1_gz_files2 = join(",", @R1);
@@ -1713,7 +1714,7 @@ my $ran_shmatrix = 0;
 my $shmatrixj = '';
 my $ran_deseq = 0;
 if($star){
-    if($htseq){
+    if($htseq && !$alignment_only){
 	my $starhtseqj = join(",", @starhtseq_jids);
 	if(!-e "$output/progress/$pre\_$uID\_MATRIX_HTSEQ_STAR.done" || $ran_starhtseq){
 	    sleep(3);
@@ -1726,7 +1727,7 @@ if($star){
 	    $ran_shmatrix = 1;
 	}
     }
-    if($dexseq){
+    if($dexseq && !$alignment_only){
 	my $stardexseqj = join(",", @stardexseq_jids);
 	if(!-e "$output/progress/$pre\_$uID\_MATRIX_DEX_STAR.done" || $ran_stardexseq){
 	    sleep(3);
@@ -1741,7 +1742,7 @@ if($star){
     my $crmfiles = join(" ", @crm);
     my $scrmj = join(",", @starcrm_jids);
 
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_CRM_STAR.done" || $ran_starcrm){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_CRM_STAR.done" || $ran_starcrm) && !$alignment_only){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CRM_STAR", job_hold => "$scrmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CRM_STAR.log");
 	my $standardParams = Schedule::queuing(%stdParams);
@@ -1752,7 +1753,7 @@ if($star){
         $ran_picard_metrics = 1;
     }
 
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_STAR.done" || $ran_starcrm){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_STAR.done" || $ran_starcrm) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CRM_HIST_STAR", job_hold => "$scrmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1766,7 +1767,7 @@ if($star){
     my $asmfiles = join(" ", @asm);
     my $sasmj = join(",", @starasm_jids);
 
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_ASM_STAR.done" || $ran_starasm){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_ASM_STAR.done" || $ran_starasm) && !$alignment_only){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_ASM_STAR", job_hold => "$sasmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_ASM_STAR.log");
 	my $standardParams = Schedule::queuing(%stdParams);
@@ -1780,7 +1781,7 @@ if($star){
     my $ismfiles = join(" ", @ism);
     my $sismj = join(",", @starism_jids);
 
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_ISM_STAR.done" || $ran_starism){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_ISM_STAR.done" || $ran_starism) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_ISM_STAR", job_hold => "$sismj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_ISM_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1791,7 +1792,7 @@ if($star){
         push @qcplot_jids, "$pre\_$uID\_MERGE_ISM_STAR";
     }
 
-    if (!-e "$output/progress/$pre\_$uID\_GEO_STAR.done" || $ran_starism_merge){
+    if ((!-e "$output/progress/$pre\_$uID\_GEO_STAR.done" || $ran_starism_merge) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GEO_STAR", job_hold => "$pre\_$uID\_MERGE_ISM_STAR", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_GEO_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1829,7 +1830,7 @@ if($star){
 
     ## merge read distribution
     my $rseqcj = join(",",@rseqc_jids);
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_STAR.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_STAR.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_RD_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_STAR.log");
          my $standardParams = Schedule::queuing(%stdParams);
@@ -1840,7 +1841,7 @@ if($star){
     }
 
     ## merge clipping profiles
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_STAR.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_STAR.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_CP_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1851,7 +1852,7 @@ if($star){
     }
 
     ## merge GC content
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_STAR.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_STAR.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_GC_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1862,7 +1863,7 @@ if($star){
     }
 
     ## merge bam stats
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_STAR.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_STAR.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_BS_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1873,7 +1874,7 @@ if($star){
     }
 
     ## merge insertion profiles
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_STAR.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_STAR.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_IP_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_STAR.log");
          my $standardParams = Schedule::queuing(%stdParams);
@@ -1884,7 +1885,7 @@ if($star){
     }
 
     ## merge deletion profiles
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_DP_STAR", job_hold => "$rseqcj", DPu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1895,7 +1896,7 @@ if($star){
     }
 
     ## Plot merged RSEQC files
-    if(!-e "$output/progress/$pre\_$uID\_QC_PLOT_STAR.done" || $ran_rseqc_merge || $ran_picard_metrics){
+    if((!-e "$output/progress/$pre\_$uID\_QC_PLOT_STAR.done" || $ran_rseqc_merge || $ran_picard_metrics) && !$alignment_only){
         sleep(3);
         my $qcplotj = join(",",@qcplot_jids);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QC_PLOT_STAR", job_hold => "$qcplotj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QC_PLOT_STAR.log");
@@ -1907,7 +1908,7 @@ if($star){
     }
 
     ## QCPDF containing plots of merged data
-    if(!-e "$output/progress/$pre\_$uID\_QCPDF_STAR.done" || $ran_rseqc || $ran_plots){
+    if((!-e "$output/progress/$pre\_$uID\_QCPDF_STAR.done" || $ran_rseqc || $ran_plots) && !$alignment_only){
         sleep(3);
         my $qcpdfj = join(",",@qcpdf_jids);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QCPDF_STAR", job_hold => "$qcpdfj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QCPDF_STAR.log");
@@ -1921,7 +1922,7 @@ if($star){
 my $ran_thmatrix = 0;
 my $thmatrixj = '';
 if($tophat){
-    if($htseq){
+    if($htseq && !$alignment_only){
 	my $tophathtseqj = join(",", @tophathtseq_jids);
 	if(!-e "$output/progress/$pre\_$uID\_MATRIX_HTSEQ_TOPHAT.done" || $ran_tophathtseq){
 	    sleep(3);
@@ -1935,7 +1936,7 @@ if($tophat){
 	}
     }
 
-    if($dexseq){
+    if($dexseq && !$alignment_only){
 	my $tophatdexseqj = join(",", @tophatdexseq_jids);
 	if(!-e "$output/progress/$pre\_$uID\_MATRIX_DEX_TOPHAT.done" || $ran_tophatdexseq){
 	    sleep(3);
@@ -1949,7 +1950,7 @@ if($tophat){
 
     my $crmfiles_tophat = join(" ", @crm_tophat);
     my $tcrmj = join(",", @tophatcrm_jids);
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_CRM_TOPHAT.done" || $ran_tophatcrm){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_CRM_TOPHAT.done" || $ran_tophatcrm) && !$alignment_only){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CRM_TOPHAT", job_hold => "$tcrmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CRM_TOPHAT.log");
 	my $standardParams = Schedule::queuing(%stdParams);
@@ -1960,7 +1961,7 @@ if($tophat){
         $ran_picard_metrics = 1;
     }
 
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_TOPHAT.done" || $ran_starcrm){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_TOPHAT.done" || $ran_starcrm) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CRM_HIST_TOPHAT", job_hold => "$tcrmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CRM_HIST_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1974,7 +1975,7 @@ if($tophat){
     my $asmfiles_tophat = join(" ", @asm_tophat);
     my $tasmj = join(",", @tophatasm_jids);
 
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_ASM_TOPHAT.done" || $ran_tophatasm){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_ASM_TOPHAT.done" || $ran_tophatasm) && !$alignment_only){
 	sleep(3);
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_ASM_TOPHAT", job_hold => "$tasmj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_ASM_TOPHAT.log");
 	my $standardParams = Schedule::queuing(%stdParams);
@@ -1988,7 +1989,7 @@ if($tophat){
     my $ismfiles_tophat = join(" ", @ism_tophat);
     my $tismj = join(",", @tophatism_jids);
 
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_ISM_TOPHAT.done" || $ran_tophatism){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_ISM_TOPHAT.done" || $ran_tophatism) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_ISM_TOPHAT", job_hold => "$tismj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_ISM_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -1998,7 +1999,7 @@ if($tophat){
         $ran_tophatism_merge = 1;
     }
 
-    if (!-e "$output/progress/$pre\_$uID\_GEO_TOPHAT.done" || $ran_tophatism_merge){
+    if ((!-e "$output/progress/$pre\_$uID\_GEO_TOPHAT.done" || $ran_tophatism_merge) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GEO_TOPHAT", job_hold => "$pre\_$uID\_MERGE_ISM_TOPHAT", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_GEO_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -2031,7 +2032,7 @@ if($tophat){
 
     ## merge read distribution
     my $rseqcj = join(",",@rseqc_jids);
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_RD_TOPHAT.log");
          my $standardParams = Schedule::queuing(%stdParams);
@@ -2041,7 +2042,7 @@ if($tophat){
     }
 
     ## merge clipping profiles
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_CP_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -2051,7 +2052,7 @@ if($tophat){
     }
 
     ## merge GC content
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_GC_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -2061,7 +2062,7 @@ if($tophat){
     }
 
     ## merge bam stats
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_BS_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -2071,7 +2072,7 @@ if($tophat){
     }
 
     ## merge insertion profiles
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_IP_TOPHAT.log");
          my $standardParams = Schedule::queuing(%stdParams);
@@ -2081,7 +2082,7 @@ if($tophat){
     }
 
     ## merge deletion profiles
-    if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT.done" || $ran_rseqc){
+    if((!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT.done" || $ran_rseqc) && !$alignment_only){
         sleep(3);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT", job_hold => "$rseqcj", DPu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT.log");
         my $standardParams = Schedule::queuing(%stdParams);
@@ -2090,7 +2091,7 @@ if($tophat){
         push @qcplot_jids, "$pre\_$uID\_MERGE_RSEQC_DP_TOPHAT";
     }
 
-    if(!-e "$output/progress/$pre\_$uID\_QC_PLOT_TOPHAT.done" || $ran_rseqc || $ran_picard_metrics){
+    if((!-e "$output/progress/$pre\_$uID\_QC_PLOT_TOPHAT.done" || $ran_rseqc || $ran_picard_metrics) && !$alignment_only){
         sleep(3);
         my $qcplotj = join(",",@qcplot_jids);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QC_PLOT_TOPHAT", job_hold => "$qcplotj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QC_PLOT_TOPHAT.log");
@@ -2102,7 +2103,7 @@ if($tophat){
     }
 
     ## QC PDF
-    if(!-e "$output/progress/$pre\_$uID\_QCPDF_TOPHAT.done" || $ran_rseqc || $ran_plots){
+    if((!-e "$output/progress/$pre\_$uID\_QCPDF_TOPHAT.done" || $ran_rseqc || $ran_plots) && !$alignment_only){
         sleep(3);
         my $qcpdfj = join(",",@qcpdf_jids);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QCPDF_TOPHAT", job_hold => "$qcpdfj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QCPDF_TOPHAT.log");
@@ -2117,7 +2118,7 @@ if($tophat){
 
 my $ran_kmatrix = 0;
 my $kmatrixj = '';
-if($kallisto){
+if($kallisto && !$alignment_only){
     my $kallistoj = join(",", @kallisto_jids);
     if(!-e "$output/progress/$pre\_$uID\_MATRIX_KALLISTO.done" || $ran_kallisto){
 	sleep(3);
@@ -2133,7 +2134,7 @@ if($kallisto){
 
 my $ran_rmatrix = 0;
 my $rmatrixj = '';
-if($rsem){
+if($rsem && !$alignment_only){
     my $rsemj = join(",", @rce_jids);
     if(!-e "$output/progress/$pre\_$uID\_MATRIX_RSEM.done" || $ran_rceg){
 	sleep(3);
@@ -2150,7 +2151,7 @@ if($rsem){
 ### SAMPLE COMMAND
 ####qsub -N Proj_4226_DESeq ~/bin/qCMD /opt/common/R/R-3.0.3/bin/Rscript ~/RNAseqPipe/trunk/bin/RunDE.R "\"proj.id='4226'\" \"output.dir='/ifs/data/byrne/rnaseq/Proj_4226'\" \"counts.file='Proj_4226_ALL_samples.htseq.count'\" \"key.file='/ifs/data/byrne/rnaseq/Proj_4226/sampleKey.txt'\" \"comps=c('hi - lo')\""
 
-if($deseq){    
+if($deseq && !$alignment_only){    
     if($star){
 	`/bin/mkdir -m 775 -p $output/gene/differentialExpression_gene`;
 	`/bin/mkdir -m 775 -p $output/gene/clustering`;
@@ -2292,7 +2293,7 @@ else{
 =cut
 }
 
-if($r1adaptor){
+if($r1adaptor && !$alignment_only){
     my $cagj = join(",", @cag_jids);
     if(!-e "$output/progress/$pre\_$uID\_MERGE_CAS.done" || $ran_cag){
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CAS", job_hold => "$cagj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CAS.log");
