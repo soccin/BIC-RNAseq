@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript, $alignment_only);
+my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $no_replicates, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript, $alignment_only, $trim_polya, $trim_r1_5prime, $trim_r2_5prime, $min_read_len_param);
 
 $pre = 'TEMP';
 $output = "results";
@@ -86,7 +86,11 @@ GetOptions ('map=s' => \$map,
  	    'priority_group=s' => \$priority_group,
             'lincrna_BROAD' => \$lincrna_BROAD,
             'no_replicates' => \$no_replicates,
-            'alignment_only' =>\$alignment_only) or exit(1);
+            'alignment_only' =>\$alignment_only,
+            'trim_polya=i' =>\$trim_polya,
+            'trim_r1_5prime=i' =>\$trim_r1_5prime,
+            'trim_r2_5prime=i' =>\$trim_r2_5prime,
+            'min_read_length=i' => \$min_read_len_param) or exit(1);
 
 
 if(!$map || !$species || !$strand || !$config || !$request || !$scheduler || $help){
@@ -115,6 +119,10 @@ if(!$map || !$species || !$strand || !$config || !$request || !$scheduler || $he
 	* PRIORITY_GROUP: lsf notion of priority assigned to groups (default: Pipeline)
 	* OUTPUT: output results directory (default: results)
         * OPTIONS: lncRNA analysis (-lncrna) runs all analyses based on lncRNA GTF (hg19 only); 
+        * TRIM_POLYA: trim [int] length of polya bases after adaptor trimming
+        * TRIM_R1_5PRIME: trim [int] length of bases from 5 prime end of Read1 after adaptor trimming and polya trimming
+        * TRIM_R2_5PRIME: trim [int] length of bases from 5 prime end of Read2 after adaptor trimming and polya trimming
+        * MIN_READ_LENGTH: minimum length of reads to keep after all trimming (default: 1/2 read length)
 HELP
 exit;
 }
@@ -297,6 +305,16 @@ if($allfusions){
 if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
     $detectFusions = 1;
 }
+
+if($trim_polya && $trim_polya <= 0)
+{
+    die "-trim_polya must be greater than 0 if specified\n";
+}
+
+if(($trim_r1_5prime && $trim_r1_5prime <= 0) || ($trim_r2_5prime && $trim_r2_5prime <= 0)){
+    die "-trim_r1_5prime and -trim_r2_5prime must be greater than 0 if specified\n";
+}
+
 
 if($comparisons || $samplekey){
     if(-e $comparisons && -e $samplekey){
@@ -912,7 +930,12 @@ foreach my $sample (keys %samp_libs_run){
                             print "WARNING: fastqs have variable read lengths\n";
                         }
                         $sampReadLength = $readLength;
-			$minReadLength = int(0.5*$readLength);
+                        if($min_read_len_param){
+                            $minReadLength = $min_read_len_param;
+                        }
+                        else{
+			    $minReadLength = int(0.5*$readLength);
+                        }
 			$grl = 1;
 		    }
 		}
@@ -935,7 +958,7 @@ foreach my $sample (keys %samp_libs_run){
 
     my @gz_jids = ();
     my $ran_gz = 0;
-    if($r1adaptor){
+    if($r1adaptor || $trim_polya || $trim_r1_5prime || $trim_r2_5prime){
 	my $r1_gz_files_TRIM = join(" ", @R1);
 	my $r2_gz_files_TRIM = join(" ", @R2);
 	my $ran_zcat = 0;
@@ -966,12 +989,38 @@ foreach my $sample (keys %samp_libs_run){
 	my $zcatj = join(",", @zcat_jids);
 	my $ran_ca = 0;
 	my @ca_jids = ();
+        my $ca_r1_input = "$output/intFiles/$sample/$sample\_R1.fastq";
+        my $ca_r2_input = "$output/intFiles/$sample/$sample\_R2.fastq";
 	if($samp_pair{$sample} eq "PE"){
 	    if(!-e "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.done" || $ran_zcat){
-		sleep(3);
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUTADAPT_$sample\_R1", job_hold => "$zcatj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.log");
+                sleep(3);
+
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUTADAPT_$sample\_R1", job_hold => "$zcatj", cpu => "1", mem => "2", cluster_out => "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR1 --paired-output $output/intFiles/$sample/$sample\_R2_TEMP.fastq -o $output/intFiles/$sample/$sample\_R1_TEMP.fastq $output/intFiles/$sample/$sample\_R1.fastq $output/intFiles/$sample/$sample\_R2.fastq >$output/intFiles/$sample/$sample\_R1\_CUTADAPT\_STATS.txt"`;
+                my $cutadapt_cmd_r1 = "";
+
+                if($r1adaptor){
+                    $cutadapt_cmd_r1 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR1 --paired-output $output/intFiles/$sample/$sample\_R2_TEMP.fastq -o $output/intFiles/$sample/$sample\_R1_TEMP.fastq $ca_r1_input $ca_r2_input >$output/intFiles/$sample/$sample\_R1\_CUTADAPT\_STATS.txt"; 
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_TEMP.fastq";
+                    $ca_r2_input = "$output/intFiles/$sample/$sample\_R2_TEMP.fastq";
+                }
+                if($trim_polya){
+                    if($cutadapt_cmd_r1){
+                        $cutadapt_cmd_r1 .= " && ";
+                    }
+                    $cutadapt_cmd_r1 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength -a \"A{$trim_polya}\" -O 5 --paired-output $output/intFiles/$sample/$sample\_R2_TEMP_POLYA.fastq -o $output/intFiles/$sample/$sample\_R1_TEMP_POLYA.fastq $ca_r1_input $ca_r2_input >$output/intFiles/$sample/$sample\_R1\_TRIM_POLYA\_STATS.txt";
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_TEMP_POLYA.fastq";
+                    $ca_r2_input = "$output/intFiles/$sample/$sample\_R2_TEMP_POLYA.fastq";
+                }
+                if($trim_r1_5prime){
+                    if($cutadapt_cmd_r1){
+                        $cutadapt_cmd_r1 .= " && ";
+                    }
+                    $cutadapt_cmd_r1 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength -u $trim_r1_5prime --paired-output $output/intFiles/$sample/$sample\_R2_TEMP_5PRIME.fastq -o $output/intFiles/$sample/$sample\_R1_TEMP_5PRIME.fastq $ca_r1_input $ca_r2_input >$output/intFiles/$sample/$sample\_R1\_TRIM_5PRIME\_STATS.txt";
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_TEMP_5PRIME.fastq";
+                    $ca_r2_input = "$output/intFiles/$sample/$sample\_R2_TEMP_5PRIME.fastq";
+                } 
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$cutadapt_cmd_r1"`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.done`;
 		push @ca_jids, "$pre\_$uID\_CUTADAPT_$sample\_R1";
 		push @cag_jids, "$pre\_$uID\_CUTADAPT_$sample\_R1";
@@ -979,11 +1028,35 @@ foreach my $sample (keys %samp_libs_run){
 		$ran_cag = 1;
 	    }
 
-	    if(!-e "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R2.done" || $ran_zcat){
+	    if(!-e "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R2.done" || $ran_zcat || $ran_ca){
 		sleep(3);
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUTADAPT_$sample\_R2", job_hold => "$zcatj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R2.log");
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUTADAPT_$sample\_R2", job_hold => "$zcatj,$pre\_$uID\_CUTADAPT_$sample\_R1", cpu => "1", mem => "2", cluster_out => "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R2.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR2 --paired-output $output/intFiles/$sample/$sample\_R1_CT.fastq -o $output/intFiles/$sample/$sample\_R2_CT.fastq $output/intFiles/$sample/$sample\_R2_TEMP.fastq $output/intFiles/$sample/$sample\_R1_TEMP.fastq >$output/intFiles/$sample/$sample\_R2\_CUTADAPT\_STATS.txt"`;
+                my $cutadapt_cmd_r2 = "";
+
+                if($r1adaptor){
+                    $cutadapt_cmd_r2 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR2 --paired-output $output/intFiles/$sample/$sample\_R1_CT_TEMP.fastq -o $output/intFiles/$sample/$sample\_R2_CT_TEMP.fastq $ca_r2_input $ca_r1_input >$output/intFiles/$sample/$sample\_R2\_CUTADAPT\_STATS.txt";
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_CT_TEMP.fastq";
+                    $ca_r2_input = "$output/intFiles/$sample/$sample\_R2_CT_TEMP.fastq";
+                }
+                if($trim_polya){
+                    if($cutadapt_cmd_r2){
+                        $cutadapt_cmd_r2 .= " && ";
+                    }
+                    $cutadapt_cmd_r2 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength -g \"T{$trim_polya}\" -O 5 --paired-output $output/intFiles/$sample/$sample\_R1_CT_TEMP_POLYA.fastq -o $output/intFiles/$sample/$sample\_R2_CT_TEMP_POLYA.fastq $ca_r2_input $ca_r1_input >$output/intFiles/$sample/$sample\_R2\_TRIM_POLYA\_STATS.txt";
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_CT_TEMP_POLYA.fastq";
+                    $ca_r2_input = "$output/intFiles/$sample/$sample\_R2_CT_TEMP_POLYA.fastq";
+                }
+                if($trim_r2_5prime){
+                    if($cutadapt_cmd_r2){
+                        $cutadapt_cmd_r2 .= " && ";
+                    }
+                    $cutadapt_cmd_r2 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength -u $trim_r2_5prime --paired-output $output/intFiles/$sample/$sample\_R1_CT_TEMP_5PRIME.fastq -o $output/intFiles/$sample/$sample\_R2_CT_TEMP_5PRIME.fastq $ca_r2_input $ca_r1_input >$output/intFiles/$sample/$sample\_R2\_TRIM_5PRIME\_STATS.txt";
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_CT_TEMP_5PRIME.fastq ";
+                    $ca_r2_input = "$output/intFiles/$sample/$sample\_R2_CT_TEMP_5PRIME.fastq ";
+                }
+
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$cutadapt_cmd_r2"`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUTADAPT_$sample\_R2.done`;
 		push @ca_jids, "$pre\_$uID\_CUTADAPT_$sample\_R2";
 		push @cag_jids, "$pre\_$uID\_CUTADAPT_$sample\_R2";
@@ -996,7 +1069,7 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GZIP_$sample\_R1", job_hold => "$caj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_GZIP_$sample\_R1.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/gzip $output/intFiles/$sample/$sample\_R1_CT.fastq`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/gzip $ca_r1_input`;
 		`/bin/touch $output/progress/$pre\_$uID\_GZIP_$sample\_R1.done`;
 		push @gz_jids, "$pre\_$uID\_GZIP_$sample\_R1";
 		$ran_gz = 1;
@@ -1006,7 +1079,7 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GZIP_$sample\_R2", job_hold => "$caj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_GZIP_$sample\_R2.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/gzip $output/intFiles/$sample/$sample\_R2_CT.fastq`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/gzip $ca_r2_input`;
 		`/bin/touch $output/progress/$pre\_$uID\_GZIP_$sample\_R2.done`;
 		push @gz_jids, "$pre\_$uID\_GZIP_$sample\_R2";
 		$ran_gz = 1;
@@ -1017,7 +1090,28 @@ foreach my $sample (keys %samp_libs_run){
 		sleep(3);
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_CUTADAPT_$sample\_R1", job_hold => "$zcatj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR1 -o $output/intFiles/$sample/$sample\_R1_CT.fastq $output/intFiles/$sample/$sample\_R1.fastq >$output/intFiles/$sample/$sample\_R1\_CUTADAPT\_STATS.txt"`;
+                my $cutadapt_cmd_r1 = "";
+
+                if($r1adaptor){
+                    $cutadapt_cmd_r1 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength $processR1 -o $output/intFiles/$sample/$sample\_R1_TEMP.fastq $ca_r1_input >$output/intFiles/$sample/$sample\_R1\_CUTADAPT\_STATS.txt"; 
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_TEMP.fastq";
+                }
+                if($trim_polya){
+                    if($cutadapt_cmd_r1){
+                        $cutadapt_cmd_r1 .= " && ";
+                    }
+                    $cutadapt_cmd_r1 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength -a \"A{$trim_polya}\" -O 5 -o $output/intFiles/$sample/$sample\_R1_TEMP_POLYA.fastq $ca_r1_input >$output/intFiles/$sample/$sample\_R1\_TRIM_POLYA\_STATS.txt";
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_TEMP_POLYA.fastq";
+                }
+                if($trim_r1_5prime){
+                    if($cutadapt_cmd_r1){
+                        $cutadapt_cmd_r1 .= " && ";
+                    }
+                    $cutadapt_cmd_r1 .= "$PYTHON/python $CUTADAPT/cutadapt -f fastq -m $minReadLength -u $trim_r1_5prime -o $output/intFiles/$sample/$sample\_R1_TEMP_5PRIME.fastq $ca_r1_input >$output/intFiles/$sample/$sample\_R1\_TRIM_5PRIME\_STATS.txt";
+                    $ca_r1_input = "$output/intFiles/$sample/$sample\_R1_TEMP_5PRIME.fastq";
+                } 
+
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$cutadapt_cmd_r1"`;
 		`/bin/touch $output/progress/$pre\_$uID\_CUTADAPT_$sample\_R1.done`;
 		push @ca_jids, "$pre\_$uID\_CUTADAPT_$sample\_R1";
 		push @cag_jids, "$pre\_$uID\_CUTADAPT_$sample\_R1";
@@ -1028,18 +1122,19 @@ foreach my $sample (keys %samp_libs_run){
     	    my $caj = join(",", @ca_jids);
 	    if(!-e "$output/progress/$pre\_$uID\_GZIP_$sample\_R1.done" || $ran_ca){
 		sleep(3);
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GZIP_$sample\_R1", job_hold => "$caj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_GZIP_$sample\_R1.log");
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_GZIP_$sample\_R1", job_hold => "$caj", cpu => "1", mem => "2", cluster_out => "$output/progress/$pre\_$uID\_GZIP_$sample\_R1.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/gzip $output/intFiles/$sample/$sample\_R1_CT.fastq`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams /bin/gzip $ca_r1_input`;
 		`/bin/touch $output/progress/$pre\_$uID\_GZIP_$sample\_R1.done`;
 		push @gz_jids, "$pre\_$uID\_GZIP_$sample\_R1";
 		$ran_gz = 1;
 	    }
 	}
 
-	$r1_gz_files = "$output/intFiles/$sample/$sample\_R1_CT.fastq.gz";
-	$r2_gz_files = "$output/intFiles/$sample/$sample\_R2_CT.fastq.gz";
+	$r1_gz_files = "${ca_r1_input}.gz";
+	$r2_gz_files = "${ca_r2_input}.gz";
     }
+
 
     my $gzj = join(",", @gz_jids);
     if($tophat){
@@ -2293,7 +2388,8 @@ else{
 =cut
 }
 
-if($r1adaptor && !$alignment_only){
+#mergeCutAdaptStats.py is outdated, need to be updated, skip this step for now
+if(0 && $r1adaptor && !$alignment_only){
     my $cagj = join(",", @cag_jids);
     if(!-e "$output/progress/$pre\_$uID\_MERGE_CAS.done" || $ran_cag){
 	my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_CAS", job_hold => "$cagj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_CAS.log");
