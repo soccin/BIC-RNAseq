@@ -1,0 +1,19 @@
+GSAheatmap              Heatmap of top significant gene sets
+GSAsummaryTable         Gene set analysis summary table
+consensusHeatmap        Heatmap of top consensus gene sets
+consensusScores         Top consensus gene sets and boxplot
+diffExp                 Perform differential expression analysis
+extractFactors          Extracts 'ArrayData' factors
+geneSetSummary          Gene set summary
+gsa_input               Random input data for gene set analysis
+gsa_results             Gene set analysis result data
+loadGSC                 Load a gene set collection
+loadMAdata              Load and preprocess microarray data
+networkPlot             Gene set network plot
+piano-package           Piano - Platform for Integrative ANalysis of
+                        Omics data
+polarPlot               Polar plot
+runGSA                  Gene set analysis
+runGSAhyper             Gene set analysis with Fisher's exact test
+runQC                   Run quality control
+writeFilesForKiwi       Write files for Kiwi

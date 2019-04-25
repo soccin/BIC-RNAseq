@@ -5,7 +5,6 @@ address                 Address in RAM of a variable
 all.equal               Equality Test Between Two Data Tables
 as.data.table           Coerce to data.table
 as.data.table.xts       Efficient xts to as.data.table conversion
-as.matrix               Convert a data.table to a matrix
 as.xts.data.table       Efficient data.table to xts conversion
 between                 Convenience functions for range subsets.
 chmatch                 Faster match of character vectors
@@ -21,7 +20,6 @@ frank                   Fast rank
 fread                   Fast and friendly file finagler
 fsort                   Fast parallel sort
 fwrite                  Fast CSV writer
-groupingsets            Grouping Set aggregation for data tables
 last                    Last item of an object
 like                    Convenience function for calling regexpr.
 melt.data.table         Fast melt for data.table
@@ -53,7 +51,7 @@ shouldPrint             For use by packages that mimic/divert auto
 special-symbols         Special symbols
 split                   Split data.table into chunks in a list
 subset.data.table       Subsetting data.tables
-tables                  Display 'data.table' metadata
+tables                  Display all objects of class 'data.table'
 test.data.table         Runs a set of tests.
 timetaken               Pretty print of time taken
 transform.data.table    Data table utilities
@@ -61,5 +59,3 @@ transpose               Efficient transpose of list
 truelength              Over-allocation access
 tstrsplit               strsplit and transpose the resulting list
                         efficiently
-update.dev.pkg          Perform update of development version of a
-                        package

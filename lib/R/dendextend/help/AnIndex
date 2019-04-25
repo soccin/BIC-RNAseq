@@ -20,7 +20,6 @@ Bk_permutations	Bk_permutations
 Bk_plot	Bk_plot
 branches_attr_by_clusters	branches_attr_by_clusters
 branches_attr_by_labels	branches_attr_by_labels
-branches_attr_by_lists	branches_attr_by_lists
 branches_color	color_branches
 circlize_dendrogram	circlize_dendrogram
 click_rotate	click_rotate
@@ -28,7 +27,6 @@ click_rotate.default	click_rotate
 click_rotate.dendrogram	click_rotate
 collapse_branch	collapse_branch
 colored_bars	colored_bars
-colored_dots	colored_dots
 color_branches	color_branches
 color_labels	color_labels
 color_unique_labels	color_unique_labels

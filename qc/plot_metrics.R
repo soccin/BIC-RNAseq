@@ -18,19 +18,26 @@ col.pal <- "Spectral"
 err.code <- 0
 Rlibs <- NULL
 
-###################################
-## get user input
-###################################
-args=(commandArgs(TRUE))
+## testing
+#if(interactive()){
+#    args <- c("metrics",
+#             "metrics/images",
+#             "TEST",
+#             "/ifs/work/byrne/pipelines/rnaseq_pipeline/lib/R")
+#} else {
+    ###################################
+    ## get user input
+    ###################################
+    args=(commandArgs(TRUE))
 
-if(length(args)==0){
-  usage()
-  q()
-}
-#for(i in 1:length(args)){
-  #eval(parse(text=args[i]))
+    if(length(args)==0){
+       usage()
+        q()
+    }
+#    for(i in 1:length(args)){
+#      eval(parse(text=args[i]))
+#    }
 #}
-
 metrics.dir <- args[1]
 qc.dir <- args[2]
 if(length(args)>=3){
@@ -38,11 +45,20 @@ if(length(args)>=3){
   if(length(args)>=4){
     Rlibs <- args[4]
   }
+  if(length(args)>=5){
+    bin <- args[5]
+  }
 } 
+
+print(paste("metrics.dir",metrics.dir))
+print(paste("qc.dir",qc.dir))
+print(paste("pre",pre))
+print(paste("Rlibs",Rlibs))
+print(paste("bin",bin))
  
-if(!is.null(Rlibs)){
-  .libPaths(c(Rlibs,.libPaths()))
-}
+#if(!is.null(Rlibs)){
+#  .libPaths(c(Rlibs,.libPaths()))
+#}
 
 #####################################
 ## validate input
@@ -61,9 +77,9 @@ if (!exists("qc.dir")){
 #####################################
 ### Load BIC's rnaseq library
 #####################################
-cat("Loading bicrnaseq library...")
+cat("Loading bicrnaseq library...\n")
 cat("Rlibs: ",Rlibs,"\n")
-tmp <- capture.output(suppressMessages(library(bicrnaseq)))
+source(file.path(bin,"bicrnaseqR/source_bicrnaseq.R"))
 cat("Done.\n")
 
 dir.create(qc.dir,showWarnings=FALSE)
@@ -301,11 +317,20 @@ if(!is.null(file)){
   rd <- as.matrix(read.delim(file,header=T,sep="\t"))
   cat("Done.\n")
 
-  
-  #rd <- t(bic.matrix2numeric(bic.make.rownames(rd)))
-  rd <- bic.matrix2numeric(bic.make.rownames(rd))
-  rd <- as.data.frame(rd)
-  rd$Samples <- rownames(rd)
+  if(nrow(rd) == 1){ 
+      smps <- rd[,1]
+      cols <- colnames(rd)[-1]
+      rd <- as.numeric(rd[,-1])
+      names(rd) <- cols 
+      rd <- as.data.frame(t(as.data.frame(rd)))
+      rd$Samples <- smps
+  } else {
+      rownames(rd) <- rd[,1]
+      rd <- rd[,-1]
+      rd <- apply(rd,2,as.numeric) 
+      rd <- as.data.frame(rd)
+      rd$Samples <- rownames(rd)
+  }
   cat("Plotting RSeQC read distribution metrics...")
   file.name <- file.path(qc.dir,paste(pre,"rseqc_read_distribution.pdf",sep="_"))
   tryCatch({

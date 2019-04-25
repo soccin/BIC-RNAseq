@@ -1,8 +1,8 @@
 Package: dendextend
 Type: Package
 Title: Extending 'dendrogram' Functionality in R
-Version: 1.8.0
-Date: 2018-04-28
+Version: 1.7.0
+Date: 2018-02-10
 Authors@R: c(person("Tal", "Galili", role = c("aut", "cre", "cph"), email =
     "tal.galili@gmail.com", comment = "https://www.r-statistics.com"),
     person("Gavin", "Simpson", role = "ctb"), person("Gregory","Jefferis", role
@@ -30,13 +30,7 @@ Authors@R: c(person("Tal", "Galili", role = c("aut", "cre", "cph"), email =
     "Ma", comment =
     "https://github.com/JohnMCMa", role = "ctb"), person("Krzysiek",
     "G", comment =
-    "https://github.com/storaged", role = "ctb"), person("Manuela",
-    "Hummel", email = "m.hummel@dkfz.de", comment =
-    "https://github.com/hummelma", role = "ctb"), 
-    person("Chase",
-    "Clark", comment =
-    "https://github.com/chasemc", role = "ctb"), 
-    person("Yoav", "Benjamini", email = "ybenja@tau.ac.il",role = "ths"))
+    "https://github.com/storaged", role = "ctb"), person("Yoav", "Benjamini", email = "ybenja@tau.ac.il",role = "ths"))
 Description: Offers a set of functions for extending
     'dendrogram' objects in R, letting you visualize and compare trees of
     'hierarchical clusterings'. You can (1) Adjust a tree's graphical parameters
@@ -60,7 +54,7 @@ URL: https://github.com/talgalili/dendextend/,
 BugReports: https://github.com/talgalili/dendextend/issues
 RoxygenNote: 6.0.1
 NeedsCompilation: no
-Packaged: 2018-05-02 06:23:53 UTC; junior
+Packaged: 2018-02-10 11:19:52 UTC; junior
 Author: Tal Galili [aut, cre, cph] (https://www.r-statistics.com),
   Gavin Simpson [ctb],
   Gregory Jefferis [aut, ctb] (imported code from his dendroextras
@@ -81,14 +75,12 @@ Author: Tal Galili [aut, cre, cph] (https://www.r-statistics.com),
   Cath [ctb] (https://github.com/CathG),
   John Ma [ctb] (https://github.com/JohnMCMa),
   Krzysiek G [ctb] (https://github.com/storaged),
-  Manuela Hummel [ctb] (https://github.com/hummelma),
-  Chase Clark [ctb] (https://github.com/chasemc),
   Yoav Benjamini [ths]
 Maintainer: Tal Galili <tal.galili@gmail.com>
 Repository: CRAN
-Date/Publication: 2018-05-03 11:02:48 UTC
-Built: R 3.2.0; ; 2018-06-26 16:28:08 UTC; unix
+Date/Publication: 2018-02-11 14:39:22 UTC
+Built: R 3.2.0; ; 2018-04-26 00:07:28 UTC; unix
 RemoteType: cran
-RemoteSha: 1.8.0
+RemoteSha: 1.7.0
 RemoteRepos: structure("http://lib.stat.cmu.edu/R/CRAN", .Names = "CRAN")
 RemotePkgType: source

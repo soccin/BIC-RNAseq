@@ -38,10 +38,6 @@ branches_attr_by_clusters
 branches_attr_by_labels
                         Change col/lwd/lty of branches matching labels
                         condition
-branches_attr_by_lists
-                        Change col/lwd/lty of branches from the root
-                        down to clusters defined by list of labels of
-                        respective members
 circlize_dendrogram     Plot a circlized dendrograms
 click_rotate            Interactively rotate a tree object
 collapse_branch         Collapse branches under a tolerance level
@@ -49,7 +45,6 @@ color_branches          Color tree's branches according to sub-clusters
 color_labels            Color dend's labels according to sub-clusters
 color_unique_labels     Color unique labels in a dendrogram
 colored_bars            Add colored bars to a dendrogram
-colored_dots            Add colored dots beside a dendrogram
 common_subtrees_clusters
                         Find clusters of common subtrees
 cor.dendlist            Correlation matrix between a list of trees.

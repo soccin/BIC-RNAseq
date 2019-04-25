@@ -83,16 +83,9 @@ ans
 ans <- flights[origin == "JFK" & month == 6L, .N]
 ans
 
-## ----j_cols_no_with-------------------------------------------------------------------------------
-ans <- flights[, c("arr_delay", "dep_delay")]
+## -------------------------------------------------------------------------------------------------
+ans <- flights[, c("arr_delay", "dep_delay"), with = FALSE]
 head(ans)
-
-## ----j_cols_dot_prefix----------------------------------------------------------------------------
-select_cols = c("arr_delay", "dep_delay")
-flights[ , ..select_cols]
-
-## ----j_cols_with----------------------------------------------------------------------------------
-flights[ , select_cols, with = FALSE]
 
 ## -------------------------------------------------------------------------------------------------
 DF = data.frame(x = c(1,1,1,2,2,3,3,3), y = 1:8)
@@ -107,20 +100,20 @@ DF[with(DF, x > 1), ]
 #  ## not run
 #  
 #  # returns all columns except arr_delay and dep_delay
-#  ans <- flights[, !c("arr_delay", "dep_delay")]
+#  ans <- flights[, !c("arr_delay", "dep_delay"), with = FALSE]
 #  # or
-#  ans <- flights[, -c("arr_delay", "dep_delay")]
+#  ans <- flights[, -c("arr_delay", "dep_delay"), with = FALSE]
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
 #  ## not run
 #  
 #  # returns year,month and day
-#  ans <- flights[, year:day]
+#  ans <- flights[, year:day, with = FALSE]
 #  # returns day, month and year
-#  ans <- flights[, day:year]
+#  ans <- flights[, day:year, with = FALSE]
 #  # returns all columns except year, month and day
-#  ans <- flights[, -(year:day)]
-#  ans <- flights[, !(year:day)]
+#  ans <- flights[, -(year:day), with = FALSE]
+#  ans <- flights[, !(year:day), with = FALSE]
 
 ## -------------------------------------------------------------------------------------------------
 ans <- flights[, .(.N), by = .(origin)]
