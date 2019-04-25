@@ -1,6 +1,0 @@
-sample1	GroupA
-sample2	GroupA
-sample3	GroupB
-sample4	GroupB
-sample5	GroupC
-sample6	GroupC
