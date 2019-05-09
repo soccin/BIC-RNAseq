@@ -15,7 +15,7 @@ suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(gridExtra))
 suppressPackageStartupMessages(library(scales))
-
+#suppressPackageStartupMessages(library(tidyverse))
 
 source(file.path(bin,"bicrnaseqR/bic_analyze_counts.R"))
 source(file.path(bin,"bicrnaseqR/bic_plots.R"))

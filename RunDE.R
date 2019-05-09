@@ -404,7 +404,7 @@ if(diff.exp == T){
                     )
         tryCatch({
             bic.standard.heatmap(norm.counts.mat,condA,condB,genes=genes,file=out.file)
-          }, error = function(){
+          }, error = function(e){
               warning(paste0("Could not generate heatmap for ",condA," vs ",condB))
           })
       }

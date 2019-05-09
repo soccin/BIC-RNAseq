@@ -6,7 +6,7 @@
 #' and removing GeneID column from matrix if it also contains
 #' a GeneSymbol column.
 #'
-#' @param htseq.file  tab-delimited file containing raw HTseq
+#' @param htseq.files tab-delimited file containing raw HTseq
 #'                    counts; columns are samples and rows are
 #'                    genes; must contain GeneID column but may 
 #'                    also contain a GeneSymbol column
@@ -675,6 +675,7 @@ bic.run.gsa <- function(species,deseq.res,min.gns=5,max.gns=1000,
   all.up.res <- NULL
   all.dn.res <- NULL
   for (gs in gs.names.list){
+print(gs)
     gs.name <- bic.remove.sub(gs,"\\.gmt",part2take=1)
     gs.cat <- toupper(bic.remove.sub(bic.remove.sub(gs,".all.v4.0.symbols.gmt",part2take=1),"-1",part2take=1))
     gsc <- loadGSC(system.file("extdata",gs,package="bicrnaseq"))  
