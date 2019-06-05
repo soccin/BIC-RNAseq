@@ -56,9 +56,9 @@ print(paste("pre",pre))
 print(paste("Rlibs",Rlibs))
 print(paste("bin",bin))
  
-#if(!is.null(Rlibs)){
-#  .libPaths(c(Rlibs,.libPaths()))
-#}
+if(!is.null(Rlibs)){
+  .libPaths(c(Rlibs,.libPaths()))
+}
 
 #####################################
 ## validate input
