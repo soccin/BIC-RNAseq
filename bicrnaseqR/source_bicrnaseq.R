@@ -1,6 +1,8 @@
 #! /opt/common/CentOS_6/R/R-3.2.0/bin/R
 
 suppressPackageStartupMessages(library(rlang))
+suppressPackageStartupMessages(library(lattice))
+suppressPackageStartupMessages(library(locfit))
 suppressPackageStartupMessages(library(DESeq))
 suppressPackageStartupMessages(library(dendextend))
 suppressPackageStartupMessages(library(limma))
@@ -15,6 +17,7 @@ suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(gridExtra))
 suppressPackageStartupMessages(library(scales))
+
 #suppressPackageStartupMessages(library(tidyverse))
 
 source(file.path(bin,"bicrnaseqR/bic_analyze_counts.R"))
