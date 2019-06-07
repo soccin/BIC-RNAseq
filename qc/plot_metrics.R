@@ -1,4 +1,5 @@
 #! /opt/common/CentOS_6/R/R-3.2.0/bin/R
+.libPaths("/opt/common/CentOS_6/R/R-3.2.0/lib64/R/library")
 
 usage <- function(){
     usage.str = "\nUsage: Rscript plotMetrics.R
