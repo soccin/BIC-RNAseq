@@ -578,6 +578,8 @@ bic.plot.5prime3prime.bias <- function(dat,col.pal="Set3",horizontal=TRUE,file=N
 #' @export
 bic.plot.coverage <- function(dat,col.pal="Set3",file=NULL){
 
+  if(nrow(dat) > 50){ warn("Too many samples. skipping."); return(NULL) }
+
   suppressMessages(x.m <- melt(dat, id.vars="position"))
   x.m$position <- as.integer(as.character(x.m$position))
   p <-  ggplot(x.m, aes(x = position, y = value, color = variable)) +  
