@@ -131,6 +131,7 @@ def merge_stats(args):
             for file in files:
                 samp = sample_id(file)
                 if file_empty(file):
+                    print >> sys.stderr, "WARNING: file for " + samp + " is empty."
                     continue
                 if samp in samples:
                     print >> sys.stderr, "WARNING: Duplicate sample found! Skipping " + file

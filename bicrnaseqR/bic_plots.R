@@ -410,6 +410,10 @@ bic.pval.histogram <- function(dat,file=NULL){
 #'                                       "5prime3prime.bias" |
 #'                                       "alignment.summary"]
 bic.check.picard.data <- function(dat,name){
+  if(nrow(dat) > 50){
+      warning("Too many samples to plot. Skipping.")
+      return(1)
+  }
   required.slots <- switch(name,
                            "alignment.distribution" = c("SAMPLE","RIBOSOMAL_BASES","CODING_BASES",
                                                       "UTR_BASES","INTRONIC_BASES","INTERGENIC_BASES"),
@@ -463,7 +467,8 @@ bic.check.picard.data <- function(dat,name){
 #' @export
 bic.plot.alignment.distribution <- function(dat,pct=FALSE,horizontal=TRUE,col.pal="Set3",file=NULL){
   ## validate data
-  bic.check.picard.data(dat,"alignment.distribution")
+  chk <- bic.check.picard.data(dat,"alignment.distribution")
+  if(!is.null(chk)){ return(NULL) }
   y <- data.frame(Sample = dat$SAMPLE, 
                  Ribosomal = dat$RIBOSOMAL_BASES, 
                  Coding = dat$CODING_BASES,
@@ -524,7 +529,10 @@ bic.plot.alignment.distribution <- function(dat,pct=FALSE,horizontal=TRUE,col.pa
 #' @export
 bic.plot.5prime3prime.bias <- function(dat,col.pal="Set3",horizontal=TRUE,file=NULL){
   ## validate data
-  bic.check.picard.data(dat,"5prime3prime.bias")
+  dat[dat == "?"] <- NA
+  chk <- bic.check.picard.data(dat,"5prime3prime.bias")
+  if(!is.null(chk)){ return(NULL) }
+
   y <- data.frame(Sample = dat$SAMPLE,
                   cvCoverage = dat$MEDIAN_CV_COVERAGE,
                   fivePrimeBias = dat$MEDIAN_5PRIME_BIAS,
@@ -616,7 +624,8 @@ bic.plot.coverage <- function(dat,col.pal="Set3",file=NULL){
 #' @export
 bic.plot.alignment.summary <- function(dat,position="stack",pct=FALSE,col.pal="Set3",file=NULL){
   ## validate input data
-  bic.check.picard.data(dat,"alignment.summary")
+  chk <- bic.check.picard.data(dat,"alignment.summary")
+  if(!is.null(chk)){ return(NULL) }
 
   dat <- dat[-which(dat$CATEGORY=="PAIR"),]
   dat$UNMAPPED <- dat$PF_READS-dat$PF_READS_ALIGNED
