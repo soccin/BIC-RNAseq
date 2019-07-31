@@ -41,9 +41,19 @@ close CONFIG;
 `export R_LIBS=$Rlibs:\$R_LIBS`;
 
 my $run_gsa = "gsa.dir='$gsa_out'";
+my $gmt_dir = "''";
 if(!$gsa_out){ 
     $run_gsa = "GSA=FALSE";
+} else {
+    if($species =~ /hg19|human/i){
+        $gmt_dir = "gmt.dir='$bin/data/human'";
+    } else {
+        if($species =~ /mm9|mm10|mouse/i){
+            $gmt_dir = "gmt.dir='$bin/data/mouse'";
+        }
+    }
 }
+
 
 my $ec = 0;
 
@@ -69,10 +79,10 @@ else{
         $reps = "no.replicates=TRUE";
     }
 
-    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\"  \"pre='$pre'\"  \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\" \"pre='$pre'\" \"Rlibs='$Rlibs'\"\n";
+    print "command: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"$gmt_dir\" \"pre='$pre'\"  \"species='$species'\" \"proj.id='$pre'\" \"diff.exp.dir='$diff_out'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"clustering.dir='$cluster_out'\" \"$run_gsa\" \"key.file='$samplekey'\" \"comps=c($cmpStr)\" \"$reps\" \"pre='$pre'\" \"Rlibs='$Rlibs'\"\n";
 
 
-    `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "pre='$pre'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "$run_gsa" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps" "Rlibs='$Rlibs'"`;
+    `$R/Rscript $bin/RunDE.R "bin='$bin'" "$gmt_dir" \"pre='$pre'\" "species='$species'" "proj.id='$pre'" "diff.exp.dir='$diff_out'" "counts.file='$counts'" "pre='$pre'" "counts.dir='$count_out'" "clustering.dir='$cluster_out'" "$run_gsa" "key.file='$samplekey'" "comps=c($cmpStr)" "$reps" "Rlibs='$Rlibs'"`;
 
     $ec = $? >> 8;
 }

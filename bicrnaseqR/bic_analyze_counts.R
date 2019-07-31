@@ -37,7 +37,13 @@ bic.format.htseq.counts <- function(htseq.file,key=NULL){
 
   ## subset/sort data according to key
   if(!is.null(key)){
-    HTSeq.dat = HTSeq.dat[,key[,1]]
+    smps <- key[,1]
+    if(any(!smps %in% colnames(HTSeq.dat))){
+        print(paste0("WARNING: These samples are NOT in count data... ", 
+                     paste(smps[!smps %in% colnames(HTSeq.dat)], collapse=", ")))
+        smps <- smps[smps %in% colnames(HTSeq.dat)] 
+    }
+    HTSeq.dat = HTSeq.dat[,smps]
   }
 
   HTSeq.dat = HTSeq.dat[!rownames(HTSeq.dat) %in% c("alignment_not_unique","ambiguous","no_feature","not_aligned","too_low_aQual"),]
@@ -646,9 +652,9 @@ bic.process.gsa.res <- function(gsaRes,max.p=0.1,fc2keep=log2(1.5),frac2keep=2,f
 #'         significantly UP-regulated and one with gene sets found
 #'         to be significantly DOWN-regulated
 #' @export
-bic.run.gsa <- function(species,deseq.res,min.gns=5,max.gns=1000,
-                                      max.p=0.1,nPerm=1e4,fcQ=T,
-                                      fc2keep=log2(1.5),frac2keep=4){
+bic.run.gsa <- function(species,deseq.res,gmt.dir,min.gns=5,max.gns=1000,
+                        max.p=0.1,nPerm=1e4,fcQ=T,
+                        fc2keep=log2(1.5),frac2keep=4){
 
   if (species %in% c("hg19","hg18","hybrid")){
     species = "human"
@@ -678,8 +684,9 @@ bic.run.gsa <- function(species,deseq.res,min.gns=5,max.gns=1000,
 print(gs)
     gs.name <- bic.remove.sub(gs,"\\.gmt",part2take=1)
     gs.cat <- toupper(bic.remove.sub(bic.remove.sub(gs,".all.v4.0.symbols.gmt",part2take=1),"-1",part2take=1))
-    gsc <- loadGSC(system.file("extdata",gs,package="bicrnaseq"))  
- 
+    #gsc <- loadGSC(system.file("extdata",gs,package="bicrnaseq"))  
+    gsc <- loadGSC(file.path(gmt.dir, gs)) 
+
     res <- deseq.res[,-1]  ## remove ensembl IDs; since this function only supports
                            ## human and mouse, we can be confident that the first
                            ## column always has ensembl IDs

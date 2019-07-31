@@ -14,7 +14,7 @@ usage <- function(){
                        'CondA - CondC','CondB - CondC')]\"
     \"species        = '[Required for gene set analysis: (hg19|human|mm9|mm10|mouse)] 
                         Note: only human or mouse currently supported; specific
-                        build does not matter, as long as it is clearly human or mouse'\"
+                        build does not matter, as long as it is clearly human or mouse']\"
 
     \"Rlibs          = [Optional (default=NULL): path to R libraries\"
     \"pre            = [Optional (default='TEMP'): prefix for all output files]\"
@@ -22,8 +22,9 @@ usage <- function(){
     \"GSA            = [Optional (default=TRUE): run gene set analysis; if running GSA 
                        but not DESeq, BE SURE TO SET diff.exp.dir (see below) to point
                        to existing DESeq results directory.]\"
+    \"gmt.dir        = [Required if GSA=TRUE: directory containing GMT files for correct species]\"
     \"heatmaps       = [Optional (default=TRUE): generate a heatmap for each comparison
-                       showing relative expression of the top ~100 DE genes\"
+                       showing relative expression of the top ~100 DE genes]\"
 
     \"counts.dir     = [Optional (default='$PWD/counts_gene')]\"
     \"clustering.dir = [Optional (default='$PWD/clustering')]\"
@@ -68,6 +69,7 @@ counts.dir        <- file.path(pd,"counts_gene")
 clustering.dir    <- file.path(pd,"clustering")
 diff.exp.dir      <- file.path(pd,"differentialExpression_gene")
 gsa.dir           <- file.path(pd,"GSA")
+gmt.dir           <- NULL
 max.p             <- 0.05
 lfc               <- 1   #0.57#log2(fc.cut)
 min.abs.fc        <- 2   #2^0.57
@@ -185,6 +187,7 @@ if (exists("key.file") && !is.null(key.file)){
             no.replicates=TRUE
         }
     }
+
 } else {
     key = NULL
 }
@@ -414,7 +417,7 @@ if(diff.exp == T){
       ##
       if(GSA){
         if(exists("species") & !is.null(species)){
-          gsa.res <- bic.run.gsa(species,de.res$all.res) 
+          gsa.res <- bic.run.gsa(species,de.res$all.res,gmt.dir) 
           if(!is.null(gsa.res$dn)){
             out.file <- file.path(gsa.dir,
                               paste("GeneSet_Dn_",condB,"_vs_",condA,".xls",sep="")
