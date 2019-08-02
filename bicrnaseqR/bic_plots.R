@@ -409,11 +409,8 @@ bic.pval.histogram <- function(dat,file=NULL){
 #' @param name   name of plot (Options: ["alignment.distribution" |
 #'                                       "5prime3prime.bias" |
 #'                                       "alignment.summary"]
-bic.check.picard.data <- function(dat,name){
-  if(nrow(dat) > 50){
-      warning("Too many samples to plot. Skipping.")
-      return(1)
-  }
+bic.check.picard.data <- function(dat,name,max.rows=50){
+
   required.slots <- switch(name,
                            "alignment.distribution" = c("SAMPLE","RIBOSOMAL_BASES","CODING_BASES",
                                                       "UTR_BASES","INTRONIC_BASES","INTERGENIC_BASES"),
@@ -442,10 +439,17 @@ bic.check.picard.data <- function(dat,name){
     }
   )
   if(name=="alignment.summary"){
+    max.rows <- max.rows * 3
     if(!"FIRST_OF_PAIR" %in% dat$CATEGORY | !"SECOND_OF_PAIR" %in% dat$CATEGORY){
       stop("'CATEGORY' column must contain at least one instance of 'FIRST_OF_PAIR' and one of 'SECOND_OF_PAIR'")
     }
   }
+
+  if(nrow(dat) > max.rows){
+      warning("Too many samples to plot. Skipping.")
+      return(1)
+  }
+
   invisible(NULL)
 }
 
@@ -465,7 +469,7 @@ bic.check.picard.data <- function(dat,name){
 #' @param pct        plot percentages
 #'
 #' @export
-bic.plot.alignment.distribution <- function(dat,pct=FALSE,horizontal=TRUE,col.pal="Set3",file=NULL){
+bic.plot.alignment.distribution <- function(dat,pct=FALSE,horizontal=TRUE,col.pal="Set3",file=NULL,max.rows=50){
   ## validate data
   chk <- bic.check.picard.data(dat,"alignment.distribution")
   if(!is.null(chk)){ return(NULL) }
@@ -475,6 +479,11 @@ bic.plot.alignment.distribution <- function(dat,pct=FALSE,horizontal=TRUE,col.pa
                  UTR = dat$UTR_BASES,
                  Intronic = dat$INTRONIC_BASES,
                  Intergenic = dat$INTERGENIC_BASES)
+
+  if(nrow(y) > max.rows){
+      warning("Too many samples to plot. Skipping.")
+      return(1)
+  }
 
   y.m <- melt(y,id.var="Sample")
 
