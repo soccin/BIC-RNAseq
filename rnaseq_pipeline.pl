@@ -1894,6 +1894,16 @@ if($star){
         $ran_rseqc_merge = 1;
     }
 
+    ## check for missing rseqc files
+    if(!-e "$output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.done" || $ran_rseqc_merge){
+        sleep(3);
+        my $qcplotj = join(",",@qcplot_jids);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_CHECK_STAR", job_hold => "$qcplotj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/check_rseqc.py $pre $map $output/metrics/images`; 
+        `/bin/touch $output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.done`;
+    }
+
     ## Plot merged RSEQC files
     if(!-e "$output/progress/$pre\_$uID\_QC_PLOT_STAR.done" || $ran_rseqc_merge || $ran_picard_metrics){
         sleep(3);
