@@ -369,8 +369,8 @@ if($comparisons || $samplekey || $deseq){
 	    die "sample $data[0] cannot be found in mapping file $map $!";
 	}
 
-	if(!$sample_comparisons{$data[1]}){
-	   die "condition $data[1] cannot be found in comparisons file $comparisons $!";
+	if(!$sample_comparisons{$data[1]} && $data[1] !~ /exclude/i){
+	    die "condition $data[1] cannot be found in comparisons file $comparisons $!";
 	}
     }
     close SK;
@@ -389,6 +389,8 @@ if($comparisons || $samplekey || $deseq){
 	}
     }
 }
+
+die;
 
 my $BOWTIE2 = '';
 my $CUFFLINKS = '';
