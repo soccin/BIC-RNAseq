@@ -390,8 +390,6 @@ if($comparisons || $samplekey || $deseq){
     }
 }
 
-die;
-
 my $BOWTIE2 = '';
 my $CUFFLINKS = '';
 my $HTSEQ = '';
