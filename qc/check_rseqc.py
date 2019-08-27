@@ -71,6 +71,9 @@ projFiles = {'5prime/3prime bias' : '_picard_5prime3prime_bias.pdf',
              'Read distribution as percentages' : '_rseqc_read_distribution_percentage.pdf'
              }
 
+maxSampFiles = ['Alignment distribution', 'Alignment distribution as percentages', 
+                'Alignment summary', 'Alignment summary as percentages', '5prime/3prime bias']
+
 nSamples = len(samples)
 print >> sys.stdout, ""
 allFound = True
@@ -78,7 +81,7 @@ for pf, fe in projFiles.items():
     expFile = os.path.join(imgDir, projID + fe)
     if not os.path.exists(expFile) or os.path.getsize(expFile) == 0:
         allFound = False
-        if nSamples > 50:
+        if nSamples > 50 and pf in maxSampFiles:
             print >> sys.stderr, "WARNING: Missing " + pf + "; likely due to large number of samples (n=" + str(nSamples) + ")."
             print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
         else:
