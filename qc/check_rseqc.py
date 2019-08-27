@@ -17,7 +17,7 @@ samples = []
 with open(sMap) as fl:
     for line in fl:
         samples.append(line.strip().split("\t")[1])
-
+samples = set(samples)
 
 ### check for per-sample pdf files in image directory
 fileExts = {'Mismatch profile' : '.mismatch_profile.pdf',
@@ -42,7 +42,7 @@ for smp in samples:
     allFound = True
     
     for nm, fe in fileExts.items():
-        expFile = os.path.abspath(imgDir) + "/rseqc_" + smp + fe
+        expFile = os.path.join(imgDir, "rseqc_" + smp + fe)
         if not os.path.exists(expFile) or os.path.getsize(expFile) == 0:
             allFound = False
             print >> sys.stderr, " "
@@ -71,14 +71,19 @@ projFiles = {'5prime/3prime bias' : '_picard_5prime3prime_bias.pdf',
              'Read distribution as percentages' : '_rseqc_read_distribution_percentage.pdf'
              }
 
+nSamples = len(samples)
 print >> sys.stdout, ""
 allFound = True
 for pf, fe in projFiles.items():
-    expFile = os.path.abspath(imgDir) + "/" + projID + fe
+    expFile = os.path.join(imgDir, projID + fe)
     if not os.path.exists(expFile) or os.path.getsize(expFile) == 0:
         allFound = False
-        print >> sys.stderr, "ERROR: Missing " + pf 
-        print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
+        if nSamples > 50:
+            print >> sys.stderr, "WARNING: Missing " + pf + "; likely due to large number of samples (n=" + str(nSamples) + ")."
+            print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
+        else:
+            print >> sys.stderr, "ERROR: Missing " + pf 
+            print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
 if allFound:
     print >> sys.stdout, "All project PDFs good for " + projID
 else:
