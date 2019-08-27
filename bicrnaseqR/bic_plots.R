@@ -893,7 +893,10 @@ bic.standard.heatmap <- function(norm.counts.matrix,condA,condB,genes=NULL,file=
 
   tryCatch({ 
     ## extract data for the DE genes
-    htmp.dat <- dat[genes,grep(paste(idHeader,condA,condB,sep="|"),colnames(dat))]
+    htmp.dat <- dat[genes,grep(paste(c(idHeader,paste0("__",c(condA,condB))),collapse="|"),colnames(dat))]
+
+    ## if there is only one result, matrix turns to vector, so we need to convert it back
+    if(!is.matrix(htmp.dat)){ htmp.dat <- t(as.matrix(htmp.dat)) }
 
     ## remove duplicate genes
     if(length(htmp.dat[which(duplicated(htmp.dat[,idHeader])),idHeader])>0){
@@ -902,13 +905,20 @@ bic.standard.heatmap <- function(norm.counts.matrix,condA,condB,genes=NULL,file=
 
     ## remove any rows that have NAs
     htmp.dat <- htmp.dat[complete.cases(htmp.dat),]
+
+    ## again, make sure we have a matrix
+    if(!is.matrix(htmp.dat)){ htmp.dat <- t(as.matrix(htmp.dat)) }
+
     ## as long as gene symbols are unique, assign them
     ## as rownames; if not, we'll have to average values
     ## for genes that occur multiple times
-    rownames(htmp.dat) <- htmp.dat[,idHeader]
+#    rownames(htmp.dat) <- htmp.dat[,idHeader]
+rNms <- htmp.dat[,idHeader]
     htmp.dat <- htmp.dat[,-1]
+    if(!is.matrix(htmp.dat)){ htmp.dat <- t(as.matrix(htmp.dat)) }
+    rownames(htmp.dat) <- rNms
     htmp.dat <- bic.matrix2numeric(htmp.dat)
-  }, err = function(){ 
+  }, error = function(){ 
      warning(paste0("Can not generate heatmap for ",condA," vs ",condB))
   })
 
@@ -944,6 +954,8 @@ bic.standard.heatmap <- function(norm.counts.matrix,condA,condB,genes=NULL,file=
     if(!is.null(file)){
       dev.off()
     }
+  } else {
+    warning(paste0("Can not generate heatmap for ",condA," vs ",condB,". Need at least 2 rows and 2 columns to plot."))
   }
  
 }

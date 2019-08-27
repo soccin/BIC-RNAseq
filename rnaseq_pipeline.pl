@@ -377,11 +377,11 @@ if($comparisons || $samplekey || $deseq){
     `/bin/cp $samplekey $output/`;
 
 
-    foreach my $ms (keys %mapping_samples){
-	if(!$samplekey_samples{$ms}){
-	    die "sample $ms is in mapping file $map, but not in sample key file $samplekey $!";
-	}
-    }
+    #foreach my $ms (keys %mapping_samples){
+#	if(!$samplekey_samples{$ms}){
+#	    die "sample $ms is in mapping file $map, but not in sample key file $samplekey $!";
+#	}
+#    }
 
     foreach my $sc (keys %sample_comparisons){
 	if(!$samplekey_conditions{$sc}){
@@ -592,8 +592,29 @@ elsif($species =~ /rat|Rn6/i){
     $STAR_MAX_MEM = 30;
 }
 
+elsif($species =~ /zebrafish|z11|GRCz11/i){
+    $species = 'z11';
+    $REF_SEQ = '/ifs/depot/assemblies/D.rerio/GRCz11/GRCz11.fasta';
+    $GTF = '/ifs/depot/assemblies/D.rerio/GRCz11/Danio_rerio.GRCz11.97.gtf';
+    if($r1adaptor){
+        $starDB = '/ifs/depot/assemblies/D.rerio/GRCz11/index/star/2.4.1d/ensembl/v97/overhang49';
+    } else {
+        $starDB = '/ifs/depot/assemblies/D.rerio/GRCz11/index/star/2.4.1d/ensembl/v97/overhang74';
+    }
+    $chrSplits = '/ifs/depot/assemblies/D.rerio/GRCz11/chromosomes';
+    $geneNameConversion = "$Bin/data/GRCz11/zv11EnsemblIDtoGeneName.txt";
+    $TRANS_INDEX = '';
+    $TRANS_INDEX_DEDUP = '';
+    $TRANS_FASTA_DEDUP = '';
+    $RIBOSOMAL_INTERVALS = "$Bin/data/GRCz11/ribosomal_z11.interval_file";
+    $REF_FLAT = "$Bin/data/GRCz11/refFlat__z11.txt.gz";
+    $RSEM_DB = "";
+    $KALLISTO_INDEX = "";
+    $QC_BED = "$Bin/data/GRCz11/z10_ENSEMBL_[DATE].bed";
 
-elsif($species =~ /zebrafish|zv10/i){
+    $STAR_MAX_MEM = 30;
+}
+elsif($species =~ /zv10/i){
     $species = 'zv10';
     $REF_SEQ = '/ifs/depot/assemblies/D.rerio/GRCz10/GRCz10.fasta';
     $GTF = "$Bin/data/zv10/GRCz10.gtf";
@@ -1894,16 +1915,6 @@ if($star){
         $ran_rseqc_merge = 1;
     }
 
-    ## check for missing rseqc files
-    if(!-e "$output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.done" || $ran_rseqc_merge){
-        sleep(3);
-        my $qcplotj = join(",",@qcplot_jids);
-        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_CHECK_STAR", job_hold => "$qcplotj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.log");
-        my $standardParams = Schedule::queuing(%stdParams);
-        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/check_rseqc.py $pre $map $output/metrics/images`; 
-        `/bin/touch $output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.done`;
-    }
-
     ## Plot merged RSEQC files
     if(!-e "$output/progress/$pre\_$uID\_QC_PLOT_STAR.done" || $ran_rseqc_merge || $ran_picard_metrics){
         sleep(3);
@@ -1914,6 +1925,15 @@ if($star){
         `/bin/touch $output/progress/$pre\_$uID\_QC_PLOT_STAR.done`;
         push @qcpdf_jids, "$pre\_$uID\_QC_PLOT_STAR";
         $ran_plots = 1;
+    }
+
+    ## check for missing rseqc files
+    if(!-e "$output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.done" || $ran_rseqc_merge){
+        sleep(3);
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_CHECK_STAR", job_hold => "$pre\_$uID\_QC_PLOT_STAR", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.log");
+        my $standardParams = Schedule::queuing(%stdParams);
+        `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/python $Bin/qc/check_rseqc.py $pre $map $output/metrics/images`;
+        `/bin/touch $output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.done`;
     }
 
     ## QCPDF containing plots of merged data
