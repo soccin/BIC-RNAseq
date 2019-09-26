@@ -240,8 +240,10 @@ save(cds,file=file.path(diff.exp.rdat.dir,"cds.Rdata"),compress=TRUE)
 ################################################################################
 cat("Running clustering and QC...")
 setwd(pd)
-tmp <- capture.output(
-         suppressMessages(
+
+tmp <- tryCatch({
+         capture.output(
+          suppressMessages(
            bic.deseq.heatmap(cds,
                              file=file.path(clustering.dir,
                                             paste0(pre,"_heatmap_50_most_highly_expressed_genes.pdf")),
@@ -249,25 +251,40 @@ tmp <- capture.output(
                              num.gns=50)
          )
        )
-tmp <- capture.output(
-         suppressMessages(
+      }, error = function(e){
+           print("WARNING: There was an error while creating heatmap of the 50 most highly expressed genes.")
+      })
+tmp <- tryCatch({
+         capture.output(
+          suppressMessages(
            bic.sample.to.sample.distances(cds,
-                                         conds,
-                                         file=file.path(sub("/$","",clustering.dir),paste0(pre,"_heatmap_sample_to_sample_distances.pdf"))
+                   conds,
+                   file=file.path(sub("/$","",clustering.dir),paste0(pre,"_heatmap_sample_to_sample_distances.pdf"))
            )
          )
        )
-tmp <- capture.output(
-         suppressMessages(
+      }, error = function(e){
+           print("WARNING: There was an error while creating heatmap of sample to sample distances")
+      })
+tmp <- tryCatch({
+         capture.output(
+          suppressMessages(
            bic.deseq.plot.pca(cds,
                               file=file.path(clustering.dir,paste0(pre,"_PCA.pdf"))
            )
          )
        )
-tmp <- capture.output(
-         suppressMessages(
+      }, error = function(e){
+           print("WARNING: There was an error while creating PCA plot.")
+      })
+tmp <- tryCatch({
+         capture.output(
+          suppressMessages(
            bic.plot.dispersion.estimates(cds,
                                          out.dir=clustering.dir,file.prefix=pre)))
+       }, error = function(e){
+           print("WARNING: There was an error while creating dispersion estimate plot.")
+       })
 cat("Done.\n")
 
 

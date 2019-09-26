@@ -76,8 +76,8 @@ if($output !~ /^\//){
 chomp $aligner;
 chomp $species;
 
-if($species !~ /hg19|mm9|mm10|zv9|zv10|dm3|WBcel235|hybrid/i){
-    die "Species must be hg19, mm9, mm10, zv9, zv10, dm3 or WBcel235";
+if($species !~ /hg19|mm9|mm10|zv9|zv10|z11|dm3|WBcel235|hybrid/i){
+    die "Species must be hg19, mm9, mm10, zv9, zv10, z11, dm3 or WBcel235";
 }
 if($aligner !~ /tophat|star/i){
     die "Aligner must be tophat or star";

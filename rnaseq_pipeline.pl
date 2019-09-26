@@ -602,15 +602,15 @@ elsif($species =~ /zebrafish|z11|GRCz11/i){
         $starDB = '/ifs/depot/assemblies/D.rerio/GRCz11/index/star/2.4.1d/ensembl/v97/overhang74';
     }
     $chrSplits = '/ifs/depot/assemblies/D.rerio/GRCz11/chromosomes';
-    $geneNameConversion = "$Bin/data/GRCz11/IDtoGeneName.txt";
+    $geneNameConversion = "$Bin/data/GRCz11/IDToGeneName.txt";
     $TRANS_INDEX = '';
     $TRANS_INDEX_DEDUP = '';
     $TRANS_FASTA_DEDUP = '';
     $RIBOSOMAL_INTERVALS = "$Bin/data/GRCz11/ribosomal_GRCz11.97.interval_file";
-    $REF_FLAT = "$Bin/data/GRCz11/refFlat.txt";
+    $REF_FLAT = "$Bin/data/GRCz11/refFlat__GRCz11.txt.gz";
     $RSEM_DB = "";
     $KALLISTO_INDEX = "";
-    $QC_BED = "$Bin/data/GRCz11/GRCz11_ensembl_20190903.bed";
+    $QC_BED = "$Bin/data/GRCz11/Danio_rerio.GRCz11.97.bed";
 
     $STAR_MAX_MEM = 30;
 }
