@@ -1,0 +1,5 @@
+Names	slide number	experiment Cy3	experiment Cy5	date	comments
+swirl.1.spot	81	swirl	wild type	2001/9/20	
+swirl.2.spot	82	wild type	swirl	2001/9/20	
+swirl.3.spot	93	swirl	wild type	2001/11/8	
+swirl.4.spot	94	wild type	swirl	2001/11/8	

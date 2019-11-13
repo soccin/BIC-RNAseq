@@ -1,0 +1,252 @@
+% NOTE -- ONLY EDIT THE .Rnw FILE!!!  The .tex file is
+% likely to be overwritten.
+%
+% \VignetteIndexEntry{marray Overview}
+% \VignetteDepends{marray}
+% \VignetteKeywords{Expression Analysis, Preprocessing}
+% \VignettePackage{marray}
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,epsfig,fullpage,hyperref}
+\parindent 0in
+
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+
+
+\begin{document}
+
+\title{\bf Quick start guide for marray}
+
+\author{Yee Hwa Yang}
+
+\maketitle
+
+\begin{center} 
+1. Department of Medicine, University of California, San Francisco, \url{http://www.biostat.ucsf.edu/jean}\\ 
+\end{center}
+
+\tableofcontents
+
+% library(tools) 
+% setwd("C:/MyDoc/Projects/madman/Rpacks/marray/inst/doc")
+% Rnwfile<-file.path("C:/MyDoc/Projects/madman/Rpacks/marray/inst/doc","marray.Rnw")
+% options(width=65)
+% Sweave(Rnwfile,pdf=TRUE,eps=TRUE,stylepath=TRUE,driver=RweaveLatex())
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Overview}
+
+This document provides a brief guide to the \Rpackage{marray} package,
+which is packages for diagnostic plots and normalization of cDNA
+microarray data.  Information on the other packages can be found in the
+other vignettes.
+
+There are three main components to this package.  These are:
+\begin{itemize}
+\item Reading in data.
+\item Perform simple diagnositc plots to access quality.
+\item Normalization.
+\end{itemize}
+
+After the two main pre--processing tasks, image analysis and
+normalization, the next steps in the statistical analysis depend on the
+biological question for which the microarray experiment was
+designed. Thus, different Bioconductor packages may be applicable. For
+example, for identifying differentially expressed genes, functions in
+the packages {\tt limma}, {\tt EBarrays}, {\tt siggenes}, and {\tt
+multtest} may be used.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Getting started}
+
+To load the {\tt marray} package in your R session, type {\tt
+library(marray)}.  We demonstrate the functionality of this R packages
+using gene expression data from the Swirl zebrafish experiment which is
+included as part of the package. To load the swirl dataset, use {\tt
+data(swirl)}, and to view a description of the experiments and data,
+type {\tt ?  swirl}.  
+
+
+\begin{enumerate}
+
+\item To begin, users will create a directory and move all the relevant
+image processing output files (e.g. \texttt{.spot} files) and a file
+containing target (or samples) descriptions
+(e.g. \texttt{SwirlSample.txt} file) to that directory. For this
+illustration, the data has been gathered in the data directory {\tt
+swirldata}.
+
+\item Start R in the desired working directory and load the
+  \Rpackage{marray} packages:
+
+%code 1
+<<eval=TRUE, echo=TRUE>>=
+library(marray)
+dir(system.file("swirldata", package="marray")) 
+@
+
+\item {\bf Data input:} Read in the target file containing
+information about the hybridization.
+
+%code 2
+<<eval=TRUE, echo=TRUE>>=
+datadir <- system.file("swirldata", package="marray")
+swirlTargets <- read.marrayInfo(file.path(datadir, "SwirlSample.txt"))
+@
+
+\item Read in the raw fluorescent intensities data, by default we assume
+that the file names are provided in the {\bf first} column of the target
+file.
+%code 3
+<<eval=TRUE, echo=TRUE>>=
+mraw <- read.Spot(targets = swirlTargets, path=datadir)
+@
+
+If your working directory contains \Rpackage{GenePix} files (\Rfunction{
+  .gpr}), run the following command.  By default, the function {\tt
+  read.GenePix} will also set up printer layout and probe annotation
+  information. 
+\begin{verbatim}
+> data <- read.GenePix(targets=swirlTargets)
+\end{verbatim}
+
+\item Read in the probe annotation information.
+%code 4a
+<<eval=TRUE, echo=TRUE>>=
+galinfo <- read.Galfile("fish.gal", path=datadir)
+mraw@maLayout <- galinfo$layout
+mraw@maGnames <- galinfo$gnames
+@
+
+\item {\bf Array quality assessment:}, the following command generates
+     diagnostic plots for a qualitative assessment of slide quality.
+     The results are saved as png files in the working directory.  We
+     uses the wrapper functions provided in the package {\tt
+     arrayQuality}.
+
+%% Code 4
+\begin{verbatim}
+> library(arrayQuality)
+> maQualityPlots(mraw)
+\end{verbatim}
+
+In addition, you can perform simple diagnostic plots with
+\begin{verbatim}
+> image(mraw)
+> boxplot(mraw)
+> plot(mraw)
+\end{verbatim}
+
+\item {\bf Normalization:} Perform print-tip normalization
+for each arrays and take a look at the data summary.
+%% Code 5
+\begin{verbatim}
+> normdata <- maNorm(mraw)
+> summary(normdata)
+\end{verbatim}
+
+\item  Output the normalized log--ratios $M$ data.
+%% Code 6
+\begin{verbatim}
+> write.marray(normdata)
+\end{verbatim}
+
+\item {\bf Identify DE genes:} Using the linear model package
+\Rpackage{limma} to identify differential expressed (DE) genes between
+wildtype and mutant.  Perform fold-chance estimation as well as apply
+Bayesian smoothing to the standard errors.
+%% Code 8
+\begin{verbatim}
+> library(limma)
+> LMres <- lmFit(normdata, design = c(1, -1, -1, 1), weights=NULL)
+> LMres <- eBayes(LMres)
+\end{verbatim}
+
+\item Show the top 50 genes and write it out into a clickable html file.
+%% Code 9
+\begin{verbatim}
+> restable <- toptable(LMres, number=50, genelist=maGeneTable(normdata), resort.by="M")
+> table2html(restable, disp="file")
+\end{verbatim}
+
+
+\item To utilize other bioconductor packages for downstream analysis, it
+  is also possible to convert objects of class {\tt marrayNorm} into
+  objects of class {\tt ExpressionSet} (see definition in the {\tt Biobase}
+  package), see package {\tt convert} package for more details.
+\begin{verbatim}
+> library(convert)
+> as(normdata, "ExpressionSet")
+\end{verbatim}
+
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Other vignettes and packages}
+
+Greater details can be found in other vignettes.  These are: 
+
+\begin{description}
+\item {\tt marrayClasses}.  This vignette describes basic class
+definitions and associated methods for pre-- and post--normalization
+intensity data for batches of arrays.
+
+\item {\tt marrayInput}. This vignette describes functionality for
+reading microarray data into R, such as intensity data from image
+processing output files (e.g. {\tt .spot} and {\tt .gpr} files for the
+{\tt Spot} and {\tt GenePix} packages, respectively) and textual
+information on probes and targets (e.g. from gal files and god
+lists). {\tt tcltk} widgets are supplied to facilitate and automate data
+input and the creation of microarray specific R objects for storing
+these data.
+
+\item {\tt marrayPlot}. This vignette provides descriptions to
+  functions for diagnostic plots of microarray spot statistics, such as
+  boxplots, scatter--plots, and spatial color images. Examination of
+  diagnostic plots of intensity data is important in order to identify
+  printing, hybridization, and scanning artifacts which can lead to
+  biased inference concerning gene expression.
+
+\item {\tt marrayNorm}. This vignette describes various location and
+scale normalization procedures, which correct for different types of dye
+biases (e.g. intensity, spatial, plate biases) and allow the use of
+control sequences spotted onto the array and possibly spiked into the
+mRNA samples. Normalization is needed to ensure that observed
+differences in intensities are indeed due to differential expression and
+not experimental artifacts; fluorescence intensities should therefore be
+normalized before any analysis which involves comparisons among genes
+within or between arrays. 
+
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+{\bf Note: Sweave.} This document was generated using the \Rfunction{Sweave}
+function from the R \Rpackage{tools} package. The source file is in the
+\Rfunction{/inst/doc} directory of the package \Rpackage{marray}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+ 
+
+This wrapper function \Rfunction{?maQualityPlots} automatically produces
+nine plots of  
+\begin{itemize}
+\item pre-- and post--normalization cDNA microarray data;
+\item $MA$--plots of pre-- and post--normalization log--ratios $M$; 
+\item color images of pre-- and post--normalization log--ratios $M$; 
+\item color images of average log--intensities $A$; 
+\item histogram and overlay density of the signal to noise log--ratio
+  for Cy5 and Cy3 channels; where the signal to noise ratios is defined
+  as the foreground intensity (without background adjustment) over the
+  background intensity; and 
+\item dot--plots of $M$ and $A$ values for replicate controls probes.
+\end{itemize}
+In addition, this function automatically saves the figures to a file.
+More detailed descriptions of all the arguments and options and be found
+the in the arrayQuality package.  Please contact us if you have other
+image processing output formats and would like a similar wrapper
+functions.

@@ -1,0 +1,98 @@
+ShowLargeObject-class   Show Large Data Object - class
+[-methods               Subsetting methods for microarray objects
+boxplot,marrayRaw-method
+                        Boxplots for cDNA microarray spot statistics
+cbind.marrayRaw         Combine marrayRaw, marrayNorm or marrayInfo
+                        Objects
+checkTargetInfo         Verifying the order between intensities matrix
+                        and target file information
+coerce-methods          Coerce an object to belong to a given
+                        microarray class
+dim.marrayRaw           Retrieve the Dimensions of an marrayRaw,
+                        marrayNorm or marrayInfo Object
+findID                  Find ID when given an accession number
+htmlPage                Display gene list as a HTML page
+image,marrayRaw-method
+                        Color image for cDNA microarray spot statistics
+log.na                  Basic Statistical Functions for Handling
+                        Missing Values
+ma2D                    Stratified bivariate robust local regression
+maBoxplot               Boxplots for cDNA microarray spot statistics
+maColorBar              Calibration bar for color images
+maCompCoord             Generate grid and spot matrix coordinates
+maCompInd               Generate spot indices
+maCompLayout            Generate a marrayLayout object
+maCompNormA             Weights for composite normalization
+maCompPlate             Generate plate IDs
+maCoord2Ind             Convert grid and spot matrix coordinates to
+                        spot indices
+maDefaultPar            Default graphical parameters for microarray
+                        objects
+maDotsDefaults          Replace graphical default parameters by user
+                        supplied parameters
+maDotsMatch             Replace default arguments of a function by user
+                        supplied values
+maGenControls           Generating a vector recording the control
+                        status of the spotted probe sequences.
+maGeneTable             Table of spot coordinates and gene names
+maImage                 Color image for cDNA microarray spot statistics
+maImage.func            Color image for cDNA microarray spot statistics
+maInd2Coord             Convert spot indices to grid and spot matrix
+                        coordinates
+maLegendLines           Add a legend to a plot
+maLoess                 Stratified univariate robust local regression
+maLoessLines            Add smoothed fits to a plot
+maMAD                   Stratified MAD calculation
+maMed                   Stratified median calculation
+maNorm                  Simple location and scale normalization
+                        function
+maNorm2D                2D spatial location normalization function
+maNormLoess             Intensity dependent location normalization
+                        function
+maNormMAD               MAD scale normalization function
+maNormMain              Main function for location and scale
+                        normalization of cDNA microarray data
+maNormMed               Median location normalization function
+maNormScale             Simple scale normalization function
+maNum2Logic             Convert a numeric vector of indices to a
+                        logical vector
+maPalette               Microarray color palette
+maPlot                  Scatter-plots for cDNA microarray spot
+                        statistics
+maPlot.func             Scatter-plots with fitted curves and text
+maSelectGnames          Select genes according to the values of a few
+                        different statistics
+maText                  Highlight points on a plot
+maTop                   Identify extreme values
+maTwoSamples            Changing signs for two sample analysis
+mapGeneInfo             Creating URL strings for external database
+                        links
+marrayInfo-class        Class "marrayInfo", description of target
+                        samples or spotted probe sequences
+marrayLayout-class      Class "marrayLayout", classes and methods for
+                        layout parameters of cDNA microarrays
+marrayNorm-class        Class "marrayNorm", classes and methods for
+                        post-normalization cDNA microarray intensity
+                        data
+marrayRaw-class         Class "marrayRaw", classes and methods for
+                        pre-normalization cDNA microarray intensity
+                        data
+opVersionID             Determine the operon oligo set ID
+plot.marrayRaw          Scatter-plots for cDNA microarray spot
+                        statistics
+read.Galfile            Reading GenePix Gal file
+read.fname              Internal marray functions
+read.marrayInfo         Create objects of class marrayInfo
+read.marrayLayout       Create objects of class marrayLayout
+read.marrayRaw          Create objects of class "marrayRaw"
+rm.na                   Remove missing values
+stat.confband.text      Rank genes according to the value of a
+                        statistic.
+stat.gnames             Sort Genes According to the Value of a
+                        Statistic
+summary-methods         Printing summary methods for microarray objects
+swirl                   Gene expression data from Swirl zebrafish cDNA
+                        microarray experiment
+write.list              Data Output
+write.marray            Data Output
+write.xls               Data Output

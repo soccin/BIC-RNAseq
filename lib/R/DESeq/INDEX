@@ -1,0 +1,55 @@
+CountDataSet-class      Class "CountDataSet" - a container for count
+                        data from HTS experiments
+adjustScvForBias        Adjust an SCV value for the bias arising when
+                        it is calculated from unbiased estimates of
+                        mean and variance.
+conditions              Accessor functions for the 'conditions'
+                        information in a CountDataSet object.
+counts                  Accessors for the 'counts' slot of a
+                        CountDataSet object.
+dispTable               Accessor function for the dispTable information
+                        in a CountDataSet
+estimateDispersions     Estimate and fit dispersions for a
+                        CountDataSet.
+estimateSizeFactors     Estimate the size factors for a CountDataSet
+estimateSizeFactorsForMatrix
+                        Low-level function to estimate size factors
+                        with robust regression.
+estimateVarianceFunctions
+                        REMOVED
+fitInfo                 Accessor function for the fitInfo objects in a
+                        CountDataSet
+fitNbinomGLMs           Fit a generalized linear model (GLM) for each
+                        gene.
+fitNbinomGLMsForMatrix
+                        Fit negative binomial GLMs to a count matrix.
+getBaseMeansAndVariances
+                        Perform row-wise estimates of base-level means
+                        and variances for count data.
+getVarianceStabilizedData
+                        Apply a variance stabilizing transformation
+                        (VST) to the count data
+makeExampleCountDataSet
+                        make a simple example CountDataSet with random
+                        data
+nbinomGLMTest           Perform chi-squared tests comparing two sets of
+                        GLM fits
+nbinomTest              Test for differences between the base means for
+                        two conditions
+nbinomTestForMatrices   Perform row-wise tests for differences between
+                        the base means of two count matrices.
+nbkd.sf                 GLM family for a negative binomial with known
+                        dispersion and log link with size factors
+newCountDataSet         Create a CountDataSet object
+newCountDataSetFromHTSeqCount
+                        Create a new CountDataSet from count files
+                        generated with htseq-count
+plotDispEsts            Plot dispersion estimates and fitted values
+plotMA                  Makes a so-called "MA-plot"
+plotPCA                 Sample PCA plot from variance-stabilized data
+residualsEcdfPlot       REMOVED
+scvPlot                 REMOVED
+sizeFactors             Accessor functions for the 'sizeFactors'
+                        information in a CountDataSet object.
+varianceFitDiagnostics
+                        REMOVED

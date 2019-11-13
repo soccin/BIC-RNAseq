@@ -1,0 +1,10 @@
+GSA                     Gene set analysis
+GSA.correlate           "Correlates" a gene set collection with a given
+                        list of genes
+GSA.func                Gene set analysis without permutations
+GSA.genescores          Individual gene scores from a gene set analysis
+GSA.listsets            List the results from a Gene set analysis
+GSA.make.features       Creates features from a GSA analysis that can
+                        be used in other procedures
+GSA.plot                Plot the results from a Gene set analysis
+GSA.read.gmt            Read in a gene set collection from a .gmt file

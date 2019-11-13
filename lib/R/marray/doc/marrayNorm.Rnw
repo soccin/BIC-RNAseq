@@ -1,0 +1,474 @@
+% NOTE -- ONLY EDIT THE .Rnw FILE!!!  The .tex file is
+% likely to be overwritten.
+%
+% \VignetteIndexEntry{marray Normalization}
+% \VignetteDepends{marray}
+% \VignetteKeywords{Expression Analysis, Preprocessing}
+% \VignettePackage{marray}
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,epsfig,fullpage,hyperref}
+\parindent 0in
+
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+
+\parindent 0in
+
+\bibliographystyle{abbrvnat}
+
+\begin{document}
+
+\title{\bf Normalization: Bioconductor's marray package}
+
+
+\author{Yee Hwa Yang$^1$ and Sandrine Dudoit$^2$}
+\maketitle
+\begin{center}
+1. Department of Medicine, University of California, San Francisco,
+   {\tt jean@biostat.berkeley.edu}\\
+2. Division of Biostatistics, University of California, Berkeley,
+   \url{http://www.stat.berkeley.edu/~sandrine}
+\end{center}
+
+
+% library(tools) 
+% setwd("C:/MyDoc/Projects/madman/Rpacks/marray/inst/doc")
+% Rnwfile<-file.path("C:/MyDoc/Projects/madman/Rpacks/marray/inst/doc","marrayNorm.Rnw")
+% Sweave(Rnwfile,pdf=TRUE,eps=TRUE,stylepath=TRUE,driver=RweaveLatex())
+
+
+\tableofcontents
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Overview}
+
+This document provides a tutorial for the normalization component of the
+{\tt marray} package.  Greater details on the packages are given in
+\cite{Dudoit&Yang02}.  This package implements robust adaptive location
+and scale normalization procedures, which correct for different types of
+dye biases (e.g. intensity, spatial, plate biases) and allow the use of
+control sequences spotted onto the array and possibly spiked into the
+mRNA samples. Normalization is needed to ensure that observed
+differences in intensities are indeed due to differential expression and
+not experimental artifacts; fluorescence intensities should therefore be
+normalized before any analysis which involves comparisons among genes
+within or between arrays.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Getting started}
+
+To load the {\tt marray} package in your R session, type {\tt
+library(marray)}.  We demonstrate the functionality of this R packages
+using gene expression data from the Swirl zebrafish experiment. These
+data are included as part of the package, hence you will also need to
+install this package. To load the swirl dataset, use {\tt data(swirl)},
+and to view a description of the experiments and data, type {\tt ?
+swirl}. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Normalization using robust local regression}
+
+The purpose of normalization is to identify and remove sources of
+systematic variation, other than differential expression, in the
+measured fluorescence intensities (e.g.  different labeling efficiencies
+and scanning properties of the Cy3 and Cy5 dyes; different scanning
+parameters, such as PMT settings; print--tip, spatial, or plate
+effects). It is necessary to normalize the fluorescence intensities
+before any analysis which involves comparing expression levels within or
+between slides (e.g. classification, multiple testing), in order to
+ensure that differences in intensities are indeed due to differential
+expression and not experimental artifacts. The need for normalization
+can be seen most clearly in self--self experiments, in which two
+identical mRNA samples are labeled with different dyes and hybridized to
+the same slide \cite{Dudoitetal02}. Although there is no differential
+expression and one expects the red and green intensities to be equal,
+the red intensities often tend to be lower than the green
+intensities. Furthermore, the imbalance in the red and green intensities
+is usually not constant across the spots within and between arrays, and
+can vary according to overall spot intensity, location on the array,
+plate origin, and possibly other variables. \\
+
+
+{\bf Location normalization.} We have developed location normalization
+methods which correct for intensity, spatial, and other dye biases using
+{\it robust locally weighted regression}
+\cite{Cleveland79,Norm,NormNAR}. Local regression is a {\it smoothing}
+method for summarizing multivariate data using general curves and
+surfaces. The smoothing is achieved by fitting a linear or quadratic
+function of the predictor variables {\it locally} to the data, in a
+fashion that is analogous to computing a moving average. In the lowess
+and loess procedures, polynomials are fitted locally using iterated
+weighted least squares. {\it Robust} fitting guards against deviant
+points distorting the smoothed points. In the context of microarray
+experiments, robust local regression allows us to capture the
+non--linear dependence of the intensity log--ratio $M=\log_2 R/G$ on the
+overall intensity $A = \log_2 \sqrt{RG}$, while ensuring that the
+computed normalization values are not driven by a small number of
+differentially expressed genes with extreme log--ratios. For details on
+the R {\tt loess} function ({\tt modreg} package), type {\tt ? loess}.\\
+
+{\bf Scale normalization.} For scale normalization, a robust estimate of
+scale, such as the {\it median absolute deviation (MAD)}, may be used
+\cite{Norm,NormNAR}. For a collection of numbers $x_1, \ldots, x_n$,
+the MAD is the median of their absolute deviations from the median $m =
+{\rm median}\{x_1, \ldots, x_n\}$
+
+$$ MAD = {\rm median}\{ |x_1 - m|,  \ldots, |x_n - m|\}.$$
+The R function for MAD is {\tt mad}.\\
+
+Location and scale normalized intensity log--ratios $M$ are given by
+
+$$ M \leftarrow \frac{M - l}{s},$$
+
+where $l$ and $s$ denote the location and scale normalization values,
+respectively. The location value $l$ can be obtained, for example, by
+robust local regression of $M$ on $A$ within print--tip--group. The
+scale value $s$ could be the MAD, within print--tip--group, of location
+normalized log--ratios.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Normalization functions}
+
+\subsection{Simple normalization function {\tt maNorm}}
+A simple wrapper function {\tt maNorm} is provided for users interested
+in applying a standard set of normalization procedures using default
+parameters. This function returns an object of class {\tt marrayNorm} and
+has seven arguments
+\begin{description}
+\item
+{{\tt mbatch}:} Object of class {\tt marrayRaw}, containing intensity
+data for the batch of arrays to be normalized. An object of class {\tt
+  marray} may also be passed if normalization is performed in several
+steps. 
+\item
+{{\tt norm}:} Character string specifying the normalization
+        procedure. Six normalization procedures are available with this
+        function: {\tt none}, for no normalization; {\tt median},  for
+        global median location normalization; {\tt loess} for global
+        intensity or $A$--dependent location normalization 
+        using the {\tt loess} function; {\tt twoD}, for 2D spatial
+        location normalization using the {\tt loess} function; {\tt
+        printTipLoess}, for within--print--tip--group intensity
+        dependent location normalization using the {\tt loess} function;
+        and {\tt scalePrintTipMAD}, for within--print--tip--group
+        intensity dependent location normalization followed by
+        within--print--tip--group scale normalization using the median
+        absolute deviation. This argument can be specified using the
+        first letter of each method. 
+\item
+{{\tt subset}:} 
+        A logical or numeric vector indicating the subset of points used
+        to compute the normalization values. 
+\item
+{{\tt span}:} The argument span which controls the degree of smoothing
+in the loess function. Only used for {\tt loess}, {\tt twoD}, {\tt
+  printTipLoess}, and {\tt scalePrintTipMAD} options. 
+\item
+{{\tt Mloc}:} If {\tt TRUE}, the location normalization values are
+         stored in the slot {\tt maMloc} of the object of class {\tt
+         marray} returned by the function, if {\tt FALSE}, these values
+         are not retained. This option allows to save memory for large datasets.
+\item
+{{\tt Mscale}:} If {\tt TRUE}, the scale normalization values are stored
+         in the slot {\tt maMscale} of the object of class {\tt marray}
+         returned by the function, if {\tt FALSE}, these values are not
+         retained.
+\item
+{{\tt echo}:} If {\tt TRUE}, the index of the array currently being normalized is printed.
+\end{description}
+
+\subsection{Simple scale normalization function {\tt maNormScale}}
+A simple wrapper function {\tt maNormScale} is provided for users
+interested in applying a standard set of scale normalization procedures
+using default parameters. This function returns an object of class {\tt
+marrayNorm} has six arguments
+
+\begin{description}
+\item
+{{\tt mbatch}:} Object of class {\tt marrayRaw}, containing intensity
+data for the batch of arrays to be normalized. An object of class {\tt
+  marray} may also be passed if  normalization is performed in several
+steps.  
+\item
+{{\tt norm}:} Character string specifying the normalization
+procedure. Two normalization procedures are currently available for this
+function: {\tt globalMAD} for global scale normalization using the
+median absolute deviation; {\tt printTipMAD} for
+within--print--tip--group scale normalization using the median absolute
+deviation. This argument can be specified using the first letter of each
+method. 
+\item
+{{\tt subset}:} 
+        A logical or numeric vector indicating the subset of points used
+        to compute the normalization values. 
+\item
+{{\tt geo}:} If {\tt TRUE}, the MAD of each group is divided by the
+geometric mean of the MADs across groups \cite{NormNAR}. This allows
+observations to retain their original units. 
+\item
+{{\tt Mscale}:} If {\tt TRUE}, the scale normalization values are stored
+         in the slot {\tt maMscale} of the object of class {\tt marray}
+         returned by the function, if {\tt FALSE}, these values are 
+         not retained.
+\item
+{{\tt echo}:} If {\tt TRUE}, the index of the array currently being
+normalized is printed. 
+
+\end{description}
+
+The {\tt globalMad} option, with {\tt geo=TRUE}, allows between slide
+scale normalization. 
+
+\subsection{General normalization function {\tt maNormMain}}
+Note: We recommand users using {\tt maNorm} and {\tt maNormScale} rather
+than this function for performing standard set of normalization
+procedures.
+
+This is the main internal function for location and scale normalization
+of cDNA microarray data is {\tt maNormMain}; it has eight arguments (see
+also {\tt ? maNormMain}):
+\begin{description}
+\item
+{{\tt mbatch}:} Object of class {\tt marrayRaw}, containing intensity
+data for the batch of arrays to be normalized. An object of class {\tt
+  marrayNorm} may also be passed if normalization is performed in
+several steps. 
+\item
+{{\tt f.loc}:} A list of location normalization functions, e.g., {\tt
+  maNormLoess}, {\tt maNormMed}, or {\tt maNorm2D}. 
+\item
+{{\tt f.scale}:} A list of scale normalization functions, e.g, {\tt maNormMAD}.
+\item
+{{\tt a.loc}:} For composite normalization, a function for computing the
+weights used in combining several location normalization functions,
+e.g., {\tt maCompNormA}. 
+\item
+{{\tt a.scale}:} For composite normalization, a function for computing
+the weights used in combining several scale normalization functions. 
+\item
+{{\tt Mloc}:} If {\tt TRUE}, the location normalization values are
+         stored in the slot {\tt maMloc} of the object of class {\tt
+         marray} returned by the function, if {\tt FALSE}, these values
+         are not retained. This option allows to save memory for large datasets.
+\item
+{{\tt Mscale}:} If {\tt TRUE}, the scale normalization values are stored
+         in the slot {\tt maMscale} of the object of class {\tt marray}
+         returned by the function, if {\tt FALSE}, these values are 
+         not retained.
+\item
+{{\tt echo}:} If {\tt TRUE}, the index of the array currently being
+normalized is printed. 
+\end{description}
+
+ Normalization is performed simultaneously for each array in the batch
+ using the location and scale normalization procedures specified by the
+ lists of functions {\tt f.loc} and {\tt f.scale}. Typically, only one
+ function is given in each list, otherwise composite normalization is
+ performed using the weights given by {\tt a.loc} and {\tt a.scale}
+ \cite{NormNAR}. The {\tt maNormMain} function returns objects of class
+ {\tt marrayNorm}.
+
+The {\tt marray} package contains internal functions for median ({\tt
+maNormMed}), intensity or $A$--dependent ({\tt maNormLoess}), and 2D
+spatial ({\tt maNorm2D}) location normalization. The R robust local
+regression function {\tt loess} is used for intensity dependent and 2D
+spatial normalization. The package also contains a function for scale
+normalization using the median absolute deviation (MAD) ({\tt
+maNormMAD}). These functions have arguments for specifying which spots
+to use in the normalization and for controlling the local regression,
+when applicable. The functions allow normalization to be done separately
+within values of a layout parameter, such as plate or print--tip--group,
+and using different subsets of probe sequences (e.g. dilution series of
+control probe sequences).
+
+
+\section{Normalization of Swirl zebrafish microarray data}
+
+To read in the data for the Swirl experiment and generate the plate IDs
+
+<<eval=TRUE,echo=TRUE>>=
+library("marray", verbose=FALSE)
+data(swirl)
+maPlate(swirl)<-maCompPlate(swirl,n=384)
+@
+
+The pre--normalization $MA$--plot for the Swirl 93 array in Figure
+\ref{fig:maPlot1} illustrates the non--linear dependence of the
+log--ratio $M$ on the overall spot intensity $A$ and the existence of
+spatial dye biases. Only a small proportion of the spots are expected to
+vary in intensity between the two channels. We thus perform
+within--print--tip--group loess location normalization using all $8,448$
+probes on the array. \\ 
+
+\subsection{Using simple function {\tt maNorm}} 
+
+
+The following command normalizes all four arrays in the Swirl experiment
+simultaneously.  The simple wrapper function could be used to perform
+most of the standard normalizations procedures.
+
+<<eval=TRUE>>=
+swirl.norm <- maNorm(swirl, norm="p")
+summary(swirl.norm)
+@
+
+For global median normalization
+\begin{verbatim}
+> swirl.normm <- maNorm(swirl, norm="median")
+\end{verbatim}
+
+\subsection{Using simple function {\tt maNormScale}} 
+
+This simple wrapper function may be used to perform scale normalization
+separately from location normalization. The following examples do not
+represent a recommended analysis but are simply used for demonstrating
+the software functionality. Within--print--tip--group intensity
+dependent normalization followed by within--print--tip--group scale
+normalization using the median absolute deviation, could be performed in
+one step by 
+
+\begin{verbatim}
+> swirl.norms <- maNorm(swirl, norm="s")
+\end{verbatim}
+
+or sequentially by
+
+<<eval=FALSE,echo=TRUE>>=
+swirl.norm1 <- maNorm(swirl, norm="p")
+swirl.norm2 <- maNormScale(swirl.norm1, norm="p")
+@
+
+For between slide scale normalization using MAD scaled by the geometric
+mean of MAD across slides \cite{Norm,NormNAR} 
+
+\begin{verbatim}
+swirl.normg <- maNormScale(swirl.norm, norm="g")
+\end{verbatim}
+
+\subsection{Using main function {\tt maNormMain}} 
+
+The following command normalizes all four arrays in the Swirl experiment simultaneously
+
+\begin{verbatim}
+> swirl.norm <- maNormMain(swirl, 
+	f.loc = list(maNormLoess(x = "maA", y = "maM", z = "maPrintTip", 
+		w = NULL, subset = TRUE, span = 0.4)),
+	f.scale = NULL,
+    	a.loc = maCompNormEq(), 
+	a.scale = maCompNormEq(),
+	Mloc = TRUE, Mscale = TRUE, echo = FALSE)
+\end{verbatim}
+
+This is the default normalization procedure in {\tt maNormMain}, thus
+the same results could be obtained by calling  
+
+\begin{verbatim}
+> swirl.norm <- maNormMain(swirl)
+\end{verbatim}
+
+
+To see the effect of within--print--tip--group location normalization,
+compare the pre--and post--normalization boxplots and $MA$--plots in
+Figures \ref{fig:maBoxplot1}, \ref{fig:maBoxplot2}, and
+\ref{fig:maPlot1}. Normalized log--ratios $M$ are now evenly distributed
+about about zero across the range of intensities $A$ for each
+print--tip--group. Furthermore, the non--linear location normalization
+seems to have eliminated, to some extent, the scale differences among
+print--tip--groups and arrays. \\ 
+
+\subsection{Plots}
+
+The plots were produced using the following commands:
+
+<<maBoxplot1pre,fig=TRUE,prefix=FALSE,echo=TRUE,include=FALSE>>=
+boxplot(swirl[,3], xvar="maPrintTip", yvar="maM", main="Swirl array 93: pre--normalization")
+@
+
+<<maBoxplot2pre,fig=TRUE,prefix=FALSE,echo=TRUE,include=FALSE>>=
+boxplot(swirl, yvar="maM", main="Swirl arrays: pre--normalization")
+@
+
+<<maBoxplot1post,fig=TRUE,prefix=FALSE,echo=TRUE,include=FALSE>>=
+boxplot(swirl.norm[,3], xvar="maPrintTip", yvar="maM", main="Swirl array 93: post--normalization")
+@
+
+<<maBoxplot2post,fig=TRUE,prefix=FALSE,echo=TRUE,include=FALSE>>=
+boxplot(swirl.norm, yvar="maM", main="Swirl arrays: post--normalization")
+@
+
+<<maPlot1pre,fig=TRUE,prefix=FALSE,echo=TRUE,include=FALSE>>=
+plot(swirl[,3], main="Swirl array 93: pre--normalization MA--plot")
+@
+
+<<maPlot1post,fig=TRUE,prefix=FALSE,echo=TRUE,include=FALSE>>=
+plot(swirl.norm[,3], main="Swirl array 93: post--normalization MA--plot")
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{cc}
+\includegraphics[width=3in,height=3in,angle=0]{maBoxplot1pre}, &
+\includegraphics[width=3in,height=3in,angle=0]{maBoxplot1post} \\ 
+(a) & (b)
+\end{tabular}
+\end{center}
+\caption{Boxplots by print--tip--group of the pre-- and
+  post--normalization intensity log-ratios $M$ for the Swirl 93
+  array. }
+\protect\label{fig:maBoxplot1}
+\end{figure}
+
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{cc}
+\includegraphics[width=3in,height=3in,angle=0]{maBoxplot2pre}, &
+\includegraphics[width=3in,height=3in,angle=0]{maBoxplot2post} \\ 
+(a) & (b)
+\end{tabular}
+\end{center}
+\caption{Boxplots of the pre--and post--normalization intensity
+  log--ratios $M$ for the four arrays in the Swirl experiment. } 
+\protect\label{fig:maBoxplot2}
+\end{figure}
+
+\newpage
+
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{cc}
+\includegraphics[width=3in,height=3in,angle=0]{maPlot1pre}, &
+\includegraphics[width=3in,height=3in,angle=0]{maPlot1post} \\ 
+(a) & (b)
+\end{tabular}
+\end{center}
+\caption{Pre-- and post--normalization $MA$--plot for the Swirl 93
+  array, with the lowess fits for individual
+  print--tip--groups. Different colors are used to represent lowess
+  curves for print--tips from different rows, and different line types
+  are used to represent lowess curves for print--tips from different
+  columns. }
+\protect\label{fig:maPlot1}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{\bf Note: Sweave.} This document was generated using the \Rfunction{Sweave}
+function from the R \Rpackage{tools} package. The source file is in the
+\Rfunction{/inst/doc} directory of the package \Rpackage{marray}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bibliography{marrayPacks}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+
+ 

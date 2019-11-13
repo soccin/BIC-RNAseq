@@ -1,0 +1,764 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>R: Exploratory analysis for two-color spotted microarray data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+<h1> Exploratory analysis for two-color spotted microarray data
+<img class="toplogo" src="../../../doc/html/logo.jpg" alt="[R logo]" />
+</h1>
+<hr/>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]" /></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]" /></a>
+</div><h2>Documentation for package &lsquo;marray&rsquo; version 1.48.0</h2>
+
+<ul><li><a href="../DESCRIPTION">DESCRIPTION file</a>.</li>
+<li><a href="../doc/index.html">User guides, package vignettes and other documentation.</a></li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<p style="text-align: center;">
+<a href="#A">A</a>
+<a href="#B">B</a>
+<a href="#C">C</a>
+<a href="#D">D</a>
+<a href="#F">F</a>
+<a href="#G">G</a>
+<a href="#H">H</a>
+<a href="#I">I</a>
+<a href="#L">L</a>
+<a href="#M">M</a>
+<a href="#O">O</a>
+<a href="#P">P</a>
+<a href="#Q">Q</a>
+<a href="#R">R</a>
+<a href="#S">S</a>
+<a href="#T">T</a>
+<a href="#U">U</a>
+<a href="#V">V</a>
+<a href="#W">W</a>
+<a href="#misc">misc</a>
+</p>
+
+
+<h2><a name="A">-- A --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="plotMA.html">addLines</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="plotMA.html">addPoints</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="plotMA.html">addText</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">as</a></td>
+<td>Coerce an object to belong to a given microarray class</td></tr>
+</table>
+
+<h2><a name="B">-- B --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="boxplot.html">boxplot-method</a></td>
+<td>Boxplots for cDNA microarray spot statistics</td></tr>
+</table>
+
+<h2><a name="C">-- C --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">cbind-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">cbind-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="cbind.html">cbind.marrayNorm</a></td>
+<td>Combine marrayRaw, marrayNorm or marrayInfo Objects</td></tr>
+<tr><td style="width: 25%;"><a href="cbind.html">cbind.marrayRaw</a></td>
+<td>Combine marrayRaw, marrayNorm or marrayInfo Objects</td></tr>
+<tr><td style="width: 25%;"><a href="checkTargetInfo.html">checkTargetInfo</a></td>
+<td>Verifying the order between intensities matrix and target file information</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">coerce</a></td>
+<td>Coerce an object to belong to a given microarray class</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">coerce-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">coerce-methods</a></td>
+<td>Coerce an object to belong to a given microarray class</td></tr>
+<tr><td style="width: 25%;"><a href="maGenControls.html">controlCode</a></td>
+<td>Generating a vector recording the control status of the spotted probe sequences.</td></tr>
+<tr><td style="width: 25%;"><a href="maNA.html">cor.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+</table>
+
+<h2><a name="D">-- D --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="dim.html">dim.marrayInfo</a></td>
+<td>Retrieve the Dimensions of an marrayRaw, marrayNorm or marrayInfo Object</td></tr>
+<tr><td style="width: 25%;"><a href="dim.html">dim.marrayNorm</a></td>
+<td>Retrieve the Dimensions of an marrayRaw, marrayNorm or marrayInfo Object</td></tr>
+<tr><td style="width: 25%;"><a href="dim.html">dim.marrayRaw</a></td>
+<td>Retrieve the Dimensions of an marrayRaw, marrayNorm or marrayInfo Object</td></tr>
+</table>
+
+<h2><a name="F">-- F --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="findID.html">findID</a></td>
+<td>Find ID when given an accession number</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">fish.gal</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+</table>
+
+<h2><a name="G">-- G --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="marray-internal.html">gsubAnchor</a></td>
+<td>Internal marray functions</td></tr>
+</table>
+
+<h2><a name="H">-- H --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="htmlPage.html">htmlPage</a></td>
+<td>Display gene list as a HTML page</td></tr>
+</table>
+
+<h2><a name="I">-- I --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="image.html">image-method</a></td>
+<td>Color image for cDNA microarray spot statistics</td></tr>
+</table>
+
+<h2><a name="L">-- L --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="maNA.html">length.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+<tr><td style="width: 25%;"><a href="plotMA.html">lines-method</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="maNA.html">log.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+</table>
+
+<h2><a name="M">-- M --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="ma2D.html">ma2D</a></td>
+<td>Stratified bivariate robust local regression</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maA</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maA-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maA-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maA&lt;-</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maA&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maBoxplot.html">maBoxplot</a></td>
+<td>Boxplots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="maColorBar.html">maColorBar</a></td>
+<td>Calibration bar for color images</td></tr>
+<tr><td style="width: 25%;"><a href="maCompCoord.html">maCompCoord</a></td>
+<td>Generate grid and spot matrix coordinates</td></tr>
+<tr><td style="width: 25%;"><a href="maCompInd.html">maCompInd</a></td>
+<td>Generate spot indices</td></tr>
+<tr><td style="width: 25%;"><a href="maCompLayout.html">maCompLayout</a></td>
+<td>Generate a marrayLayout object</td></tr>
+<tr><td style="width: 25%;"><a href="maCompNormA.html">maCompNormA</a></td>
+<td>Weights for composite normalization</td></tr>
+<tr><td style="width: 25%;"><a href="maCompNormA.html">maCompNormEq</a></td>
+<td>Weights for composite normalization</td></tr>
+<tr><td style="width: 25%;"><a href="maCompPlate.html">maCompPlate</a></td>
+<td>Generate plate IDs</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maControls</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maControls-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maControls-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maControls-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maControls&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maControls&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maControls&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maControls&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maCoord2Ind.html">maCoord2Ind</a></td>
+<td>Convert grid and spot matrix coordinates to spot indices</td></tr>
+<tr><td style="width: 25%;"><a href="maDefaultPar.html">maDefaultPar</a></td>
+<td>Default graphical parameters for microarray objects</td></tr>
+<tr><td style="width: 25%;"><a href="maDotsDefaults.html">maDotsDefaults</a></td>
+<td>Replace graphical default parameters by user supplied parameters</td></tr>
+<tr><td style="width: 25%;"><a href="maDotsMatch.html">maDotsMatch</a></td>
+<td>Replace default arguments of a function by user supplied values</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGb</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGb-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGb&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGb&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maGenControls.html">maGenControls</a></td>
+<td>Generating a vector recording the control status of the spotted probe sequences.</td></tr>
+<tr><td style="width: 25%;"><a href="maGeneTable.html">maGeneTable</a></td>
+<td>Table of spot coordinates and gene names</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGf</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGf-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGf&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGf&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGnames</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maGnames-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGnames-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGnames&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maGnames&lt;--method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maGridCol</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maGridCol-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maGridCol-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGridCol-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maGridRow</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maGridRow-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maGridRow-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maGridRow-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maImage.html">maImage</a></td>
+<td>Color image for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="maImage.func.html">maImage.func</a></td>
+<td>Color image for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="maInd2Coord.html">maInd2Coord</a></td>
+<td>Convert spot indices to grid and spot matrix coordinates</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maInfo</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maInfo-method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maInfo&lt;-</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maInfo&lt;--method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maLabels</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maLabels-method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maLabels&lt;-</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maLabels&lt;--method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maLayout</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maLayout-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maLayout-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maLayout&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maLayout&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="maLegendLines.html">maLegendLines</a></td>
+<td>Add a legend to a plot</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maLG</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maLG-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maLG-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maLoess.html">maLoess</a></td>
+<td>Stratified univariate robust local regression</td></tr>
+<tr><td style="width: 25%;"><a href="maLoessLines.html">maLoessLines</a></td>
+<td>Add smoothed fits to a plot</td></tr>
+<tr><td style="width: 25%;"><a href="maLoessLines.html">maLowessLines</a></td>
+<td>Add smoothed fits to a plot</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maLR</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maLR-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maLR-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maM</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maM-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maM-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maM&lt;-</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maM&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maMAD.html">maMAD</a></td>
+<td>Stratified MAD calculation</td></tr>
+<tr><td style="width: 25%;"><a href="maMed.html">maMed</a></td>
+<td>Stratified median calculation</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMloc</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMloc-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMloc&lt;-</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMloc&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMscale</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMscale-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMscale&lt;-</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maMscale&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgc</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgc-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNgc-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNgc-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgc&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgc&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNgc&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNgc&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgr</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgr-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNgr-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNgr-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgr&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNgr&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNgr&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNgr&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maNorm.html">maNorm</a></td>
+<td>Simple location and scale normalization function</td></tr>
+<tr><td style="width: 25%;"><a href="maNorm2D.html">maNorm2D</a></td>
+<td>2D spatial location normalization function</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNormCall</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNormCall-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maNormLoess.html">maNormLoess</a></td>
+<td>Intensity dependent location normalization function</td></tr>
+<tr><td style="width: 25%;"><a href="maNormMAD.html">maNormMAD</a></td>
+<td>MAD scale normalization function</td></tr>
+<tr><td style="width: 25%;"><a href="maNormMain.html">maNormMain</a></td>
+<td>Main function for location and scale normalization of cDNA microarray data</td></tr>
+<tr><td style="width: 25%;"><a href="maNormMed.html">maNormMed</a></td>
+<td>Median location normalization function</td></tr>
+<tr><td style="width: 25%;"><a href="maNormScale.html">maNormScale</a></td>
+<td>Simple scale normalization function</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maNotes</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maNotes-method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNotes-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNotes-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNotes-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maNotes&lt;-</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maNotes&lt;--method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNotes&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNotes&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNotes&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNsamples</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNsamples-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNsamples-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsc</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsc-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNsc-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNsc-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsc&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsc&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNsc&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNsc&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNspots</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNspots-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNspots-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNspots-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNspots&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNspots&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNspots&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNspots&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsr</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsr-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNsr-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNsr-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsr&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maNsr&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maNsr&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maNsr&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maNum2Logic.html">maNum2Logic</a></td>
+<td>Convert a numeric vector of indices to a logical vector</td></tr>
+<tr><td style="width: 25%;"><a href="maPalette.html">maPalette</a></td>
+<td>Microarray color palette</td></tr>
+<tr><td style="width: 25%;"><a href="mapGeneInfo.html">mapGeneInfo</a></td>
+<td>Creating URL strings for external database links</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maPlate</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maPlate-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maPlate-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maPlate-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maPlate&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maPlate&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maPlate&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maPlate&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maPlot.html">maPlot</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="maPlot.func.html">maPlot.func</a></td>
+<td>Scatter-plots with fitted curves and text</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maPrintTip</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maPrintTip-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maPrintTip-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maPrintTip-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRb</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRb-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRb&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRb&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRf</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRf-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRf&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maRf&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">marrayInfo</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">marrayInfo-class</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">marrayLayout</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">marrayLayout-class</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">marrayNorm</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">marrayNorm-class</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">marrayRaw</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">marrayRaw-class</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maSelectGnames.html">maSelectGnames</a></td>
+<td>Select genes according to the values of a few different statistics</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSpotCol</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSpotCol-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maSpotCol-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maSpotCol-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSpotRow</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSpotRow-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maSpotRow-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maSpotRow-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSub</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSub-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maSub-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maSub-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSub&lt;-</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">maSub&lt;--method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maSub&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maSub&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maTargets</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maTargets-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maTargets-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maTargets&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">maTargets&lt;--method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="maText.html">maText</a></td>
+<td>Highlight points on a plot</td></tr>
+<tr><td style="width: 25%;"><a href="maTop.html">maTop</a></td>
+<td>Identify extreme values</td></tr>
+<tr><td style="width: 25%;"><a href="maTwoSamples.html">maTwoSamples</a></td>
+<td>Changing signs for two sample analysis</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maW</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maW-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maW-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maW&lt;-</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">maW&lt;--method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">maW&lt;--method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maNA.html">mean.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+</table>
+
+<h2><a name="O">-- O --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="opVersionID.html">opVersionID</a></td>
+<td>Determine the operon oligo set ID</td></tr>
+<tr><td style="width: 25%;"><a href="maNA.html">order.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+</table>
+
+<h2><a name="P">-- P --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="marray-internal.html">plot.gene.cluster</a></td>
+<td>Internal marray functions</td></tr>
+<tr><td style="width: 25%;"><a href="plotMA.html">plot.marrayNorm</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="plotMA.html">plot.marrayRaw</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="plotMA.html">points-method</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">print-method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">print-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">print-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">print-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="maNA.html">prod.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+</table>
+
+<h2><a name="Q">-- Q --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="maNA.html">quantile.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+</table>
+
+<h2><a name="R">-- R --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">rbind-method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="cbind.html">rbind.marrayInfo</a></td>
+<td>Combine marrayRaw, marrayNorm or marrayInfo Objects</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayRaw.html">read.Agilent</a></td>
+<td>Create objects of class "marrayRaw"</td></tr>
+<tr><td style="width: 25%;"><a href="marray-internal.html">read.fname</a></td>
+<td>Internal marray functions</td></tr>
+<tr><td style="width: 25%;"><a href="read.Galfile.html">read.Galfile</a></td>
+<td>Reading GenePix Gal file</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayRaw.html">read.GenePix</a></td>
+<td>Create objects of class "marrayRaw"</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayInfo.html">read.marrayInfo</a></td>
+<td>Create objects of class marrayInfo</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayLayout.html">read.marrayLayout</a></td>
+<td>Create objects of class marrayLayout</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayRaw.html">read.marrayRaw</a></td>
+<td>Create objects of class "marrayRaw"</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayRaw.html">read.SMD</a></td>
+<td>Create objects of class "marrayRaw"</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayRaw.html">read.Spot</a></td>
+<td>Create objects of class "marrayRaw"</td></tr>
+<tr><td style="width: 25%;"><a href="rm.na.html">rm.na</a></td>
+<td>Remove missing values</td></tr>
+</table>
+
+<h2><a name="S">-- S --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="maNA.html">scale.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+<tr><td style="width: 25%;"><a href="mapGeneInfo.html">SFGL</a></td>
+<td>Creating URL strings for external database links</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">show-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">show-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="showLargeObject.html">show-method</a></td>
+<td>Show Large Data Object - class</td></tr>
+<tr><td style="width: 25%;"><a href="showLargeObject.html">ShowLargeObject-class</a></td>
+<td>Show Large Data Object - class</td></tr>
+<tr><td style="width: 25%;"><a href="stat.confband.text.html">stat.confband.text</a></td>
+<td>Rank genes according to the value of a statistic.</td></tr>
+<tr><td style="width: 25%;"><a href="marray-internal.html">stat.gene.cluster</a></td>
+<td>Internal marray functions</td></tr>
+<tr><td style="width: 25%;"><a href="stat.gnames.html">stat.gnames</a></td>
+<td>Sort Genes According to the Value of a Statistic</td></tr>
+<tr><td style="width: 25%;"><a href="maNA.html">sum.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">summary-method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">summary-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">summary-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">summary-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="print-methods.html">summary-methods</a></td>
+<td>Printing summary methods for microarray objects</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">swirl</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">swirl.1.spot</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">swirl.2.spot</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">swirl.3.spot</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">swirl.4.spot</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">SwirlSample</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+<tr><td style="width: 25%;"><a href="swirl.html">SwirlSample.txt</a></td>
+<td>Gene expression data from Swirl zebrafish cDNA microarray experiment</td></tr>
+</table>
+
+<h2><a name="T">-- T --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="htmlPage.html">table2html</a></td>
+<td>Display gene list as a HTML page</td></tr>
+<tr><td style="width: 25%;"><a href="marray-internal.html">tablegen</a></td>
+<td>Internal marray functions</td></tr>
+<tr><td style="width: 25%;"><a href="plotMA.html">text-method</a></td>
+<td>Scatter-plots for cDNA microarray spot statistics</td></tr>
+</table>
+
+<h2><a name="U">-- U --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="mapGeneInfo.html">UCBFGL</a></td>
+<td>Creating URL strings for external database links</td></tr>
+<tr><td style="width: 25%;"><a href="mapGeneInfo.html">URLstring</a></td>
+<td>Creating URL strings for external database links</td></tr>
+</table>
+
+<h2><a name="V">-- V --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="maNA.html">var.na</a></td>
+<td>Basic Statistical Functions for Handling Missing Values</td></tr>
+</table>
+
+<h2><a name="W">-- W --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="mapGeneInfo.html">widget.mapGeneInfo</a></td>
+<td>Creating URL strings for external database links</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayInfo.html">widget.marrayInfo</a></td>
+<td>Create objects of class marrayInfo</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayLayout.html">widget.marrayLayout</a></td>
+<td>Create objects of class marrayLayout</td></tr>
+<tr><td style="width: 25%;"><a href="read.marrayRaw.html">widget.marrayRaw</a></td>
+<td>Create objects of class "marrayRaw"</td></tr>
+<tr><td style="width: 25%;"><a href="maTwoSamples.html">widget.TwoSamples</a></td>
+<td>Changing signs for two sample analysis</td></tr>
+<tr><td style="width: 25%;"><a href="write.list.html">write.list</a></td>
+<td>Data Output</td></tr>
+<tr><td style="width: 25%;"><a href="write.marray.html">write.marray</a></td>
+<td>Data Output</td></tr>
+<tr><td style="width: 25%;"><a href="write.xls.html">write.xls</a></td>
+<td>Data Output</td></tr>
+</table>
+
+<h2><a name="misc">-- misc --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="bracketMethods.html">[</a></td>
+<td>Subsetting methods for microarray objects</td></tr>
+<tr><td style="width: 25%;"><a href="marrayInfo-class.html">[-method</a></td>
+<td>Class "marrayInfo", description of target samples or spotted probe sequences</td></tr>
+<tr><td style="width: 25%;"><a href="marrayLayout-class.html">[-method</a></td>
+<td>Class "marrayLayout", classes and methods for layout parameters of cDNA microarrays</td></tr>
+<tr><td style="width: 25%;"><a href="marrayNorm-class.html">[-method</a></td>
+<td>Class "marrayNorm", classes and methods for post-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="marrayRaw-class.html">[-method</a></td>
+<td>Class "marrayRaw", classes and methods for pre-normalization cDNA microarray intensity data</td></tr>
+<tr><td style="width: 25%;"><a href="bracketMethods.html">[-methods</a></td>
+<td>Subsetting methods for microarray objects</td></tr>
+</table>
+</body></html>

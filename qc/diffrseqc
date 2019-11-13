@@ -1,0 +1,138 @@
+9d8
+< use File::Basename;
+59,64d57
+< #added by Julia 07/22/2019 ###
+< my $SINGULARITY = '';
+< my $singularityParams = '';
+< my $singularityBind = '';
+< my $singularityenv_prepend_path = "";
+< #added by Julia 07/22/2019 end ###
+66d58
+< 
+78,83d69
+<     if($conf[0] =~ /singularity/i){
+<         if(!-e "$conf[1]/singularity"){
+<             die "CAN'T FIND singularity IN $conf[1] $!";
+<         }
+<         $SINGULARITY = $conf[1];
+<     }
+85,94d70
+< 
+< my $root_bin = dirname($Bin);
+< ##added by Julia on 07/22/2019 ###
+< my %sinParams = (singularity_exec => "$SINGULARITY/singularity", singularity_image => "$root_bin/rnaseq_pipeline_singularity_prod.simg");
+< $singularityParams = Schedule::singularityParams(%sinParams);
+< $singularityBind = Schedule::singularityBind($scheduler);
+< 
+< $ENV{'SINGULARITYENV_PREPEND_PATH'} = $singularityenv_prepend_path;
+< $ENV{'SINGULARITY_BINDPATH'} = $singularityBind;
+< ##added by Julia on 07/22/2019 ended## 
+119d94
+< 
+125c100
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/bam_stat.py -i $bam ">$intdir/$file_pre\_bam_stat.txt"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/bam_stat.py -i $bam ">$intdir/$file_pre\_bam_stat.txt"`;
+136c111
+<     my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/mismatch_profile.py -i $bam -o "$intdir/$file_pre" -l $readlen`; 
+---
+>     my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/mismatch_profile.py -i $bam -o "$intdir/$file_pre" -l $readlen`; 
+144c119
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams \"test -e $intdir/$file_pre.mismatch_profile.pdf && mv $intdir/$file_pre.mismatch_profile.pdf $outdir\"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams \"test -e $intdir/$file_pre.mismatch_profile.pdf && mv $intdir/$file_pre.mismatch_profile.pdf $outdir\"`;
+150c125
+<     my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDP_$sample", cpu => "1", mem => "15", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.log");
+---
+>     my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.log");
+152c127
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_duplication.py -i $bam -o "$intdir/$file_pre"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/read_duplication.py -i $bam -o "$intdir/$file_pre"`;
+160c135
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams \"test -e $intdir/$file_pre.DupRate_plot.pdf && mv $intdir/$file_pre.DupRate_plot.pdf $outdir\"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams \"test -e $intdir/$file_pre.DupRate_plot.pdf && mv $intdir/$file_pre.DupRate_plot.pdf $outdir\"`;
+166,167c141,142
+<     my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDST_$sample", cpu => "1", mem => "15", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.log");
+<     my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_distribution.py -i $bam -r $bed ">$intdir/$file_pre\_read_distribution.txt"`;
+---
+>     my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDST_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.log");
+>     my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/read_distribution.py -i $bam -r $bed ">$intdir/$file_pre\_read_distribution.txt"`;
+178c153
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_GC.py -i $bam -o "$intdir/$file_pre"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/read_GC.py -i $bam -o "$intdir/$file_pre"`;
+186c161
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams \"test -e $intdir/$file_pre.GC_plot.pdf &&  mv $intdir/$file_pre.GC_plot.pdf $outdir\"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams \"test -e $intdir/$file_pre.GC_plot.pdf &&  mv $intdir/$file_pre.GC_plot.pdf $outdir\"`;
+194c169
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_NVC.py -i $bam -o "$intdir/$file_pre"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/read_NVC.py -i $bam -o "$intdir/$file_pre"`;
+202c177
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams \"test -e $intdir/$file_pre.NVC_plot.pdf && mv $intdir/$file_pre.NVC_plot.pdf $outdir\"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams \"test -e $intdir/$file_pre.NVC_plot.pdf && mv $intdir/$file_pre.NVC_plot.pdf $outdir\"`;
+210c185
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
+218c193
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams 'for f in $intdir/$file_pre.qual.*.pdf\; do  [ -e \"\$f\" ] && mv \"\$f\" $outdir\; done\;'`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams 'for f in $intdir/$file_pre.qual.*.pdf\; do  [ -e \"\$f\" ] && mv \"\$f\" $outdir\; done\;'`;
+226c201
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/insertion_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/insertion_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
+234c209
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams 'for f in $intdir/$file_pre.insertion_profile*.pdf\; do [ -e \"\$f\" ] && mv \"\$f\" $outdir\; done\;'`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams 'for f in $intdir/$file_pre.insertion_profile*.pdf\; do [ -e \"\$f\" ] && mv \"\$f\" $outdir\; done\;'`;
+242c217
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/deletion_profile.py -i $bam -o "$intdir/$file_pre" -l 50` ;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/deletion_profile.py -i $bam -o "$intdir/$file_pre" -l 50` ;
+250c225
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams \"test -e $intdir/$file_pre.deletion_profile.pdf && mv $intdir/$file_pre.deletion_profile.pdf $outdir\"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams \"test -e $intdir/$file_pre.deletion_profile.pdf && mv $intdir/$file_pre.deletion_profile.pdf $outdir\"`;
+258c233
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/clipping_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/clipping_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
+266c241
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams 'for f in $intdir/$file_pre.clipping_profile*.pdf\; do [ -e \"\$f\" ] && mv \"\$f\" $outdir\; done\;'`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams 'for f in $intdir/$file_pre.clipping_profile*.pdf\; do [ -e \"\$f\" ] && mv \"\$f\" $outdir\; done\;'`;
+274c249
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/junction_annotation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/junction_annotation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+282c257
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams 'for f in $intdir/$file_pre.splice_*.pdf\; do [ -e \"\$f\" ] &&  mv \"\$f\" $outdir\; done\;'`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams 'for f in $intdir/$file_pre.splice_*.pdf\; do [ -e \"\$f\" ] &&  mv \"\$f\" $outdir\; done\;'`;
+290c265
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/junction_saturation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/junction_saturation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+298c273
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams \"test -e $intdir/$file_pre.junctionSaturation_plot.pdf && mv $intdir/$file_pre.junctionSaturation_plot.pdf $outdir\"`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams \"test -e $intdir/$file_pre.junctionSaturation_plot.pdf && mv $intdir/$file_pre.junctionSaturation_plot.pdf $outdir\"`;
+306c281
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/infer_experiment.py -i $bam ">$intdir/$file_pre" -r $bed`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/infer_experiment.py -i $bam ">$intdir/$file_pre" -r $bed`;
+317c292
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/inner_distance.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $PYTHON/inner_distance.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+325,326c300
+<     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams \"test -e $intdir/$file_pre.inner_distance_plot.pdf && mv $intdir/$file_pre.inner_distance_plot.pdf $outdir\"`;
+<  
+---
+>     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams \"test -e $intdir/$file_pre.inner_distance_plot.pdf && mv $intdir/$file_pre.inner_distance_plot.pdf $outdir\"`;

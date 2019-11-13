@@ -1,0 +1,37 @@
+## Edit By Alice Dong [Apr, 07]
+##Namespace file for marray package
+
+importFrom(graphics,plot)
+importFrom(graphics,boxplot)
+importFrom(graphics,image)
+importFrom(graphics,points)
+importFrom(graphics,text)
+importFrom(graphics,lines)
+import(methods)
+
+S3method(rbind,marrayInfo)
+S3method(cbind,marrayRaw)
+S3method(cbind,marrayNorm)
+S3method(plot,marrayRaw)
+S3method(plot,marrayNorm)
+S3method(dim,marrayInfo)
+S3method(dim,marrayRaw)
+
+export("controlCode","mapGeneInfo", "widget.mapGeneInfo", "htmlPage", "opVersionID", "table2html", "rbind.marrayInfo", "cbind.marrayRaw", "cbind.marrayNorm", "maNum2Logic",  "maGeneTable", "maCompPlate", "maInd2Coord", "maCoord2Ind", "maCompCoord", "maCompInd", "maCompLayout", "maGenControls", "maDotsMatch", "maPlate<-","maControls<-","read.marrayLayout","read.marrayInfo",
+"read.marrayRaw","read.Spot","read.GenePix","read.Agilent","read.Galfile","read.SMD","checkTargetInfo","maNormMain","maNorm","maNormScale","maMed","maNormMed","maLoess","maNormLoess","ma2D","maNorm2D","maMAD","maNormMAD",
+"maCompNormEq","maCompNormA","write.marray","write.xls","write.list",
+"plot.marrayRaw","plot.marrayNorm","maDotsDefaults","maDefaultPar",
+"maBoxplot","maPlot.func","maText","maLowessLines","maLoessLines",
+"maLegendLines","maPlot","maImage.func","maImage","maPalette","maColorBar","maTop","maSelectGnames","stat.confband.text","stat.gnames","findID",
+"mean.na","var.na","cor.na","length.na","log.na","quantile.na","order.na","scale.na","prod.na","rm.na","widget.marrayLayout","widget.marrayInfo",
+"widget.marrayRaw","widget.TwoSamples","maTwoSamples","sum.na",
+"URLstring","maInfo","addLines","addText","addPoints","URLstring","read.fname")
+
+exportMethods("maLabels","maLabels<-","maInfo<-","maInfo","maNgc<-",
+"maNsr<-","maNsc<-","maNspots<-","maPlate<-","maControls<-","maLayout<-",
+"maGnames<-","maTargets<-","maW<-","maGf<-","maRf<-","maGb<-","maGb<-","maRb<-",
+"maRb<-","maA<-","maM<-","maMloc<-","maMscale<-","maNotes<-",
+"coerce","maNspots","maNgr<-","maNgc","maNsr","maNsc","maSub","maPlate","maNotes","maGridRow","maGridCol","maSpotRow","maSpotCol","maPrintTip","maRf","maGf","maRb","maGb","maW","maLR", "maLG","maM","maA","maLayout","maNgr","maSpotCol","maControls","maNsamples","maGnames", "maTargets","maA","maMloc", "maMscale","maControls","maNormCall","boxplot", "image", "points","text","lines","summary","maNotes","show","[")
+
+exportClasses("marrayInfo","marrayLayout","marrayRaw","marrayNorm","ShowLargeObject")
+

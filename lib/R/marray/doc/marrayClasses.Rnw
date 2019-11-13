@@ -1,0 +1,455 @@
+%
+% NOTE -- ONLY EDIT THE .Rnw FILE!!!  The .tex file is
+% likely to be overwritten.
+%
+% \VignetteIndexEntry{marrayClasses Overview}
+% \VignetteDepends{tools,marray}
+% \VignetteKeywords{Expression Analysis, Preprocessing}
+% \VignettePackage{marray}
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,fullpage}
+\usepackage[authoryear,round]{natbib}
+\usepackage{hyperref}
+
+
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+
+\parindent 0in
+
+\bibliographystyle{abbrvnat}
+
+\begin{document}
+
+\title{\bf Introduction to the Bioconductor marray package : Classes structure component}
+
+\author{Sandrine Dudoit$^1$ and Yee Hwa Yang$^2$}
+
+\maketitle
+
+\begin{center}
+1. Division of Biostatistics, University of California, Berkeley,
+   \url{http://www.stat.berkeley.edu/~sandrine}
+2. Department of Medicine, University of California, San Francisco,
+   {\tt jean@biostat.berkeley.edu}\\
+\end{center}
+
+% library(tools) 
+% setwd("C:/MyDoc/Projects/madman/Rpacks/marray/inst/doc")
+% Rnwfile<-file.path("C:/MyDoc/Projects/madman/Rpacks/marray/inst/doc","marrayClasses.Rnw")
+% options(width=65)
+% Sweave(Rnwfile,pdf=TRUE,eps=TRUE,stylepath=TRUE,driver=RweaveLatex())
+
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Overview}
+
+This document provides a tutorial on the class structures used in the
+{\tt marray} package.  The {\tt marray} packages contains basic class
+definitions and associated methods for pre-- and post--normalization
+intensity data for batches of arrays. To load the {\tt marray} package
+in your R session, type {\tt library(marray)}.  As with any R package,
+detailed information on functions, classes and methods can be obtained
+in the help files. For instance, to view the help file for the class
+{\tt marrayRaw} in a browser, use {\tt help.start()} followed by {\tt ?
+marrayRaw} or alternately the dyadic {\tt class ? marrayRaw}.
+Furthermore, se demonstrate the functionality of this collection of R
+packages using gene expression data from the Swirl zebrafish
+experiment. To load the Swirl dataset, use {\tt data(swirl)}, and to
+view a description of the experiments and data, type {\tt ? swirl}.
+
+Getting started:
+<<eval=TRUE, echo=FALSE>>=
+library("marray")
+data(swirl)
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Object--oriented programming}\label{soo}
+
+Microarray experiments generate large and complex multivariate datasets,
+which contain textual information on probe sequences (e.g. gene names,
+annotation, layout parameters) and mRNA target samples (e.g. description
+of samples, protocols, hybridization and scanning conditions), in
+addition to the primary fluorescence intensity data. Efficient and
+coordinated access to these various types of data is an important aspect
+of computing with microarray data. To facilitate the management of
+microarray data at different stages of the analysis process, a
+collection of microarray specific data structures or {\it classes} were
+defined (see also the Bioconductor package {\tt Biobase} for microarray
+classes and methods for normalized data). The packages rely on the
+class/method mechanism provided by John Chambers' R {\tt methods}
+package, which allows object--oriented programming in R. Broadly
+speaking, {\it classes} reflect how we think of certain objects and what
+information these objects should contain. Classes are defined in terms
+of {\it slots} which contain the relevant data for the application at
+hand. {\it Methods} define how a particular function should behave
+depending on the class of its arguments and allow computations to be
+adapted to particular classes, that is, data types. For example, a
+microarray object should contain intensity data as well as information
+on the probe sequences spotted on the array and the target samples
+hybridized to it. Useful methods for microarray classes include
+specializations of printing, subsetting, and plotting functions for the
+types of data represented by these classes.  
+
+The use of classes and methods greatly reduces the complexity of
+handling microarray data, by automatically coordinating various sources
+of information associated with microarray experiments. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Microarray classes}\label{sclasses}
+
+The {\it raw data} from a microarray experiment are the image files
+produced by the scanner; these are typically pairs of 16--bit tagged
+image file format (TIFF) files, one for each fluorescent dye (images
+usually range in size from a few megabytes (MB) to 10 or 20 MB for high
+resolution scans). Image analysis is required to extract foreground and
+background fluorescence intensity measurements for each spotted DNA
+sequence. \\ 
+
+Here, we begin our analysis of microarray data with the output files of
+image processing packages such as {\tt GenePix} or {\tt Spot}. In what
+follows, red and green background intensities are denoted by $R_b$ and
+$G_b$, respectively, and red and green foreground intensities by $R_f$
+and $G_f$, respectively. Background--corrected red and green
+fluorescence intensities are denoted by $R$ and $G$, and $M$ denotes the
+corresponding base--2 log--ratio, $M = \log_2 R/G$.  
+
+\subsection{{\tt marrayLayout} class} 
+
+The term {\it array layout} refers to the layout of DNA probe sequences
+on the array, as determined by the printing process. In general, probe
+sequences are spotted on a glass microscope slide using an arrayer which
+has an $ngr \times ngc$ print--head, that is, a regular array of $ngr$
+rows and $ngc$ columns of print--tips or pins. The resulting microarrays
+are thus partitioned into an $ngr \times ngc$ {\it grid matrix}. The
+terms {\it grid}, {\it sector}, and {\it print--tip--group} are used
+interchangeably in the microarray literature. Each grid consists of an
+$nsr \times nsc$ {\it spot matrix} that was printed with a single
+print--tip. DNA probes are usually printed sequentially from a
+collection of 384--well plates (or 96--well plates), thus, in some
+sense, plates are proxies for time of printing. In addition, a number of
+control probe sequences may be spotted on the array for normalization or
+other calibration purposes. The term {\it array batch} is used to refer
+to a collection of arrays with the same layout. Keeping track of spot
+layout information is essential for quality assessment of fluorescent
+intensity data and for normalization purposes.\\ 
+
+Important layout parameters are the dimensions of the spot and grid
+matrices, and, for each probe on the array, its grid matrix and spot
+matrix coordinates. In addition, it is useful to keep track of gene
+names, plate origin of the probes, and information on the spotted
+control sequences (e.g. probe sequences which should have equal
+abundance in the two target samples, such as housekeeping genes). The
+class {\tt marrayLayout} was designed to keep track of these various
+layout parameters and contains the following slots (the classes of the
+slots are listed below the slot names) 
+
+<<R>>=
+getClassDef("marrayLayout")
+@
+\begin{description}
+    \item{{\tt maNgr}:}{ Object of class "numeric", number of rows for the grid matrix.}
+    \item{{\tt maNgc}:}{ Object of class "numeric", number of columns for the grid matrix.}
+    \item{{\tt maNsr}:}{ Object of class "numeric",  number of rows for the spot matrices.} 
+    \item{{\tt maNsc}:}{ Object of class "numeric", number of columns for the spot matrices.}
+    \item{{\tt maNspots}:}{ Object of class "numeric", total number of
+    spots on the array, equal to $maNgr \times maNgc \times maNsr \times
+    maNsc$.} 
+    \item{{\tt maSub}:}{ Object of class "logical", indicating which
+    spots are currently being considered.} 
+    \item{{\tt maPlate}:}{ Object of class "factor", recording the plate
+    origin of the spotted probe sequences.}
+    \item{{\tt maControls}:}{ Object of class "factor", recording the
+    control status of the spotted probe sequences.} 
+    \item{{\tt maNotes}:}{ Object of class "character",  any notes
+    concerning the microarray layout, e.g., printing conditions.} 
+\end{description}
+
+In addition, a number of {\it methods} were defined to compute other
+important layout parameters, such as print--tip, grid matrix, and spot
+matrix coordinates: {\tt maPrintTip}, {\tt maGridRow}, {\tt maGridCol},
+{\tt maSpotRow}, and {\tt maSpotCol} (see Section \ref{smethods}). No
+slots were defined for these quantities for memory management reasons. 
+
+\subsection{{\tt marrayInfo} class} 
+
+Information on the target mRNA samples co--hybridized to the arrays is
+stored in objects of class {\tt marrayInfo}. Such objects may include
+the names of the arrays, the names of the Cy3 and Cy5 labeled samples,
+notes on the hybridization and scanning conditions, and other textual
+information. Descriptions of the spotted probe sequences (e.g. matrix of
+gene names, annotation, notes on printing conditions) are also stored in
+object of class {\tt marrayInfo}. The {\tt marrayInfo} class is not
+specific to the microarray context and has the following definition 
+
+<<R>>=
+getClassDef("marrayInfo")
+@
+
+\subsection{{\tt marrayRaw} class}
+
+ Pre--normalization intensity data for a batch of arrays are stored in
+ objects of class {\tt marrayRaw}, which contain slots for the matrices
+ of Cy3 and Cy5 background and foreground intensities ({\tt maGb}, {\tt
+ maRb}, {\tt maGf}, {\tt maRf}), spot quality weights ({\tt maW}),
+ layout parameters of the arrays ({\tt marrayLayout}), description of
+ the probes spotted onto the arrays ({\tt maGnames}) and mRNA target
+ samples hybridized to the arrays ({\tt maTargets}).  
+
+<<R>>=
+getClassDef("marrayRaw")
+@
+
+\begin{description}
+  \item{{\tt maRf}:}{ Object of class "matrix", red foreground intensities, rows correspond to spotted probe sequences, columns to arrays in the batch.}
+    \item{{\tt maGf}:}{ Object of class "matrix", green foreground intensities, rows correspond to spotted probe sequences, columns to arrays in the batch. }
+    \item{{\tt maRb}:}{ Object of class "matrix", red background intensities, rows correspond to spotted probe sequences, columns to arrays in the batch. }
+    \item{{\tt maGb}:}{ Object of class "matrix", green background intensities, rows correspond to spotted probe sequences, columns to arrays in the batch. }
+    \item{{\tt maW}:}{ Object of class "matrix", spot quality weights, rows correspond to spotted probe sequences, columns to arrays in the batch.}
+    \item{{\tt maLayout}:}{ Object of class "marrayLayout", layout parameters for cDNA microarrays.}
+    \item{{\tt maGnames}:}{ Object of class "marrayInfo", description of spotted probe sequences.}
+    \item{{\tt maTargets}:}{ Object of class "marrayInfo", description of target samples hybridized to the arrays.}
+    \item{{\tt maNotes}:}{ Object of class "character", any notes concerning the microarray experiments, e.g. hybridization or scanning conditions.}
+\end{description} 
+
+\subsection{{\tt marrayNorm} class} 
+
+Post--normalization intensity data are stored in similar objects of
+class {\tt marrayNorm}. These objects store the normalized intensity
+log--ratios {\tt maM}, the location and scale normalization values ({\tt
+  maMloc} and {\tt maMscale}), and the average log--intensities ({\tt
+  maA}). In addition, the {\tt marrayNorm} class has a slot for the
+function call used to normalize the data, {\tt maNormCall}. For more
+details on the creation of normalized microarray objects, the reader is
+referred to the vignette for the {\tt marrayNorm} package. 
+
+<<R>>=
+getClassDef("marrayNorm")
+@ 
+
+\begin{description}
+    \item{{\tt maA}:}{ Object of class "matrix", average log--intensities (base 2) $A$, rows correspond to spotted probe sequences, columns to arrays in the batch.}
+    \item{{\tt maM}:}{ Object of class "matrix", intensity log--ratios (base 2) $M$, rows correspond to spotted probe sequences, columns to arrays in the batch.}
+    \item{{\tt maMloc}:}{ Object of class "matrix", location normalization values, rows correspond to spotted probe sequences, columns to arrays in the batch.}
+    \item{{\tt maMscale}:}{ Object of class "matrix", scale normalization values, rows correspond to spotted probe sequences, columns to arrays in the batch.}
+    \item{{\tt maW}:}{ Object of class "matrix", spot quality weights, rows correspond to spotted probe sequences, columns to arrays in the batch.}
+    \item{{\tt maLayout}:}{ Object of class "marrayLayout", layout parameters for cDNA microarrays.}
+    \item{{\tt maGnames}:}{ Object of class "marrayInfo", description of spotted probe sequences.}
+    \item{{\tt maTargets}:}{ Object of class "marrayInfo", description of target samples hybridized to the arrays.}
+    \item{{\tt maNotes}:}{ Object of class "character",  any notes concerning the microarray experiments, e.g. hybridization or scanning conditions.}
+    \item{{\tt maNormCall}:}{ Object of class "call", function call for normalizing the batch of arrays.}
+\end{description}
+
+Most microarray objects contain an {\tt maNotes} slots which may be used to store any string of characters describing the experiments, for examples, notes on the printing, hybridization, or scanning conditions.
+
+
+\subsection{Creating and accessing slots of microarray objects} 
+
+{\bf Creating new objects.} The function {\tt new} from the {\tt
+  methods} package may be used to create new objects from a given
+class. For example, to create an object of class {\tt marrayInfo}
+describing the target samples in the Swirl experiment, one could use the
+following code  
+
+<<eval=TRUE>>=
+zebra.RG<-as.data.frame(cbind(c("swirl","WT","swirl","WT"),
+c("WT","swirl","WT","swirl")))
+dimnames(zebra.RG)[[2]]<-c("Cy3","Cy5")
+zebra.samples<-new("marrayInfo",
+		    maLabels=paste("Swirl array ",1:4,sep=""), 
+		    maInfo=zebra.RG,
+		    maNotes="Description of targets for Swirl experiment")
+zebra.samples
+@
+
+Slots which are not specified in {\tt new} are initialized to the
+prototype for the corresponding class. These are usually "empty", e.g.,
+{\tt matrix(0,0,0)}. In most cases, microarray objects can be created
+automatically using the input functions and their corresponding widgets
+in the {\tt marrayInput} package. These were used to create the object
+{\tt swirl} of class {\tt marrayRaw}.\\
+
+
+{\bf Accessing slots.} Different components or slots of the microarray
+objects may be accessed using the operator {\tt @}, or alternately, the
+function {\tt slot}, which evaluates the slot name. For example, to
+access the {\tt maLayout} slot in the object {\tt swirl} and the {\tt
+maNgr} slot in the layout object {\tt L}
+
+<<eval=TRUE>>=
+L<-slot(swirl, "maLayout")
+L@maNgr
+@
+
+The function {\tt slotNames} can be used to get information on the slots of a formally defined class or an instance of the class. For example, to get information on the slots for the {\tt marrayLayout} class or on the slots for the object {\tt swirl} use
+
+<<eval=TRUE>>=
+slotNames("marrayLayout")
+slotNames(swirl)
+@
+
+\subsection{Testing the validity of an object}
+
+The function {\tt validObject} from the R package {\tt methods} may be
+used to test the validity of an object with respect to its class
+definition. This function has two arguments: {\tt object}, the object to
+be tested; and {\tt test}. If {\tt test} is TRUE, the function returns a
+vector of strings describing the problems, if any.
+
+<<eval=TRUE, echo=TRUE>>=
+validObject(maLayout(swirl), test=TRUE)
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Basic microarray methods}\label{smethods}
+
+
+The following basic methods were defined to facilitate manipulation of microarray data objects. 
+To see all methods available for a particular class, e.g., {\tt marrayLayout}, or just the print methods
+
+<<eval=FALSE>>==
+showMethods(classes="marrayLayout")
+showMethods("show",classes="marrayLayout") 
+@
+
+
+\subsection{Printing methods for microarray objects} 
+
+Since there is usually no need to print out fluorescence intensities for thousands of genes, the {\tt print} method was overloaded for microarray classes by simple report generators. For an overview of the available microarray printing methods, type {\tt  methods ? summary}, or to see all summary methods for the session
+
+<<eval=TRUE>>=
+showMethods("summary")
+@
+
+For example, summary statistics for an object of class {\tt marrayRaw},
+ such as {\tt swirl}, can be obtained by {\tt print(swirl)} or simply {\tt swirl}.
+
+<<eval=TRUE>>=
+summary(swirl)
+@
+
+\subsection{Subsetting methods for microarray objects} 
+
+In many instances, one is interested in accessing only a subset of
+arrays in a batch and/or spots in an array. Subsetting methods {\tt "["}
+were defined for this purpose.  For an overview of the available
+microarray subsetting methods, type {\tt methods ? "["} or to see all
+subsetting methods for the session {\tt showMethods("[")}.  When using
+the {\tt "["} operator, the first index refers to spots and the second
+to arrays in a batch. Thus, to access the first 100 probe sequences in
+the second and third arrays in the batch {\tt swirl} use
+
+<<eval=TRUE>>=
+swirl[1:100,2:3]
+@
+
+
+\subsection{Methods for accessing slots of microarray objects} 
+
+
+A number of simple methods were defined to access slots of the
+microarray classes.  Using such methods is more general than using the
+{\tt slot} function or {\tt @} operator. In particular, if the class
+definitions are changed, any function which uses the {\tt @} operator
+will need to be modified. When using a method to access the data in the
+slot, only that particular method needs to be modified. Thus, to access
+the layout information for the array batch {\tt swirl} one may also use
+{\tt maLayout(swirl)}.\\ 
+
+ In addition, various methods were defined to compute basic statistics
+ from microarray object slots. For instance, for memory management
+ reasons, objects of class {\tt marrayLayout} do not store the spot
+ coordinates of each probe. Rather, these can be obtained from the
+ dimensions of the grid and spot matrices by applying methods: {\tt
+ maGridRow}, {\tt maGridCol}, {\tt maSpotRow}, and {\tt maSpotCol} to
+ objects of class {\tt marrayLayout}. Print--tip--group coordinates are
+ given by {\tt maPrintTip}. Similar methods were also defined to operate
+ directly on objects of class {\tt marrayRaw} and {\tt marrayNorm}. The
+ commands below may be used to display the number of spots on the array,
+ the dimensions of the grid matrix, and the print--tip--group
+ coordinates.
+
+<<eval=TRUE>>=
+swirl.layout<-maLayout(swirl)
+maNspots(swirl)
+maNspots(swirl.layout)
+maNgr(swirl)
+maNgc(swirl.layout)
+maPrintTip(swirl[1:10,3])
+@
+
+\subsection{Methods for assigning slots of microarray objects}
+
+A number of methods were defined to replace slots of microarray objects,
+ without explicitly using the {\tt @} operator or {\tt slot}
+ function. These make use of the {\tt setReplaceMethod} function from
+ the R {\tt methods} package. 
+ As with the accessor methods just described, the assignment methods are
+ named after the slots. For example, to replace the {\tt maNotes} slot
+ of {\tt swirl.layout} 
+
+<<eval=TRUE>>=
+maNotes(swirl.layout)
+maNotes(swirl.layout)<- "New value"
+maNotes(swirl.layout)
+@
+
+To initialize slots of an empty {\tt marrayLayout} object
+
+<<eval=TRUE>>=
+L<-new("marrayLayout")
+L
+maNgr(L)<-4
+@
+
+
+Similar methods were defined to operate on objects of class {\tt
+  marrayInfo}, {\tt marrayRaw} and {\tt marrayNorm}.
+
+
+\subsection{Methods for coercing microarray objects} 
+
+To facilitate navigation between different classes of microarray
+objects, we have defined methods for coercing microarray objects from
+one class into another. A list of such methods can be obtained by {\tt
+  methods ? coerce}. For example, to coerce an object of class {\tt
+  marrayRaw} into an object of class {\tt marrayNorm}: 
+
+<<eval=TRUE>>=
+swirl.norm<-as(swirl, "marrayNorm")    
+@
+
+
+\subsection{Functions for computing layout parameters}
+
+In some cases, plate information is not stored in {\tt marrayLayout}
+objects when the data are first read into R. We have defined a function
+{\tt maCompPlate} which computes plate indices from the dimensions of
+the grid matrix and number of wells in a plate. For example, the Swirl
+arrays were printed from 384--well plates, but the plate IDs were not
+stored in the {\tt fish.gal} file. To generate plate IDs (arbitrarily
+labeled by integers starting with 1) and store these in the {\tt
+  maPlate} slot of the {\tt marrayLayout} object use 
+
+<<eval=TRUE>>=
+maPlate(swirl)<-maCompPlate(swirl,n=384)
+@
+
+Similar functions were defined to generate and manipulate spot
+coordinates: {\tt maCompCoord}, {\tt maCompInd}, {\tt maCoord2Ind}, {\tt
+maInd2Coord}. The function {\tt maGeneTable} produces a table of spot
+coordinates and gene names for objects of class {\tt marrayRaw} and {\tt
+marrayNorm}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\bibliography{marrayPacks}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+ 

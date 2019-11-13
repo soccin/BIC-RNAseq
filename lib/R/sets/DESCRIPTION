@@ -1,0 +1,22 @@
+Package: sets
+Version: 1.0-17
+Title: Sets, Generalized Sets, Customizable Sets and Intervals
+Description: Data structures and basic operations for ordinary sets,
+             generalizations such as fuzzy sets, multisets, and
+             fuzzy multisets, customizable sets, and intervals.
+Authors@R: c(person(given = "David", family = "Meyer", role = c("aut", "cre"), email = "David.Meyer@R-project.org"),
+             person(given = "Kurt", family = "Hornik", role = c("aut")),
+             person(given = "Christian", family = "Buchta", role = "ctb"))
+Depends: R (>= 2.7.0)
+Suggests: proxy
+Imports: graphics,grDevices,stats,utils
+License: GPL-2
+NeedsCompilation: yes
+Packaged: 2017-03-06 14:46:37 UTC; hornik
+Author: David Meyer [aut, cre],
+  Kurt Hornik [aut],
+  Christian Buchta [ctb]
+Maintainer: David Meyer <David.Meyer@R-project.org>
+Repository: CRAN
+Date/Publication: 2017-03-07 13:54:20
+Built: R 3.2.0; x86_64-unknown-linux-gnu; 2017-03-29 00:28:54 UTC; unix

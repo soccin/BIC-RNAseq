@@ -1,0 +1,34 @@
+Cetacea                 Cetacea Data
+Felines                 Felines Data
+SVM_Benchmarking_Classification
+                        SVM Benchmarking Data and Consensus Relations
+algebra                 Relational Algebra
+plot.relation           Visualize Relations
+predicates              Relation Predicates
+ranking                 Rankings
+relation                Relations
+relation_arity          Relation Domain, Arity, and Size
+relation_charfun        Relation Characteristic Functions
+relation_choice         Relation-Based Choices
+relation_class_ids      Relation Equivalence Classes
+relation_connected_components
+                        Connected components
+relation_consensus      Consensus Relations
+relation_cover          Covering Relations
+relation_dissimilarity
+                        Dissimilarity Between Relations
+relation_domain<-       Modify Relations
+relation_elements       Elements of Relation Domains
+relation_ensemble       Relation Ensembles
+relation_graph          Relation Graph
+relation_impute         Impute relations
+relation_incidence      Relation Incidences
+relation_pclust         Prototype-Based Partitions of Relations
+relation_properties     Relation Properties
+relation_scores         Relation Scores
+relation_table          Relation Table
+relation_trace          Traces of Endorelations
+relation_violations     Violations of Relation Properties
+transform_incidences    Transform incidences
+transitive_closure      Transitive and Reflexive Closure
+transitive_reduction    Transitive and Reflexive Reduction
