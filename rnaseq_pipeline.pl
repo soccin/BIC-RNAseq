@@ -81,17 +81,16 @@ GetOptions ('map=s' => \$map,
 	    'email' => \$email,
 	    'r1adaptor=s' => \$r1adaptor,
 	    'r2adaptor=s' => \$r2adaptor,
- 	    'scheduler=s' => \$scheduler,
  	    'priority_project=s' => \$priority_project,
  	    'priority_group=s' => \$priority_group,
             'lincrna_BROAD' => \$lincrna_BROAD,
             'no_replicates' => \$no_replicates) or exit(1);
 
 
-if(!$map || !$species || !$strand || !$config || !$request || !$scheduler || $help){
+if(!$map || !$species || !$strand || !$config || !$request || $help){
     print <<HELP;
 
-    USAGE: rnaseq_pipeline.pl -map MAP -species SPECIES -strand STRAND -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS -scheduler SCHEDULER -request REQUEST
+    USAGE: rnaseq_pipeline.pl -map MAP -species SPECIES -strand STRAND -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS -request REQUEST
 	* MAP: file listing sample mapping information for processing (REQUIRED)
 	* SPECIES: only hg19, mouse (mm10; default) and human-mouse hybrid (hybrid), zebrafish (zv10), fly (dm3) currently supported (REQUIRED)
 	* STRAND: library strand; valid options are none, forward, reverse (REQUIRED)
@@ -118,20 +117,18 @@ HELP
 exit;
 }
 
-if($scheduler =~ /sge/i){
-    $scheduler = 'sge';
-}
-elsif($scheduler =~ /luna/i){
+if($ENV{'LSF_ENVDIR'} eq "/common/lsf/conf"){
     $scheduler = 'luna';
 }
-elsif($scheduler =~ /juno/i){
+elsif($ENV{'LSF_ENVDIR'} eq "/common/juno/OS7/conf"){
     $scheduler = 'juno';
 }
-else
-{
+elsif($ENV{'SGE_ROOT'} ne ""){
+    $scheduler = 'sge';
+}
+else{
     die "unrecognized scheduler, valid scheduler [sge, luna, juno]";
 }
-
 
 
 if($pre =~ /^\d+/){
