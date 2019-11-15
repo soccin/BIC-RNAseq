@@ -1493,7 +1493,7 @@ foreach my $sample (keys %samp_libs_run){
 		}
 
 		if(!-e "$output/progress/$pre\_$uID\_STAR_FUSION_$sample.done" || $ran_zcat2){
-		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_FUSION_$sample", job_hold => "$zcat2j", cpu => "6", mem => "20", cluster_out => "$output/progress/$pre\_$uID\_STAR_FUSION_$sample.log");
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_FUSION_$sample", job_hold => "$zcat2j", cpu => "6", mem => "60", cluster_out => "$output/progress/$pre\_$uID\_STAR_FUSION_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
 		    ###`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $STAR/STAR --genomeDir $starDB --readFilesIn $inReads --runThreadN 6 --outFileNamePrefix $output/fusion/star/$sample/$sample\_STAR_ --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outSAMattributes All --outSAMunmapped Within --chimSegmentMin 20`;
 		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PERL/perl $STAR_FUSION/STAR-Fusion --genome_lib_dir $STAR_FUSION_GENOME_LIB $inReads --output_dir $output/fusion/star_fusion/$sample`;
