@@ -1609,7 +1609,7 @@ foreach my $sample (keys %samp_libs_run){
 	    if(!-e "$output/progress/$pre\_$uID\_MERGE_FUSION_$sample.done" || $ran_fusion){
 		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_FUSION_$sample", job_hold => "$fusionj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_FUSION_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
-		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $Bin/MergeFusion $mergeFusions --out $output/fusion/$pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/hugo_data_073013.tsv`;
+		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $Bin/MergeFusion $mergeFusions --out $output/fusion/$pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/human/hugo_data_073013.tsv`;
 		`/bin/touch $output/progress/$pre\_$uID\_MERGE_FUSION_$sample.done`;
 		$merge_fusionj = "$pre\_$uID\_MERGE_FUSION_$sample";
 		$ran_merge_fusion = 1;
