@@ -4,8 +4,8 @@ use strict;
 use Getopt::Long qw(GetOptions);
 use FindBin qw($Bin);
 use lib "$Bin/lib";
-use Schedule;
-use Cluster;
+#use Schedule;
+#use Cluster;
 use File::Basename;
 
 my ($config, $sample, $bam, $bed, $intdir, $outdir, $progdir, $scheduler, $readlen, $layout, $forceall, $sync, $help);
@@ -91,18 +91,18 @@ while(<CONFIG>){
 
 my $root_bin = dirname($Bin);
 ##added by Julia on 07/22/2019 ###
-my %sinParams = (singularity_exec => "$SINGULARITY/singularity", singularity_image => "$root_bin/rnaseq_pipeline_singularity_prod.simg");
-$singularityParams = Schedule::singularityParams(%sinParams);
-$singularityBind = Schedule::singularityBind($scheduler);
+#my %sinParams = (singularity_exec => "$SINGULARITY/singularity", singularity_image => "$root_bin/rnaseq_pipeline_singularity_prod.simg");
+#$singularityParams = Schedule::singularityParams(%sinParams);
+#$singularityBind = Schedule::singularityBind($scheduler);
 
-$ENV{'SINGULARITYENV_PREPEND_PATH'} = $singularityenv_prepend_path;
-$ENV{'SINGULARITY_BINDPATH'} = $singularityBind;
+#$ENV{'SINGULARITYENV_PREPEND_PATH'} = $singularityenv_prepend_path;
+#$ENV{'SINGULARITY_BINDPATH'} = $singularityBind;
 ##added by Julia on 07/22/2019 ended## 
 close CONFIG;
 
 
-my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
-my $additionalParams = Schedule::additionalParams(%addParams);
+#my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
+#my $additionalParams = Schedule::additionalParams(%addParams);
 
 my $ran_bs = 0;
 my $ran_mp = 0;
@@ -122,221 +122,75 @@ my $ran_cp = 0;
 my @rseqc_jids = ();
 my $file_pre = "rseqc_$sample";
 
+my @outFiles = ();
 
-### bam stats
-if(!-e "$progdir/$pre\_$uID\_RSEQC_BS_$sample.done" || $forceall){
-    print "Running bam_stat.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_BS_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_BS_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/bam_stat.py -i $bam ">$intdir/$file_pre\_bam_stat.txt"`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_BS_$sample.done`;
-    
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_BS_$sample";
-    $ran_bs = 1;
+print "Running bam_stat.py\n";
+`$PYTHON/bam_stat.py -i $bam ">$intdir/$file_pre\_bam_stat.txt"`;
+   
+print "Running mismatch_profile.py\n";
+`$PYTHON/mismatch_profile.py -i $bam -o "$intdir/$file_pre" -l $readlen`;
+`test -e "$intdir/$file_pre.mismatch_profile.pdf" && mv "$intdir/$file_pre.mismatch_profile.pdf" $outdir`;
+
+print "Running read_duplication.py\n";
+`read_duplication.py -i $bam -o "$intdir/$file_pre"`;
+`test -e "$intdir/$file_pre.DupRate_plot.pdf" && mv "$intdir/$file_pre.DupRate_plot.pdf" $outdir`;
+
+print "Running read_distribution.py\n";
+`$PYTHON/read_distribution.py -i $bam -r $bed ">$intdir/$file_pre\_read_distribution.txt"`;
+
+print "Running read_GC.py\n";
+`$PYTHON/read_GC.py -i $bam -o "$intdir/$file_pre"`;
+`test -e "$intdir/$file_pre.GC_plot.pdf" &&  mv "$intdir/$file_pre.GC_plot.pdf" $outdir`;
+
+print "Running read_NVC.py\n";
+`$PYTHON/read_NVC.py -i $bam -o "$intdir/$file_pre"`;
+`test -e "$intdir/$file_pre.NVC_plot.pdf" && mv "$intdir/$file_pre.NVC_plot.pdf" $outdir`;
+
+print "Running read_quality.py\n";
+`$PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
+@outFiles = glob "$intdir/$file_pre.qual.*.pdf";
+foreach my $fl (@outFiles) {
+    `mv $fl $outdir`;
 }
 
-### mismatch profile
-if(!-e "$progdir/$pre\_$uID\_RSEQC_MP_$sample.done" || $forceall){
-    print "Running mismatch_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_MP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_MP_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/mismatch_profile.py -i $bam -o "$intdir/$file_pre" -l $readlen`; 
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_MP_$sample.done`;
-    $ran_mp = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_MP_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_MP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_MP_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.mismatch_profile.pdf && mv $intdir/$file_pre.mismatch_profile.pdf $outdir"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_MP_MV_$sample";
+print "Running insertion_profile.py\n";
+`$PYTHON/insertion_profile.py -i $bam -o "$intdir/$file_pre" -s $layout`;
+@outFiles = glob "$intdir/$file_pre.insertion_profile*.pdf";
+foreach my $fl (@outFiles) {
+    `mv $fl $outdir`;
 }
 
-### read duplication
-if(!-e "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.done" || $forceall){
-    print "Running read_duplication.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDP_$sample", cpu => "1", mem => "20", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);    
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_duplication.py -i $bam -o "$intdir/$file_pre"`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_RDP_$sample.done`;
-    $ran_rdp = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDP_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_RDP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDP_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.DupRate_plot.pdf && mv $intdir/$file_pre.DupRate_plot.pdf $outdir"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_RDP_MV_$sample";
+print "Running deletion_profile.py\n";
+`$PYTHON/deletion_profile.py -i $bam -o "$intdir/$file_pre" -l 50` ;
+@outFiles = glob "$intdir/$file_pre.deletion_profile*.pdf";
+foreach my $fl (@outFiles) {
+    `mv $fl $outdir`;
 }
 
-### read distribution
-if(!-e "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.done" || $forceall){
-    print "Running read_distribution.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDST_$sample", cpu => "1", mem => "15", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_distribution.py -i $bam -r $bed ">$intdir/$file_pre\_read_distribution.txt"`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_RDST_$sample.done`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_RDST_$sample";
-    $ran_rdst = 1;
+print "Running clipping_profile.py\n";
+`$PYTHON/clipping_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
+@outFiles = "$intdir/$file_pre.clipping_profile*.pdf";
+foreach my $fl (@outFiles) {
+    `mv $fl $outdir`;
 }
 
-### read GC
-if(!-e "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.done" || $forceall){
-    print "Running read_GC.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RGC_$sample", cpu => "1", mem => "10", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);    
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_GC.py -i $bam -o "$intdir/$file_pre"`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_RGC_$sample.done`;
-    $ran_rgc = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RGC_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_RGC_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RGC_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.GC_plot.pdf &&  mv $intdir/$file_pre.GC_plot.pdf $outdir"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_RGC_MV_$sample";
+print "Running junction_annotation.py\n";
+`$PYTHON/junction_annotation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+@outFiles = "$intdir/$file_pre.splice_*.pdf";
+foreach my $fl (@outFiles) {
+    `mv $fl $outdir`;
 }
 
-### read NVC
-if(!-e "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.done" || $forceall){
-    print "Running read_NVC.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_NVC_$sample", cpu => "1", mem => "10", cluster_out => "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);    
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_NVC.py -i $bam -o "$intdir/$file_pre"`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_NVC_$sample.done`;
-    $ran_rn = 1;
+print "Running junction_saturation.py\n";
+`$PYTHON/junction_saturation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+`test -e "$intdir/$file_pre.junctionSaturation_plot.pdf" && mv "$intdir/$file_pre.junctionSaturation_plot.pdf" $outdir`;
 
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_NVC_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_NVC_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_NVC_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.NVC_plot.pdf && mv $intdir/$file_pre.NVC_plot.pdf $outdir"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_NVC_MV_$sample";
-}
+print "Running infer_experiment.py\n";
+`$PYTHON/infer_experiment.py -i $bam ">$intdir/$file_pre" -r $bed`;
 
-### read quality
-if(!-e "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.done" || $forceall){
-    print "Running read_quality.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "300", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_RQ_$sample.done`;
-    $ran_rq = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams mv $intdir/$file_pre.qual.*.pdf $outdir || true"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_RQ_MV_$sample";
-}
-
-### insertion profile
-if(!-e "$progdir/$pre\_$uID\_RSEQC_IP_$sample.done" || $forceall){
-    print "Running insertion_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_IP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_IP_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/insertion_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_IP_$sample.done`;
-    $ran_ip = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_IP_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_IP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_IP_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams mv $intdir/$file_pre.insertion_profile*.pdf $outdir || true"`; 
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_IP_MV_$sample";
-}
-
-### deletion profile
-if(!-e "$progdir/$pre\_$uID\_RSEQC_DP_$sample.done" || $forceall){
-    print "Running deletion_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_DP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_DP_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/deletion_profile.py -i $bam -o "$intdir/$file_pre" -l 50` ;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_DP_$sample.done`;
-    $ran_dp = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_DP_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_DP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_DP_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams mv $intdir/$file_pre.deletion_profile*.pdf $outdir || true"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_DP_MV_$sample";
-}
-
-### clipping profile
-if(!-e "$progdir/$pre\_$uID\_RSEQC_CP_$sample.done" || $forceall){
-    print "Running clipping_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_CP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_CP_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/clipping_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_CP_$sample.done`;
-    $ran_cp = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_CP_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_CP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_CP_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams mv $intdir/$file_pre.clipping_profile*.pdf $outdir || true"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_CP_MV_$sample";
-}
-
-### junction annotation
-if(!-e "$progdir/$pre\_$uID\_RSEQC_JA_$sample.done" || $forceall){
-    print "Running junction_annotation.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JA_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JA_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/junction_annotation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_JA_$sample.done`;
-    $ran_ja = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JA_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_JA_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JA_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams mv $intdir/$file_pre.splice_*.pdf $outdir || true"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_JA_MV_$sample";
-}
-
-### junction saturation
-if(!-e "$progdir/$pre\_$uID\_RSEQC_JS_$sample.done" || $forceall){
-    print "Running junction_saturation.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JS_$sample", cpu => "1", mem => "8", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JS_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/junction_saturation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_JS_$sample.done`;
-    $ran_js = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JS_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_JS_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_Js_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.junctionSaturation_plot.pdf && mv $intdir/$file_pre.junctionSaturation_plot.pdf $outdir"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_JS_MV_$sample";
-}
-
-### infer experiment
-if(!-e "$progdir/$pre\_$uID\_RSEQC_IE_$sample.done" || $forceall){
-    print "Running infer_experiment.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_IE_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_IE_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/infer_experiment.py -i $bam ">$intdir/$file_pre" -r $bed`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_IE_$sample.done`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_IE_$sample";
-    $ran_ie = 1;
-}
-
-### inner distance
-if(!-e "$progdir/$pre\_$uID\_RSEQC_ID_$sample.done" || $forceall){
-    print "Running inner_distance.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_ID_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_ID_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/inner_distance.py -i $bam -o "$intdir/$file_pre" -r $bed`;
-    `/bin/touch $progdir/$pre\_$uID\_RSEQC_ID_$sample.done`;
-    $ran_id = 1;
-
-    ## move only the output pdf file to delivered results
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_ID_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_ID_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_ID_MV_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.inner_distance_plot.pdf && mv $intdir/$file_pre.inner_distance_plot.pdf $outdir"`;
-    push @rseqc_jids, "$pre\_$uID\_RSEQC_ID_MV_$sample";
- 
-}
-
-if($sync){
-    foreach my $rseqc_jid (@rseqc_jids){
-        `$Bin/jobSync $scheduler $rseqc_jid`;
-    } 
-}
+print "Running inner_distance.py\n";
+`$PYTHON/inner_distance.py -i $bam -o "$intdir/$file_pre" -r $bed`;
+`test -e "$intdir/$file_pre.inner_distance_plot.pdf" && mv "$intdir/$file_pre.inner_distance_plot.pdf" $outdir`;
 
 `sleep 10`;
 exit(0);
