@@ -211,7 +211,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.done" || $forceall){
 ### read quality
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.done" || $forceall){
     print "Running read_quality.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "300", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "150", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RQ_$sample.done`;
