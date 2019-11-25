@@ -1216,13 +1216,11 @@ foreach my $sample (keys %samp_libs_run){
             `ln -s $output/gene/alignments/tophat2/$pre\_$sample\.bai $output/gene/alignments/tophat2/$pre\_$sample\.bam.bai`;
             sleep(3);
             # only allow a limited number of rseqc jobs to run at the same time, so added additional job holding
-            my $batch_count = int((scalar @rseqc_jids) / $rseqc_batch_size);
+            my $job_count = scalar @rseqc_jids;
             my $batch_job_hold = "";
-            if($batch_count > 0)
+            if($job_count >= $rseqc_batch_size)
             {
-                my $start_slice = ($batch_count - 1) * $rseqc_batch_size;
-                my $end_slice = $batch_count * $rseqc_batch_size - 1;
-                $batch_job_hold = join(",", @rseqc_jids[$start_slice..$end_slice]);
+                $batch_job_hold = $rseqc_jids[$job_count - $rseqc_batch_size];
             }
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_TOPHAT_$sample", job_hold => "$reorderj,$batch_job_hold", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_TOPHAT_$sample.log");
             my $standardParams = Schedule::queuing(%stdParams);
@@ -1415,13 +1413,11 @@ foreach my $sample (keys %samp_libs_run){
         if(!-e "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.done" || $ran_staraddrg){
             sleep(3);
             # only allow a limited number of rseqc jobs to run at the same time, so added additional job holding
-            my $batch_count = int((scalar @rseqc_jids) / $rseqc_batch_size);
+            my $job_count = scalar @rseqc_jids;
             my $batch_job_hold = "";
-            if($batch_count > 0)
+            if($job_count >= $rseqc_batch_size)
             {
-                my $start_slice = ($batch_count - 1) * $rseqc_batch_size;
-                my $end_slice = $batch_count * $rseqc_batch_size - 1;
-                $batch_job_hold = join(",", @rseqc_jids[$start_slice..$end_slice]);
+                $batch_job_hold = $rseqc_jids[$job_count - $rseqc_batch_size];
             }
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_STAR_$sample", job_hold => "$staraddrgj,$batch_job_hold", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSEQC_STAR_$sample.log");
             my $standardParams = Schedule::queuing(%stdParams);
