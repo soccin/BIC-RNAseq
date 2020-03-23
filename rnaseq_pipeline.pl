@@ -1274,8 +1274,9 @@ foreach my $sample (keys %samp_libs_run){
 	    if(!-e "$output/progress/$pre\_$uID\_STAR_GG2_$sample.done" || $ran_star1p){
 		sleep(3);
 		chdir "$output/intFiles/$sample/star2passGG";
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_GG2_$sample", job_hold => "$star1pj", cpu => "12", mem => "40", cluster_out => "$output/progress/$pre\_$uID\_STAR_GG2_$sample.log");
-		my $standardParams = Schedule::queuing(%stdParams);
+		#my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_GG2_$sample", job_hold => "$star1pj", cpu => "12", mem => "40", cluster_out => "$output/progress/$pre\_$uID\_STAR_GG2_$sample.log");
+                my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_STAR_GG2_$sample", job_hold => "$star1pj", cpu => "12", mem => "$STAR_MAX_MEM", cluster_out => "$output/progress/$pre\_$uID\_STAR_GG2_$sample.log");
+my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $STAR/STAR --runMode genomeGenerate --genomeDir $output/intFiles/$sample/star2passGG --genomeFastaFiles $REF_SEQ --sjdbFileChrStartEnd $output/intFiles/$sample/$sample\_STAR_1PASS_SJ.out.tab --sjdbOverhang $mrl --runThreadN 12`;
 		`/bin/touch $output/progress/$pre\_$uID\_STAR_GG2_$sample.done`;
 		$sgg2j = "$pre\_$uID\_STAR_GG2_$sample";
