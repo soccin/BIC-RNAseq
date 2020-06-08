@@ -38,7 +38,6 @@ fileExts = {'Mismatch profile' : '.mismatch_profile.pdf',
             }
 
 for smp in samples:
-    #print >> sys.stdout, "Checking RSEQC files for sample " + smp + " .... ",
     allFound = True
     
     for nm, fe in fileExts.items():
@@ -52,8 +51,6 @@ for smp in samples:
 
     if allFound:
         print >> sys.stdout, "All files for sample " + smp + " are good." 
-    #else:
-    #    print >> sys.stdout, "WARNING: file(s) missing. See errors for details."
 
 
 ### check for project-wide files in image directory 
@@ -67,8 +64,8 @@ projFiles = {'5prime/3prime bias' : '_picard_5prime3prime_bias.pdf',
              'Deletion profiles' : '_rseqc_deletion_profiles.pdf',
              'GC content' : '_rseqc_gc_content.pdf',
              'Insertion profiles' : '_rseqc_insertion_profiles.pdf',
-             'Read distribution' : '_rseqc_read_distribution.pdf',
-             'Read distribution as percentages' : '_rseqc_read_distribution_percentage.pdf'
+             #'Read distribution' : '_rseqc_read_distribution.pdf',
+             #'Read distribution as percentages' : '_rseqc_read_distribution_percentage.pdf'
              }
 
 maxSampFiles = ['Alignment distribution', 'Alignment distribution as percentages', 

@@ -100,7 +100,6 @@ $ENV{'SINGULARITY_BINDPATH'} = $singularityBind;
 ##added by Julia on 07/22/2019 ended## 
 close CONFIG;
 
-
 my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
 my $additionalParams = Schedule::additionalParams(%addParams);
 
@@ -122,11 +121,22 @@ my $ran_cp = 0;
 my @rseqc_jids = ();
 my $file_pre = "rseqc_$sample";
 
+#my $curDir = `pwd`;
+#chomp $curDir;
+#my $cd = $curDir;
+#$cd =~ s/\//_/g;
+#open(LOG, ">$cd\_$sample\_rseqc.log") or die "can't write to output log";
+#my $alignments_found = `grep $sample Alignment_counts.txt | cut -f 5`;
+#if($alignments_found == 0){
+#    my @currentTime = &getTime();
+#    print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNMENTS FOUND FOR SAMPLE $sample. NO RSEQC STATS.\n"; 
+#    exit(0);
+#}
 
 ### bam stats
 if(!-e "$progdir/$pre\_$uID\_RSEQC_BS_$sample.done" || $forceall){
     print "Running bam_stat.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_BS_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_BS_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_BS_$sample", cpu => "1", mem => "30", cluster_out => "$progdir/$pre\_$uID\_RSEQC_BS_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/bam_stat.py -i $bam ">$intdir/$file_pre\_bam_stat.txt"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_BS_$sample.done`;
@@ -138,7 +148,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_BS_$sample.done" || $forceall){
 ### mismatch profile
 if(!-e "$progdir/$pre\_$uID\_RSEQC_MP_$sample.done" || $forceall){
     print "Running mismatch_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_MP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_MP_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_MP_$sample", cpu => "1", mem => "30", cluster_out => "$progdir/$pre\_$uID\_RSEQC_MP_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/mismatch_profile.py -i $bam -o "$intdir/$file_pre" -l $readlen`; 
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_MP_$sample.done`;
     $ran_mp = 1;
@@ -146,14 +156,14 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_MP_$sample.done" || $forceall){
     ## move only the output pdf file to delivered results
     my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_MP_MV_$sample", job_hold => "$pre\_$uID\_RSEQC_MP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_MP_MV_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.mismatch_profile.pdf && mv $intdir/$file_pre.mismatch_profile.pdf $outdir"`;
+    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams "$singularityParams test -e $intdir/$file_pre.mismatch_profile.pdf && mv $intdir/$file_pre.mismatch_profile.pdf $outdir || true"`;
     push @rseqc_jids, "$pre\_$uID\_RSEQC_MP_MV_$sample";
 }
 
 ### read duplication
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.done" || $forceall){
     print "Running read_duplication.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDP_$sample", cpu => "1", mem => "20", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDP_$sample", cpu => "1", mem => "60", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);    
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_duplication.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RDP_$sample.done`;
@@ -169,7 +179,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.done" || $forceall){
 ### read distribution
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.done" || $forceall){
     print "Running read_distribution.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDST_$sample", cpu => "1", mem => "15", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDST_$sample", cpu => "1", mem => "45", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_distribution.py -i $bam -r $bed ">$intdir/$file_pre\_read_distribution.txt"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RDST_$sample.done`;
     push @rseqc_jids, "$pre\_$uID\_RSEQC_RDST_$sample";
@@ -179,7 +189,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_RDST_$sample.done" || $forceall){
 ### read GC
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.done" || $forceall){
     print "Running read_GC.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RGC_$sample", cpu => "1", mem => "10", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RGC_$sample", cpu => "1", mem => "50", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);    
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_GC.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RGC_$sample.done`;
@@ -195,7 +205,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_RGC_$sample.done" || $forceall){
 ### read NVC
 if(!-e "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.done" || $forceall){
     print "Running read_NVC.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_NVC_$sample", cpu => "1", mem => "10", cluster_out => "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_NVC_$sample", cpu => "1", mem => "30", cluster_out => "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);    
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_NVC.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_NVC_$sample.done`;
@@ -211,7 +221,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_NVC_$sample.done" || $forceall){
 ### read quality
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.done" || $forceall){
     print "Running read_quality.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "150", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "200", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RQ_$sample.done`;
@@ -227,7 +237,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.done" || $forceall){
 ### insertion profile
 if(!-e "$progdir/$pre\_$uID\_RSEQC_IP_$sample.done" || $forceall){
     print "Running insertion_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_IP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_IP_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_IP_$sample", cpu => "1", mem => "30", cluster_out => "$progdir/$pre\_$uID\_RSEQC_IP_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/insertion_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_IP_$sample.done`;
@@ -243,7 +253,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_IP_$sample.done" || $forceall){
 ### deletion profile
 if(!-e "$progdir/$pre\_$uID\_RSEQC_DP_$sample.done" || $forceall){
     print "Running deletion_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_DP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_DP_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_DP_$sample", cpu => "1", mem => "30", cluster_out => "$progdir/$pre\_$uID\_RSEQC_DP_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/deletion_profile.py -i $bam -o "$intdir/$file_pre" -l 50` ;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_DP_$sample.done`;
@@ -259,7 +269,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_DP_$sample.done" || $forceall){
 ### clipping profile
 if(!-e "$progdir/$pre\_$uID\_RSEQC_CP_$sample.done" || $forceall){
     print "Running clipping_profile.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_CP_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_CP_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_CP_$sample", cpu => "1", mem => "30", cluster_out => "$progdir/$pre\_$uID\_RSEQC_CP_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/clipping_profile.py -i $bam -o "$intdir/$file_pre" -s $layout` ;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_CP_$sample.done`;
@@ -275,7 +285,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_CP_$sample.done" || $forceall){
 ### junction annotation
 if(!-e "$progdir/$pre\_$uID\_RSEQC_JA_$sample.done" || $forceall){
     print "Running junction_annotation.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JA_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JA_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JA_$sample", cpu => "1", mem => "10", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JA_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/junction_annotation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_JA_$sample.done`;
@@ -291,7 +301,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_JA_$sample.done" || $forceall){
 ### junction saturation
 if(!-e "$progdir/$pre\_$uID\_RSEQC_JS_$sample.done" || $forceall){
     print "Running junction_saturation.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JS_$sample", cpu => "1", mem => "8", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JS_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_JS_$sample", cpu => "1", mem => "80", cluster_out => "$progdir/$pre\_$uID\_RSEQC_JS_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/junction_saturation.py -i $bam -o "$intdir/$file_pre" -r $bed`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_JS_$sample.done`;
@@ -307,7 +317,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_JS_$sample.done" || $forceall){
 ### infer experiment
 if(!-e "$progdir/$pre\_$uID\_RSEQC_IE_$sample.done" || $forceall){
     print "Running infer_experiment.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_IE_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_IE_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_IE_$sample", cpu => "1", mem => "10", cluster_out => "$progdir/$pre\_$uID\_RSEQC_IE_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/infer_experiment.py -i $bam ">$intdir/$file_pre" -r $bed`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_IE_$sample.done`;
@@ -318,7 +328,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_IE_$sample.done" || $forceall){
 ### inner distance
 if(!-e "$progdir/$pre\_$uID\_RSEQC_ID_$sample.done" || $forceall){
     print "Running inner_distance.py\n";
-    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_ID_$sample", cpu => "1", mem => "1", cluster_out => "$progdir/$pre\_$uID\_RSEQC_ID_$sample.log");
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_ID_$sample", cpu => "1", mem => "30", cluster_out => "$progdir/$pre\_$uID\_RSEQC_ID_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/inner_distance.py -i $bam -o "$intdir/$file_pre" -r $bed`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_ID_$sample.done`;
@@ -340,3 +350,33 @@ if($sync){
 
 `sleep 10`;
 exit(0);
+
+
+sub getTime(){
+
+    my @timeData = localtime();
+
+    if($timeData[0] < 10){
+        $timeData[0] = "0" . $timeData[0];
+    }
+    if($timeData[1] < 10){
+        $timeData[1] = "0" . $timeData[1];
+    }
+    if($timeData[2] < 10){
+        $timeData[2] = "0" . $timeData[2];
+    }
+    if($timeData[3] < 10){
+        $timeData[3] = "0" . $timeData[3];
+    }
+
+    my $month = $timeData[4] + 1;
+    $timeData[4] += 1;
+    if($timeData[4] < 10){
+        $timeData[4] = "0" . $timeData[4];
+    }
+
+    $timeData[5] += 1900;
+
+    return(@timeData);
+}
+
