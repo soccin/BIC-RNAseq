@@ -1940,7 +1940,7 @@ if($star){
     ## merge deletion profiles
     if(!-e "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.done" || $ran_rseqc){
         sleep(3);
-        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_DP_STAR", job_hold => "$rseqcj", DPu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.log");
+        my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_RSEQC_DP_STAR", job_hold => "$rseqcj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.log");
         my $standardParams = Schedule::queuing(%stdParams);
         `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/python $Bin/qc/merge_rseqc_stats.py deletion_profile $output/intFiles .deletion_profile.txt $output/metrics/$pre\_rseqc_deletion_profiles.txt`;
         `/bin/touch $output/progress/$pre\_$uID\_MERGE_RSEQC_DP_STAR.done`;
