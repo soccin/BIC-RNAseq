@@ -93,7 +93,7 @@ if(!$map || !$species || !$strand || !$config || !$request || $help){
 
     USAGE: rnaseq_pipeline.pl -map MAP -species SPECIES -strand STRAND -config CONFIG -pre PRE -samplekey SAMPLEKEY -comparisons COMPARISONS -request REQUEST
 	* MAP: file listing sample mapping information for processing (REQUIRED)
-	* SPECIES: only hg19, mouse (mm10; default) and human-mouse hybrid (hybrid), zebrafish (z11), fly (dm3) currently supported (REQUIRED)
+	* SPECIES: only hg19, mouse (mm10; default) and human-mouse hybrid (hybrid), zebrafish (z11), fly (dm6) currently supported (REQUIRED)
 	* STRAND: library strand; valid options are none, forward, reverse (REQUIRED)
 	* CONFIG: file listing paths to programs needed for pipeline; full path to config file needed (REQUIRED)
         * REQUEST: file containing all request information including PI, Investigator and ProjectID (REQUIRED)
@@ -145,8 +145,8 @@ if($output !~ /^\//){
     $output = "$curDir/$output";
 }
 
-if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|z11|dm3|fly|WBcel235|sacCer3|rat|Rnor6|rn6/i){
-    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm3), C.elegans (WBcel235), yeast (sacCer3) or zebrafish (zv9/zv10/z11)";
+if($species !~ /human|hg19|mouse|mm9|mm10|hybrid|zebrafish|zv9|zv10|z11|dm6|fly|WBcel235|sacCer3|rat|Rnor6|rn6/i){
+    die "Species must be human (hg19), mouse (mm9/mm10), human-mouse hybrid (hybrid), fly (dm6), C.elegans (WBcel235), yeast (sacCer3) or zebrafish (zv9/zv10/z11)";
 }
 
 if($r1adaptor){
@@ -674,27 +674,28 @@ elsif($species =~ /zv9/i){
 
     $STAR_MAX_MEM = 30;
 }
-elsif($species =~ /fly|dm3/i){
-    $species = 'dm3';
-    $REF_SEQ = '/ifs/depot/assemblies/D.melanogaster/dm3/dm3.fasta';
-    $GTF = "$Bin/data/dm3/dm3.flybase_more150bp_CollapseGenes_20140925.gtf";
+elsif($species =~ /fly|dmel6|dm6/i){
+    $species = 'dm6';
+    $REF_SEQ = '/ifs/depot/assemblies/D.melanogaster/dm6/dm6.fasta';
+    $GTF = "/ifs/depot/assemblies/D.melanogaster/dm6/dmel-all-r6.33.gtf";
+    $QC_BED = "/ifs/depot/assemblies/D.melanogaster/dm6/dm6_refseq_all.bed";
     $DEXSEQ_GTF = "";
-    $geneNameConversion = "";
-    $BOWTIE_INDEX = '/ifs/depot/assemblies/D.melanogaster/dm3/index/bowtie/1.1.1/dm3_bowtie';
-    $BOWTIE2_INDEX = '/ifs/depot/assemblies/D.melanogaster/dm3/index/bowtie/2.2.4/dm3_bowtie2'; 
-    $chrSplits = '/ifs/depot/assemblies/D.melanogaster/dm3/chromosomes';
+    $geneNameConversion = "/ifs/depot/assemblies/D.melanogaster/dm6/IDToGeneName.txt";
+    $BOWTIE_INDEX = '/ifs/depot/assemblies/D.melanogaster/dm6/index/bowtie/1.1.1/dm6_bowtie';
+    $BOWTIE2_INDEX = '/ifs/depot/assemblies/D.melanogaster/dm6/index/bowtie/2.2.4/dm6_bowtie2';
+    $chrSplits = '/ifs/depot/assemblies/D.melanogaster/dm6/chromosomes';
     $TRANS_INDEX = '';
     $TRANS_INDEX_DEDUP = '';
     $TRANS_FASTA_DEDUP = '';
-    $RIBOSOMAL_INTERVALS = '';
-    $REF_FLAT = '';
+    $RIBOSOMAL_INTERVALS = '/ifs/depot/assemblies/D.melanogaster/dm6/ribosomal_dm6.interval_file';
+    $REF_FLAT = '/ifs/depot/assemblies/D.melanogaster/dm6/dm6_refFlat.txt';
     $KALLISTO_INDEX = '';
 
     if($r1adaptor){
-        $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang49'; 
+        $starDB = '/ifs/depot/assemblies/D.melanogaster/dm6/index/star/2.4.1d/flybase/6.33/overhang49';
     }
     else{
-        $starDB = '/ifs/depot/assemblies/D.melanogaster/dm3/index/star/2.4.1d/flybase/custom20140925/overhang74'; 
+        $starDB = '/ifs/depot/assemblies/D.melanogaster/dm6/index/star/2.4.1d/flybase/6.33/overhang74';
     }
 
     $STAR_MAX_MEM = 30;
