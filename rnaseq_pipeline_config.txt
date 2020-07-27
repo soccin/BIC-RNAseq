@@ -1,4 +1,4 @@
-SINGULARITY             /opt/common/CentOS_6-dev/singularity/singularity-2.6.0/bin
+SINGULARITY             /opt/local/singularity/2.6.0/bin
 BOWTIE2			/opt/common/CentOS_6/bowtie2/bowtie2-2.2.4
 BOWTIE			/opt/common/CentOS_6/bowtie/bowtie-1.1.1
 CHIMERASCAN		/opt/common/CentOS_6/chimerascan/chimerascan-0.4.5/chimerascan
