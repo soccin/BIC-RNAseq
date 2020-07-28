@@ -107,6 +107,7 @@ if(length(args)==0){
     q()
 }
 for(i in 1:length(args)){
+print(args[i])
     eval(parse(text=args[i]))
 }
 
@@ -164,11 +165,11 @@ cat("Done.\n")
 ## and check for replicates
 ################################################################################
 #key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
+dir.create(diff.exp.dir,showWarnings=FALSE,mode="0755")
+dir.create(diff.exp.fig.dir,showWarnings=FALSE,mode="0755")
+dir.create(diff.exp.rdat.dir,showWarnings=FALSE,mode="0755")
 
 if (exists("key.file") && !is.null(key.file)){
-    dir.create(diff.exp.dir,showWarnings=FALSE,mode="0755")
-    dir.create(diff.exp.fig.dir,showWarnings=FALSE,mode="0755")
-    dir.create(diff.exp.rdat.dir,showWarnings=FALSE,mode="0755")
     key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
     ##remove samples to be excluded
     ex = grep("_EXCLUDE_",key[,2])

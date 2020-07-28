@@ -59,7 +59,7 @@ my $ec = 0;
 
 if($clusterOnly){
     print "COMMAND: $R/Rscript $bin/RunDE.R \"bin='$bin'\" \"pre='$pre'\" \"counts.file='$counts'\" \"counts.dir='$count_out'\" \"$run_gsa\" \"clustering.dir='$cluster_out'\" \"Rlibs='$Rlibs'\" \n";
-    `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'" "Rlibs=$Rlibs"`;
+    `$R/Rscript $bin/RunDE.R "bin='$bin'" \"pre='$pre'\" "counts.file='$counts'" "counts.dir='$count_out'" "$run_gsa" "clustering.dir='$cluster_out'" "Rlibs='$Rlibs'"`;
     $ec = $? >> 8;
 }
 else{
