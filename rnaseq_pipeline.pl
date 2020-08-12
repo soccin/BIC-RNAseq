@@ -2234,7 +2234,7 @@ if($deseq){
                 $deseq_species = "human";
             }
 	    sleep(3);
-	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_DESeq_STAR.log");
+	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_STAR", job_hold => "$shmatrixj", cpu => "1", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_DESeq_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/gene/differentialExpression_gene -count_out $output/gene/counts_gene -cluster_out $output/gene/clustering $gsa_out -config $config -bin $Bin -species $deseq_species -counts $output/gene/counts_gene/$pre\_htseq_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
