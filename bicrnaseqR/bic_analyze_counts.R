@@ -110,11 +110,23 @@ bic.scale.factor.quantile <- function(raw.counts,percentile="75%"){
 bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
                                      max.p=0.05, min.abs.fc=2, min.count=10,
                                      zeroaddQ=F, genes=c()){
+
+  cat(paste0("Comparing condB [", condB, "] vs [", condA, "]"))
+
   cds <- countDataSet
   ng <- NULL ## num genes
   ans <- NULL ## filtered results
 
-  res <- nbinomTest(cds, condA, condB)
+  
+  res <- tryCatch({ 
+             nbinomTest(cds, condA, condB) 
+           }, error = function(e){
+             print(e)
+             return(NULL)
+         })
+  if(is.null(res)){
+      return(NULL)
+  }
   DESeqRes <- res
 
   ## add gene symbol to result in case 'id' is ensembl id (or other id)
@@ -164,6 +176,8 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
                       paste("Mean_at_cond_",condA, sep=""), 
                       paste("Mean_at_cond_",condB, sep=""))
     }
+    ## sort by log2FC
+    ans = ans[order(abs(ans[,paste0("log2[",condB,"/",condA,"]")]), decreasing = TRUE),]
     rownames(ans)=ans[,1]
   } else {
     cat(paste0("\n===================================================\nNo genes pass the significant cutoff of ", max.p, "\n  AND have sufficient mean number of reads across samples\n AND at least ", min.count, " reads in one condition\n===================================================\n"))
@@ -228,7 +242,7 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
   Res=list()
   Res$DESeq         <- DESeqRes 
   Res$filtered      <- ans
-  Res$DEgenes       <- ng
+  Res$DEgenes       <- rownames(ans)
   Res$all.res       <- res
   Res$max.p         <- max.p
   Res$min.abs.fc    <- min.abs.fc

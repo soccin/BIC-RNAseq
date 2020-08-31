@@ -913,7 +913,7 @@ bic.standard.heatmap <- function(norm.counts.matrix,condA,condB,genes=NULL,file=
     ## as rownames; if not, we'll have to average values
     ## for genes that occur multiple times
 #    rownames(htmp.dat) <- htmp.dat[,idHeader]
-rNms <- htmp.dat[,idHeader]
+    rNms <- htmp.dat[,idHeader]
     htmp.dat <- htmp.dat[,-1]
     if(!is.matrix(htmp.dat)){ htmp.dat <- t(as.matrix(htmp.dat)) }
     rownames(htmp.dat) <- rNms
