@@ -519,8 +519,8 @@ elsif($species =~ /mouse|mm10/i){
     if($r1adaptor){
 	$starDB = '/ifs/depot/assemblies/M.musculus/mm10/index/star/2.4.1d/gencode/vM8/overhang49';
     }
-    else{
-	$starDB = '/ifs/depot/assemblies/M.musculus/mm10/index/star/2.4.1d/gencode/vM8/overhang74';
+    else {
+        $starDB = '/ifs/depot/assemblies/M.musculus/mm10/index/star/2.4.1d/gencode/vM8/overhang74';
     }
 
     $STAR_MAX_MEM = 30;
@@ -576,7 +576,7 @@ elsif($species =~ /human-mouse|mouse-human|hybrid/i){
 	$starDB = '/ifs/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/index/star/2.4.1d/gencode/v18/overhang74';
     }
 
-    $STAR_MAX_MEM = 60;
+    $STAR_MAX_MEM = 120;
 }
 elsif($species =~ /rat|Rn6/i){
     $species = 'Rn6';
