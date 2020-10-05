@@ -383,7 +383,7 @@ if($comparisons || $samplekey || $deseq){
 	    die "sample $data[0] cannot be found in mapping file $map $!";
 	}
 
-	if(!$sample_comparisons{$data[1]}){
+	if($data[1] ne "_EXCLUDE_" && !$sample_comparisons{$data[1]}){
 	   die "condition $data[1] cannot be found in comparisons file $comparisons $!";
 	}
     }
