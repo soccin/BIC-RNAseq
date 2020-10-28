@@ -683,22 +683,22 @@ bic.run.gsa <- function(species,deseq.res,gmt.dir,min.gns=5,max.gns=1000,
   }
 
   if(species == "human"){
-    gs.names.list=c("c1.all.v4.0.symbols.gmt","c2.all.v4.0.symbols.gmt",
-                    "c3.all.v4.0.symbols.gmt","c5-1.all.v4.0.symbols.gmt",
-                    "c6-1.all.v4.0.symbols.gmt","c7.all.v4.0.symbols.gmt")[-1]
+    gs.names.list <- c("h.all.v7.1.symbols.gmt", "c2.all.v7.1.symbols.gmt",
+                       "c3.all.v7.1.symbols.gmt","c5.all.v7.1.symbols.gmt",
+                       "c6.all.v7.1.symbols.gmt","c7.all.v7.1.symbols.gmt")
   } else {
-    gs.names.list=c("mouse_c1.gmt","mouse_c2.gmt","mouse_c3.gmt",
-                    "mouse_c4.gmt","mouse_c5.gmt")
-  }  
+    gs.names.list <- c("Mm.h.all.v7.1.gmt", "Mm.c2.all.v7.1.gmt",
+                       "Mm.c3.all.v7.1.gmt", "Mm.c5.all.v7.1.gmt",
+                       "Mm.c6.all.v7.1.gmt", "Mm.c7.all.v7.1.gmt")
+  }                 
 
   all.res <- list()
   all.up.res <- NULL
   all.dn.res <- NULL
   for (gs in gs.names.list){
-print(gs)
+    print(gs)
     gs.name <- bic.remove.sub(gs,"\\.gmt",part2take=1)
     gs.cat <- toupper(bic.remove.sub(bic.remove.sub(gs,".all.v4.0.symbols.gmt",part2take=1),"-1",part2take=1))
-    #gsc <- loadGSC(system.file("extdata",gs,package="bicrnaseq"))  
     gsc <- loadGSC(file.path(gmt.dir, gs)) 
 
     res <- deseq.res[,-1]  ## remove ensembl IDs; since this function only supports
@@ -708,8 +708,8 @@ print(gs)
     fc <- bic.average.by.name(fc)
 
     gsa.res <- runGSA(fc,geneSetStat="mean",gsc=gsc,
-                     gsSizeLim=c(min.gns,max.gns),nPerm=nPerm)#,directions=fc)
-    #save(gsa.res,file="GSA_RESULTS.Rdata",compress=T)
+                     gsSizeLim=c(min.gns,max.gns),nPerm=nPerm)
+
     tab.res <- bic.process.gsa.res(gsa.res,max.p=max.p,
                                    fc2keep=fc2keep,frac2keep=frac2keep,fcQ=fcQ)
     if(!is.null(tab.res$gsa.tab.up)){

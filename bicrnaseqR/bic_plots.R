@@ -824,6 +824,8 @@ bic.mds.clust.samples <- function(norm.counts,log2=FALSE,file=NULL,conds=NULL,la
 
   norm.counts <- bic.matrix2numeric(norm.counts)
 
+cat(paste0("NUMBER OF COLS IN norm.counts: ",length(colnames(norm.counts)), "\n"))
+return(NULL)
   if(length(colnames(norm.counts)) < 3){
     cat("Less than three samples; can not run cluster analysis\n")
     return

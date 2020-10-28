@@ -46,10 +46,10 @@ if(!$gsa_out){
     $run_gsa = "GSA=FALSE";
 } else {
     if($species =~ /hg19|human/i){
-        $gmt_dir = "gmt.dir='$bin/data/human'";
+        $gmt_dir = "gmt.dir='$bin/data/human/MSigDB/v7.1'";
     } else {
         if($species =~ /mm9|mm10|mouse/i){
-            $gmt_dir = "gmt.dir='$bin/data/mouse'";
+            $gmt_dir = "gmt.dir='$bin/data/mouse/MSigDB/v7.1'";
         }
     }
 }

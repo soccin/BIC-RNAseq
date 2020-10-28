@@ -137,7 +137,7 @@ def makeCountMatrix(args):
         print>>sys.stderr, "\nCombining the following files:\n"
         for file in files:
             if id_idx:
-                file_w_gns = file + ".geneSymbols"
+                file_w_gns = file + ".geneSymbols.txt"
                 fwg = open(file_w_gns,'w')
             print>>sys.stderr, file
             if os.stat(file)[6]==0: ## file is empty

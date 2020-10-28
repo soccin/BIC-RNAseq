@@ -152,13 +152,8 @@ if (GSA && exists("key.file") && exists("comps") && !exists("species")){
 ####   only load lib if input is valid
 ################################################################################
 cat("Loading bicrnaseq library...")
-#tmp <- capture.output(suppressMessages(library(bicrnaseq,lib.loc=Rlibs)))
-#bin <- "/ifs/work/byrne/pipelines/rnaseq_pipeline"
 source(file.path(bin, "bicrnaseqR/source_bicrnaseq.R"))
-#tmp <- capture.output(suppressMessages(library(tidyverse))
-
 cat("Done.\n")
-
 
 ################################################################################
 ## if key file is given, create key 
@@ -169,7 +164,7 @@ dir.create(diff.exp.dir,showWarnings=FALSE,mode="0755")
 dir.create(diff.exp.fig.dir,showWarnings=FALSE,mode="0755")
 dir.create(diff.exp.rdat.dir,showWarnings=FALSE,mode="0755")
 
-if (exists("key.file") && !is.null(key.file)){
+if(exists("key.file") && !is.null(key.file)){
     key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
     ##remove samples to be excluded
     ex = grep("_EXCLUDE_",key[,2])
