@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>R: A Lightweight, Modern and Flexible Logging Utility</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+<h1> A Lightweight, Modern and Flexible Logging Utility
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]" />
+</h1>
+<hr/>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]" /></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]" /></a>
+</div><h2>Documentation for package &lsquo;logger&rsquo; version 0.1</h2>
+
+<ul><li><a href="../DESCRIPTION">DESCRIPTION file</a>.</li>
+<li><a href="../doc/index.html">User guides, package vignettes and other documentation.</a></li>
+<li><a href="../demo">Code demos</a>.  Use <a href="../../utils/help/demo">demo()</a> to run them.</li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="appender_console.html">appender_console</a></td>
+<td>Append log record to stdout</td></tr>
+<tr><td style="width: 25%;"><a href="appender_file.html">appender_file</a></td>
+<td>Append log messages to a file</td></tr>
+<tr><td style="width: 25%;"><a href="appender_pushbullet.html">appender_pushbullet</a></td>
+<td>Send log messages to Pushbullet</td></tr>
+<tr><td style="width: 25%;"><a href="appender_slack.html">appender_slack</a></td>
+<td>Send log messages to a Slack channel</td></tr>
+<tr><td style="width: 25%;"><a href="appender_tee.html">appender_tee</a></td>
+<td>Append log messages to a file and stdout as well</td></tr>
+<tr><td style="width: 25%;"><a href="colorize_by_log_level.html">colorize_by_log_level</a></td>
+<td>Colorize string by the related log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">DEBUG</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">ERROR</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">FATAL</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="formatter_glue.html">formatter_glue</a></td>
+<td>Apply 'glue' to convert R objects into a character vector</td></tr>
+<tr><td style="width: 25%;"><a href="formatter_glue_or_sprintf.html">formatter_glue_or_sprintf</a></td>
+<td>Apply 'glue' and 'sprintf'</td></tr>
+<tr><td style="width: 25%;"><a href="formatter_logging.html">formatter_logging</a></td>
+<td>Mimic the default formatter used in the 'logging' package</td></tr>
+<tr><td style="width: 25%;"><a href="formatter_paste.html">formatter_paste</a></td>
+<td>Concatenate R objects into a character vector via 'paste'</td></tr>
+<tr><td style="width: 25%;"><a href="formatter_sprintf.html">formatter_sprintf</a></td>
+<td>Apply 'sprintf' to convert R objects into a character vector</td></tr>
+<tr><td style="width: 25%;"><a href="get_logger_meta_variables.html">get_logger_meta_variables</a></td>
+<td>Collect useful information about the logging environment to be used in log messages</td></tr>
+<tr><td style="width: 25%;"><a href="grayscale_by_log_level.html">grayscale_by_log_level</a></td>
+<td>Render a string with light/dark gray based on the related log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">INFO</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="layout_glue.html">layout_glue</a></td>
+<td>Format a log message with 'glue'</td></tr>
+<tr><td style="width: 25%;"><a href="layout_glue_colors.html">layout_glue_colors</a></td>
+<td>Format a log message with 'glue' and ANSI escape codes to add colors</td></tr>
+<tr><td style="width: 25%;"><a href="layout_glue_generator.html">layout_glue_generator</a></td>
+<td>Generate log layout function using common variables available via glue syntax</td></tr>
+<tr><td style="width: 25%;"><a href="layout_json.html">layout_json</a></td>
+<td>Generate log layout function rendering JSON</td></tr>
+<tr><td style="width: 25%;"><a href="layout_logging.html">layout_logging</a></td>
+<td>Format a log record as the logging package does by default</td></tr>
+<tr><td style="width: 25%;"><a href="layout_simple.html">layout_simple</a></td>
+<td>Format a log record by concatenating the log level, timestamp and message</td></tr>
+<tr><td style="width: 25%;"><a href="logger.html">logger</a></td>
+<td>Generate logging utility</td></tr>
+<tr><td style="width: 25%;"><a href="log_appender.html">log_appender</a></td>
+<td>Get or set log record appender function</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_debug</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_error</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_eval.html">log_eval</a></td>
+<td>Evaluate an expression and log results</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_fatal</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_formatter.html">log_formatter</a></td>
+<td>Get or set log message formatter</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_info</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_layout.html">log_layout</a></td>
+<td>Get or set log record layout</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_level</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">log_levels</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_success</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_threshold.html">log_threshold</a></td>
+<td>Get or set log level threshold</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_trace</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="log_level.html">log_warn</a></td>
+<td>Log a message with given log level</td></tr>
+<tr><td style="width: 25%;"><a href="skip_formatter.html">skip_formatter</a></td>
+<td>Adds the skip_formatter attribute to an object so that logger will skip calling the formatter function on the object(s) to be logged</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">SUCCESS</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">TRACE</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="log_levels.html">WARN</a></td>
+<td>Log levels</td></tr>
+<tr><td style="width: 25%;"><a href="with_log_threshold.html">with_log_threshold</a></td>
+<td>Evaluate R expression with a temporarily updated log level threshold</td></tr>
+</table>
+</body></html>

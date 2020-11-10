@@ -1,0 +1,14 @@
+Package: GSA
+Title: Gene Set Analysis
+Version: 1.03.1
+Author: Brad Efron and R. Tibshirani
+Description: Gene Set Analysis.
+Maintainer: Rob Tibshirani <tibs@stat.stanford.edu>
+Suggests: impute
+License: LGPL
+URL: http://www-stat.stanford.edu/~tibs/GSA
+Packaged: 2019-01-31 16:56:00 UTC; hornik
+Repository: CRAN
+Date/Publication: 2019-01-31 17:27:39 UTC
+NeedsCompilation: no
+Built: R 4.0.0; ; 2020-11-02 16:24:11 UTC; unix

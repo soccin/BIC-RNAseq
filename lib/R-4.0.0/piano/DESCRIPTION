@@ -1,0 +1,34 @@
+Package: piano
+Type: Package
+Title: Platform for integrative analysis of omics data
+Version: 2.4.0
+Date: 2019-10-08
+Author@R: c(person("Leif", "Varemo Wigge", email =
+        "piano.rpkg@gmail.com", role = "aut"), person("Intawat",
+        "Nookaew", email = "piano.rpkg@gmail.com", role = "aut"))
+Author: Leif Varemo Wigge <piano.rpkg@gmail.com> and Intawat Nookaew <piano.rpkg@gmail.com>
+Maintainer: Leif Varemo Wigge <piano.rpkg@gmail.com>
+Depends: R (>= 3.5)
+Imports: BiocGenerics, Biobase, gplots, igraph, relations, marray,
+        fgsea, shiny, DT, htmlwidgets, shinyjs, shinydashboard,
+        visNetwork, scales, grDevices, graphics, stats, utils, methods
+Suggests: yeast2.db, rsbml, plotrix, limma, affy, plier, affyPLM,
+        gtools, biomaRt, snowfall, AnnotationDbi, knitr, rmarkdown,
+        BiocStyle
+Description: Piano performs gene set analysis using various statistical methods, from different gene level statistics and a wide range of gene-set collections. Furthermore, the Piano package contains functions for combining the results of multiple runs of gene set analyses.
+License: GPL (>=2)
+biocViews: Microarray, Preprocessing, QualityControl,
+        DifferentialExpression, Visualization, GeneExpression,
+        GeneSetEnrichment, Pathways
+URL: http://www.sysbio.se/piano
+BugReports: https://github.com/varemo/piano/issues
+VignetteBuilder: knitr
+RoxygenNote: 6.1.1
+git_url: https://git.bioconductor.org/packages/piano
+git_branch: RELEASE_3_11
+git_last_commit: 3a98899
+git_last_commit_date: 2020-04-27
+Date/Publication: 2020-04-27
+NeedsCompilation: no
+Packaged: 2020-04-28 00:54:03 UTC; biocbuild
+Built: R 4.0.0; ; 2020-11-02 17:42:55 UTC; unix

@@ -765,13 +765,13 @@ bic.pdf.hclust<-function(dat,conds=NULL,file.name="tmp.pdf",title="",width=20,he
 #' @param file.name    plot will be saved in this file; Default: 
 #'                     $PWD/counts_scaled_hclust.pdf
 #' @export
-bic.hclust.samples <- function(norm.counts,conds=NULL,log2=FALSE,file.name=NULL,title=""){
+bic.hclust.samples <- function(norm.counts, conds = NULL, log2 = FALSE, 
+                               file.name = NULL, title = ""){
 
-  if("GeneID" %in% colnames(norm.counts) | 
-     "GeneSymbol" %in% colnames(norm.counts)){
+  if("GeneID" %in% colnames(norm.counts) | "GeneSymbol" %in% colnames(norm.counts)){
     norm.counts <- norm.counts[,-grep("GeneID|GeneSymbol",colnames(norm.counts))]
   }
-  norm.counts <- bic.matrix2numeric(norm.counts)
+  norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
 
   if(length(colnames(norm.counts)) < 3){
     cat("Less than three samples; can not run cluster analysis\n")
@@ -789,7 +789,7 @@ bic.hclust.samples <- function(norm.counts,conds=NULL,log2=FALSE,file.name=NULL,
     counts2hclust <- norm.counts
   }
   tryCatch({
-   bic.pdf.hclust(counts2hclust,conds=conds,file.name=file.name,title=title)
+   bic.pdf.hclust(counts2hclust, conds = conds, file.name = file.name, title = title)
      }, error = function(err) {
         stop(err)
         traceback()
@@ -815,17 +815,16 @@ bic.hclust.samples <- function(norm.counts,conds=NULL,log2=FALSE,file.name=NULL,
 #' @param labels       logical indicating whether to include sample labels on plot; 
 #'                     Default: TRUE
 #' @export
-bic.mds.clust.samples <- function(norm.counts,log2=FALSE,file=NULL,conds=NULL,labels=TRUE){
+bic.mds.clust.samples <- function(norm.counts, log2 = FALSE, file = NULL, 
+                                  conds = NULL, labels = TRUE){
 
   if("GeneID" %in% colnames(norm.counts) |
      "GeneSymbol" %in% colnames(norm.counts)){
     norm.counts <- norm.counts[,-grep("GeneID|GeneSymbol",colnames(norm.counts))]
   }
 
-  norm.counts <- bic.matrix2numeric(norm.counts)
+  norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
 
-cat(paste0("NUMBER OF COLS IN norm.counts: ",length(colnames(norm.counts)), "\n"))
-return(NULL)
   if(length(colnames(norm.counts)) < 3){
     cat("Less than three samples; can not run cluster analysis\n")
     return
@@ -870,7 +869,7 @@ return(NULL)
 #' there are fewer than 100 genes in the results file, all of them will
 #' be included in the heatmap. Color scheme is red/black/green.
 #'
-#' @param norm.counts.matrix  matrix of normalized counts, where a row is a gene
+#' @param norm.counts         tibble of normalized counts, where a row is a gene
 #'                            and a column is a sample. May contain "GeneID" and/or
 #'                            "GeneSymbol" column. If GeneSymbol column is present, 
 #'                            it will be used for heatmap labeling. If not, GeneID 
@@ -884,80 +883,96 @@ return(NULL)
 #' @param file                name of PDF file to which heatmap should be written. (optional) 
 #' 
 #' @export
-bic.standard.heatmap <- function(norm.counts.matrix,condA,condB,genes=NULL,file=NULL){
+bic.standard.heatmap <- function(norm.counts, condA, condB, genes = NULL, file = NULL){
 
-  dat <- norm.counts.matrix
-  if ("GeneSymbol" %in% colnames(dat)){
-    idHeader <- "GeneSymbol"
-  } else {
-    idHeader <- "GeneID"
-  }
+  dat <- norm.counts
 
   tryCatch({ 
-    ## extract data for the DE genes
-    htmp.dat <- dat[genes,grep(paste(c(idHeader,paste0("__",c(condA,condB))),collapse="|"),colnames(dat))]
-
-    ## if there is only one result, matrix turns to vector, so we need to convert it back
-    if(!is.matrix(htmp.dat)){ htmp.dat <- t(as.matrix(htmp.dat)) }
-
-    ## remove duplicate genes
-    if(length(htmp.dat[which(duplicated(htmp.dat[,idHeader])),idHeader])>0){
-      htmp.dat <- htmp.dat[-which(duplicated(as.vector(htmp.dat[,idHeader]))),]
+    htmp.dat <- dat %>%
+                filter(GeneID %in% genes, complete.cases(.)) %>%
+                filter(row_number() < 101) %>%
+                select(dplyr::matches("Gene"), grep(paste(c(condA, condB), collapse = "|"), names(.)))
+                
+    gns <- htmp.dat$GeneID
+    if("GeneSymbol" %in% names(htmp.dat)){
+        htmp.dat <- htmp.dat %>%
+                    filter(!duplicated(GeneSymbol))
+        gns <- htmp.dat$GeneSymbol
     }
 
-    ## remove any rows that have NAs
-    htmp.dat <- htmp.dat[complete.cases(htmp.dat),]
+    htmp.dat <- htmp.dat %>%
+                select_if(is.numeric) %>%
+                as.matrix()
+    rownames(htmp.dat) <- gns
 
-    ## again, make sure we have a matrix
-    if(!is.matrix(htmp.dat)){ htmp.dat <- t(as.matrix(htmp.dat)) }
+    ## replace any zeros with ones before taking log2
+    htmp.dat[htmp.dat==0] <- 1
+    htmp.dat <- as.matrix(log2(htmp.dat))
 
-    ## as long as gene symbols are unique, assign them
-    ## as rownames; if not, we'll have to average values
-    ## for genes that occur multiple times
-#    rownames(htmp.dat) <- htmp.dat[,idHeader]
-    rNms <- htmp.dat[,idHeader]
-    htmp.dat <- htmp.dat[,-1]
-    if(!is.matrix(htmp.dat)){ htmp.dat <- t(as.matrix(htmp.dat)) }
-    rownames(htmp.dat) <- rNms
-    htmp.dat <- bic.matrix2numeric(htmp.dat)
-  }, error = function(){ 
-     warning(paste0("Can not generate heatmap for ",condA," vs ",condB))
+    if(dim(htmp.dat)[1] > 1 && dim(htmp.dat)[2] > 1){
+
+      if(!is.null(file)){ pdf(file,width=16,height=16) }
+
+      par(cex.main=1.4)
+      heatmap.2(htmp.dat - apply(htmp.dat, 1, mean), 
+                trace='none', 
+                col=colorpanel(16,"green","black","red"),
+                cexRow=0.9,
+                dendrogram="both",
+                main=paste("Top Differentially Expressed Genes ",condA," vs ",condB,sep=""), 
+                symbreaks=TRUE, 
+                keysize=0.5, 
+                margin=c(20,10))
+
+      if(!is.null(file)){ dev.off() }
+    }
+   }, error = function(e) {
+      print(e)
+      warning(paste0("Can not generate heatmap for ",condA," vs ",condB,". Need at least 2 rows and 2 columns to plot."))
   })
-
-  ## replace any zeros with ones before taking log2
-  htmp.dat[htmp.dat==0] <- 1
-  htmp.dat <- as.matrix(log2(htmp.dat))
-
-  ## take only the top 100 genes in order to make heatmap legible
-  if(dim(htmp.dat)[1]>100){
-    htmp.dat <- htmp.dat[1:100,]
-  }
-
-  #if(is.null(out.file)){
-  #  out.file <- paste("ResDESeq_",condA,"_vs_",condB,"_heatmap.pdf",sep="")
-  #}
  
-  if(dim(htmp.dat)[1]>1 && dim(htmp.dat)[2]>1){
-    ## make heatmap pdf
-    if(!is.null(file)){
-      pdf(file,width=16,height=16)
-    }
-    par(cex.main=1.4)
-    heatmap.2(htmp.dat - apply(htmp.dat, 1, mean), 
-              trace='none', 
-              col=colorpanel(16,"green","black","red"),
-              cexRow=0.9,
-              #cexCol=2.0, 
-              dendrogram="both",
-              main=paste("Top Differentially Expressed Genes ",condA," vs ",condB,sep=""), 
-              symbreaks=TRUE, 
-              keysize=0.5, 
-              margin=c(20,10))
-    if(!is.null(file)){
-      dev.off()
-    }
-  } else {
-    warning(paste0("Can not generate heatmap for ",condA," vs ",condB,". Need at least 2 rows and 2 columns to plot."))
-  }
- 
+}
+
+
+bic.deseq.qc <- function(cds, clustering.dir){
+    tmp <- tryCatch({
+             capture.output(
+               bic.deseq.heatmap(cds,
+                                 file = file.path(clustering.dir,
+                                                  paste0(pre,"_heatmap_50_most_highly_expressed_genes.pdf")),
+                                transform=TRUE,
+                                num.gns=50))
+             }, error = function(e){
+                print("WARNING: There was an error while creating heatmap of the 50 most highly expressed genes.")
+           })
+
+    tmp <- tryCatch({
+             capture.output(
+               bic.sample.to.sample.distances(cds,
+                                              conds,
+                                              file = file.path(sub("/$","",clustering.dir),
+                                                               paste0(pre,"_heatmap_sample_to_sample_distances.pdf"))
+             ))
+            }, error = function(e){
+                print("WARNING: There was an error while creating heatmap of sample to sample distances")
+           })
+
+    tmp <- tryCatch({
+             capture.output(
+               bic.deseq.plot.pca(cds,
+                                  file = file.path(clustering.dir,paste0(pre,"_PCA.pdf"))
+             ))
+            }, error = function(e){
+               print("WARNING: There was an error while creating PCA plot.")
+          })
+
+    tmp <- tryCatch({
+             capture.output(
+               bic.plot.dispersion.estimates(cds,
+                                             out.dir = clustering.dir,
+                                             file.prefix = pre))
+            }, error = function(e){
+               print("WARNING: There was an error while creating dispersion estimate plot.")
+          })
+
 }

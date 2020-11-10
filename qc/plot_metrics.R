@@ -1,12 +1,12 @@
-#! /opt/common/CentOS_6/R/R-3.2.0/bin/R
-.libPaths("/opt/common/CentOS_6/R/R-3.2.0/lib64/R/library")
+#! /opt/common/CentOS_6/R/R-4.0.0/bin/R
 
 usage <- function(){
     usage.str = "\nUsage: Rscript plotMetrics.R
     \"metrics.dir    = '[Required: directory containing metrics files]'\"
     \"qc.dir         = '[Required: directory to which PDF files should be saved]'\"
-    \"pre            = '[Optional: file prefix for all output files]'\"
-    \"Rlibs          = '[Optional: path to local R libraries]'
+    \"pre            = '[Required: file prefix for all output files]'\"
+    \"Rlibs          = '[Required: path to local R libraries]'
+    \"bin            = '[Required: qc pipeline root]'
     \n\n"
     cat(usage.str)
 }

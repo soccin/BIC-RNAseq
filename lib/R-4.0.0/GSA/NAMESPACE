@@ -1,0 +1,24 @@
+export(GSA,
+GSA.correlate,
+GSA.func,
+GSA.listsets,
+GSA.make.features,
+GSA.plot,
+GSA.genescores,
+GSA.xl.plot,
+GSA.xl.correlate,
+GSA.xl.summary.genesets,
+GSA.xl.genescores,
+GSA,
+GSA.read.gmt,
+print.GSA.func,
+print.GSA,
+summary.GSA.genesets)
+
+S3method(print, GSA)
+S3method(print, GSA.func)
+S3method(summary, GSA.genesets)
+
+importFrom("graphics", "legend", "plot", "points")
+importFrom("stats", "cor", "mad", "pt", "qnorm", "quantile", "runif",
+           "var")

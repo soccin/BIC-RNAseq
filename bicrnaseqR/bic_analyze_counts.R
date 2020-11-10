@@ -1,3 +1,124 @@
+#' Run and save results of a single GSA comparison
+#'
+#' Run and save results of a single GSA comparison
+#'
+#' @param de.res     DESeq results
+#' @param comp.name  comparison name (e.g., "GroupB_vs_GroupA")
+#' @param species    character, either 'mouse' or 'human'
+#' @param gmt.dir    path to GMT files
+#' @param gsa.dir    output directory
+#'
+#' @return two-element list of GSA results, one for 'up' results and one for 'down' 
+#'         results
+#' @export
+bic.complete.gsa.analysis <- function(de.res, comp.name, species, gmt.dir, gsa.dir){
+
+    gsa.res <- bic.run.gsa(species, de.res, gmt.dir)
+
+    bic.write.dat(gsa.res$dn,
+                  file = file.path(gsa.dir,
+                                   paste0("GeneSet_Dn_", comp.name, ".xlsx")))
+
+    bic.write.dat(gsa.res$up,
+                  file = file.path(gsa.dir,
+                                   paste0("GeneSet_Up_", comp.name, ".xlsx")))
+
+    gsa.res
+
+}
+
+#' Run DESeq comparison, write results to XLSX and save visualizations in PDF files
+#'
+#' For a single comparison, run DESeq, save all and filtered results in XLSX files, 
+#' and save PCA, MA and expression heatmap figures in PDF files.
+#'
+#' @param cds               countDataSet object
+#' @param counts            tibble of normalized counts
+#' @param conds             vector of sample conditions, in same order as columns in counts tibble
+#' @param all.gene.dir      directory where table of unfiltered DESeq results should be saved
+#' @param diff.exp.dir      directory where table of filtered DESeq results should be saved
+#' @param diff.exp.fig.dir  directory where DESeq figures should be saved
+#' @param condA             condition A (denominator of comparison)
+#' @param condB             condition B (numerator of comparison)
+#' @param geneSymbols       optional; two-column tibble with columns GeneID and GeneSymbol
+#' @param max.p             maximum p.value to pass filter
+#' @param min.abs.fc        minumum absolute fold change to pass filter
+#' @param min.count         minimum mean gene counts
+#' @param zeroaddQ          keep genes with zero count in one condition
+#' @param orderPvalQ        sort filtered results by adjusted p value
+#' @param heatmaps          logical; when TRUE (default), generate heatmap of up to 100 most
+#'                          differentially expressed significant conditions
+#'
+#' @return list of all DESeq results
+#' @export
+bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.dir, diff.exp.fig.dir, 
+                                     condA = NULL, condB = NULL, geneSymbols = NULL, 
+                                     max.p = 0.05, min.abs.fc = 2, min.count = 10,
+                                     zeroaddQ = TRUE, orderPvalQ = TRUE, heatmaps = TRUE){
+    ## run DESeq comparison
+    de.res <- bic.run.deseq.comparison(cds, conds, condA, condB,
+                                       max.p = max.p,
+                                       min.abs.fc = min.abs.fc,
+                                       min.count = min.count,
+                                       zeroaddQ = zeroaddQ,
+                                       genes = geneSymbols)
+    cat("Done.\n")
+
+    ##
+    ## write All DE results to file
+    ##
+    log_debug("    Writing results for ALL genes to file...")
+    file.name <- file.path(all.gene.dir, paste0("ALLResDESeq_",condB,"_vs_",condA,".xlsx"))
+    bic.write.deseq.results(de.res$all.res,
+                            file.name = file.name,
+                            orderPvalQ = orderPvalQ)
+    log_debug("Done.\n")
+
+    ##
+    ## format and write DE results to file
+    ##
+    log_debug("    Writing results for DE genes to file...")
+    file.name <- file.path(diff.exp.dir, paste("ResDESeq_",condB,"_vs_",condA,".xlsx",sep=""))
+    bic.write.deseq.results(de.res$filtered,
+                            file.name = file.name,
+                            orderPvalQ = orderPvalQ)
+    log_debug("Done.\n")
+
+    ##
+    ## DESeq visualization
+    ##
+    log_debug("    Drawing DESeq plots...")
+    bic.plot.ma(de.res$DESeq,
+                file=file.path(diff.exp.fig.dir,
+                               paste0(pre, "_MAplot_", condA, "_vs_", condB, ".pdf")
+                     ))
+    bic.pval.histogram(de.res$DESeq,
+                       file=file.path(diff.exp.fig.dir,
+                                      paste0(pre, "_pval_histogram_", condA, "_vs_", condB, ".pdf")
+                       ))
+    log_debug("Done.\n")
+
+    ##
+    ## heatmap of top DE genes
+    ##
+    if(heatmaps & !is.null(de.res$filtered) & length(rownames(de.res$filtered)) > 0){
+        file.name <- file.path(diff.exp.fig.dir,
+                               paste0(pre,"_heatmap_",condA,"_vs_",condB,".pdf"))
+        tryCatch({
+            bic.standard.heatmap(counts, condA, condB,
+                                 genes = de.res$DEgenes,
+                                 file = file.name)
+          }, error = function(e){
+              warning(paste0("Could not generate heatmap for ",condA," vs ",condB))
+        })
+    }
+
+    return(de.res) 
+}
+
+
+
+
 #' Read in raw HTSeq count file and format for analysis
 #'
 #' Reformatting includes removing samples that are not in 
@@ -22,39 +143,26 @@
 #' @export
 bic.format.htseq.counts <- function(htseq.file,key=NULL){
 
-  cat("Reformatting raw counts...")
+  log_debug("Reformatting raw counts...")
 
-  idsAndGns <- matrix()
-
-  HTSeq.dat=bic.file2matrix(htseq.file,header=T, sep="\t")
-  HTSeq.dat=bic.make.rownames(HTSeq.dat)
-
-  if ("GeneSymbol" %in% colnames(HTSeq.dat)){
-    idsAndGns <- as.matrix(HTSeq.dat[,1])
-    rownames(idsAndGns) <- rownames(HTSeq.dat)
-    HTSeq.dat <- HTSeq.dat[,-1]
-  }
+  HTSeq.dat <- read.csv(htseq.file, header = T, sep = "\t", check.names = F) %>%
+               as_tibble() %>%
+               filter(!grepl("alignment_not_unique|ambiguous|no_feature|not_aligned|too_low_aQual", GeneID))
 
   ## subset/sort data according to key
   if(!is.null(key)){
-    smps <- key[,1]
-    if(any(!smps %in% colnames(HTSeq.dat))){
+    smps <- key$Sample
+    if(!all(smps %in% names(HTSeq.dat))){
         print(paste0("WARNING: These samples are NOT in count data... ", 
-                     paste(smps[!smps %in% colnames(HTSeq.dat)], collapse=", ")))
-        smps <- smps[smps %in% colnames(HTSeq.dat)] 
+                     paste(smps[!smps %in% names(HTSeq.dat)], collapse=", ")))
+        smps <- smps[smps %in% names(HTSeq.dat)] 
     }
-    HTSeq.dat = HTSeq.dat[,smps]
+    HTSeq.dat = HTSeq.dat %>% select_at(c("GeneID", "GeneSymbol", smps))
   }
 
-  HTSeq.dat = HTSeq.dat[!rownames(HTSeq.dat) %in% c("alignment_not_unique","ambiguous","no_feature","not_aligned","too_low_aQual"),]
-
-  ## for kallisto counts, round floats to integers
-  raw.counts=round(bic.matrix2numeric(HTSeq.dat))
-  cat("Done.\n")
-
   formatted.counts <- list()
-  formatted.counts$raw <- raw.counts
-  formatted.counts$ids <- idsAndGns
+  formatted.counts$raw <- HTSeq.dat %>% mutate_if(is.numeric, round)
+  formatted.counts$ids <- HTSeq.dat %>% select(GeneID, GeneSymbol)
 
   return(formatted.counts)
 }
@@ -68,9 +176,9 @@ bic.format.htseq.counts <- function(htseq.file,key=NULL){
 #' @return TO DO
 #' @export
 bic.scale.factor.quantile <- function(raw.counts,percentile="75%"){
-  q=quantile(raw.counts,probs=seq(0,1,0.05))
-  q=q[grep(percentile,names(q))]
-  return(sum(raw.counts[which(raw.counts<=q)]))
+  qu <- quantile(raw.counts, probs = seq(0,1,0.05))
+  qu <- qu[grep(percentile, names(qu))]
+  return(sum(raw.counts[which(raw.counts <= q)]))
 }
 
 #' Run a differential expression comparison between two
@@ -109,147 +217,83 @@ bic.scale.factor.quantile <- function(raw.counts,percentile="75%"){
 #' @export
 bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
                                      max.p=0.05, min.abs.fc=2, min.count=10,
-                                     zeroaddQ=F, genes=c()){
+                                     zeroaddQ=F, genes=NULL){
 
-  cat(paste0("Comparing condB [", condB, "] vs [", condA, "]"))
+  log_debug(paste0("Comparing [", condB, "] vs [", condA, "] ... "))
 
   cds <- countDataSet
-  ng <- NULL ## num genes
-  ans <- NULL ## filtered results
-
+  ng  <- c()  ## significant genes 
   
-  res <- tryCatch({ 
-             nbinomTest(cds, condA, condB) 
-           }, error = function(e){
-             print(e)
-             return(NULL)
-         })
-  if(is.null(res)){
-      return(NULL)
-  }
-  DESeqRes <- res
+  rawRes <- tryCatch({ 
+                nbinomTest(cds, condA, condB) %>% as_tibble() %>% rename(GeneID = id) 
+              }, error = function(e){
+                print(e)
+                return(NULL)
+            }) 
+         
+  if(is.null(rawRes) || nrow(rawRes) == 0){ return(NULL) }
 
-  ## add gene symbol to result in case 'id' is ensembl id (or other id)
-  rownames(res) <- res[,1]
-  if(length(genes) > 0){
-    genes <- genes[rownames(res),1]
-    res <- cbind(res,genes)
-    colnames(res)[length(colnames(res))] = "GeneSymbol"
+  res <- rawRes
+  if(!is.null(genes)){
+    res <- res %>% 
+           left_join(genes, by = intersect(names(.), names(genes))) %>%
+           select(dplyr::matches("Gene"), everything())
   }
 
-  ng <- rownames(res)[which(res$padj <= max.p & abs(res$log2FoldChange)>=log2(min.abs.fc))]
   norm.factors <- sizeFactors(cds)
 
-  ## add genes that have zero counts in one condition but 
-  ## count greater than min.count/mean(sizeFactors) in
-  ## in another condition but 
-  
+  ## get all significant genes
+  ng <- res %>%
+        filter(padj <= max.p, 
+               abs(log2FoldChange) >= log2(min.abs.fc),
+               (baseMeanA >= min.count/mean(norm.factors) | 
+                  baseMeanB >= min.count/mean(norm.factors))) %>%
+        pull(GeneID)
+
   if(zeroaddQ){
-    jj1 <- rownames(res)[which(res[,"baseMeanA"]==0 & res[,"baseMeanB"]>=min.count/mean(norm.factors))]
-    jj2 <- rownames(res)[which(res[,"baseMeanB"]==0 & res[,"baseMeanA"]>=min.count/mean(norm.factors))]
-    ng <- unique(c(ng,jj1,jj2))
+    jj <- res %>%
+          filter((baseMeanA == 0 & baseMeanB >= min.count/mean(norm.factors)) |
+                 (baseMeanB == 0 & baseMeanA >= min.count/mean(norm.factors))) %>%
+          pull(GeneID)
+    ng <- unique(c(ng, jj))
   }
 
-  if(length(ng) > 0){
-    resSig <- res[ng,]
-    jj <- unique(rownames(resSig)[which(resSig[,"baseMeanA"]>= min.count/mean(norm.factors) | 
-                                        resSig[,"baseMeanB"]>= min.count/mean(norm.factors))])
-    if(length(jj) == 0){
-      ng <- NULL
-    } else {
-      ng <- ng[ng %in% jj]
-    }
-  }
+  allRes <- res %>%
+            mutate(log2FoldChange = ifelse(log2FoldChange == Inf, 
+                                             log2((baseMeanB + 1)/(baseMeanA + 1)), 
+                                             log2FoldChange)) %>%
+            select(dplyr::matches("Gene"),
+                   pval, 
+                  `P.adj` = padj,
+                  !!as.name(paste0("log2[", condB, "/", condA, "]")) := log2FoldChange,
+                  !!as.name(paste0("Mean_at_cond_", condA)) := baseMeanA,
+                  !!as.name(paste0("Mean_at_cond_", condB)) := baseMeanB) %>%
+            arrange(desc(!!as.name(paste0("log2[", condB, "/", condA, "]")))) %>%
+            filter(!!as.name(paste0("Mean_at_cond_", condA)) >= min.count | 
+                    !!as.name(paste0("Mean_at_cond_", condB)) >= min.count)
 
   ## prepare filtered output
-  if(length(ng) > 0){
-    if ("GeneSymbol" %in% colnames(resSig)){
-      ans=resSig[ng,c("id","GeneSymbol","padj", "log2FoldChange",
-                      "baseMeanA","baseMeanB")]
-      colnames(ans)=c("GeneID","GeneSymbol", "P.adj",
-                      paste("log2[",condB,"/",condA,"]",sep=""),
-                      paste("Mean_at_cond_",condA, sep=""),
-                      paste("Mean_at_cond_",condB, sep=""))
-    } else {
-      ans=resSig[ng,c("id","padj", "log2FoldChange","baseMeanA","baseMeanB")]
-      colnames(ans)=c("GeneID", "P.adj", paste("log2[",condB,"/",condA,"]",sep=""), 
-                      paste("Mean_at_cond_",condA, sep=""), 
-                      paste("Mean_at_cond_",condB, sep=""))
-    }
-    ## sort by log2FC
-    ans = ans[order(abs(ans[,paste0("log2[",condB,"/",condA,"]")]), decreasing = TRUE),]
-    rownames(ans)=ans[,1]
-  } else {
-    cat(paste0("\n===================================================\nNo genes pass the significant cutoff of ", max.p, "\n  AND have sufficient mean number of reads across samples\n AND at least ", min.count, " reads in one condition\n===================================================\n"))
-    #m=max(res[which(res$padj==min(res$padj)),"baseMeanA"],
-    #      res[which(res$padj==min(res$padj)),"baseMeanB"])
-    #cat("Best corrected p.value =",min(res$padj),"\n")
-    #cat("with max number of counts", m, "\n")
-    cat("\n\n")
+  resSig <- allRes %>% filter(GeneID %in% ng) 
+
+  if(nrow(resSig) == 0){
+    log_debug("\n===================================================\n")
+    log_debug(paste0("No genes pass the significant cutoff of ", max.p,
+              "\n  AND have sufficient mean number of reads across samples\n AND at least ", 
+              min.count, " reads in one condition\n",
+              "===================================================\n"))
+    log_debug(paste0("Largest log2FC = ", max(abs(res$log2FoldChange)), "\n"))
+    log_debug(paste0("Best corrected p.value = ", min(res$padj), "\n"))
+    log_debug("\n\n")
   }
 
-  #############
-  ## prepare unfiltered results (results for all genes)
-  if ("GeneSymbol" %in% colnames(res)){
-    res=res[,c("id","GeneSymbol","pval","padj", "log2FoldChange","baseMeanA","baseMeanB")]
-    colnames(res)=c("GeneID","GeneSymbol", "pval","P.adj", 
-                    paste("log2[",condB,"/",condA,"]",sep=""), 
-                    paste("Mean_at_cond_",condA, sep=""), 
-                    paste("Mean_at_cond_",condB, sep="")
-                   )
-  } else {
-    res=res[,c("id","pval","padj", "log2FoldChange","baseMeanA","baseMeanB")]
-    colnames(res)=c("GeneID", "pval","P.adj", 
-                     paste("log2[",condB,"/",condA,"]",sep=""), 
-                     paste("Mean_at_cond_",condA, sep=""), 
-                     paste("Mean_at_cond_",condB, sep="")
-                   )
-  }
-  rownames(res)=res[,1]
-
-  ## make sure there are no Inf FC
-  jj <- which(abs(res[,paste("log2[",condB,"/",condA,"]",sep="")]) == Inf)
-  if(length(jj) >= 1){
-    res[jj, paste("log2[",condB,"/",condA,"]",sep="")] <-
-          log2(as.numeric(res[jj,paste("Mean_at_cond_",condB, sep="")]) + 1) -
-          log2(as.numeric(res[jj,paste("Mean_at_cond_",condA, sep="")]) + 1)
-  }
-
-  ## Keep only those that have at least min.count normalized mean counts in at least one group
-  jj <- unique(which(res[,paste("Mean_at_cond_",condA, sep="")] >= min.count |
-                     res[,paste("Mean_at_cond_",condB, sep="")] >= min.count
-                    )
-              )
-  res <- res[jj,]
-
-
-  ######################
-  ##### clean up results filtered by FC and pval
-
-  ## make sure there are no Inf FC
-  if(!is.null(ans)){
-    jj=which(abs(ans[,paste("log2[",condB,"/",condA,"]",sep="")])==Inf)  
-    if(length(jj)>=1){
-        ans[jj, paste("log2[",condB,"/",condA,"]",sep="")] <- 
-              log2(as.numeric(ans[jj,paste("Mean_at_cond_",condB, sep="")]) + 1) - 
-              log2(as.numeric(ans[jj,paste("Mean_at_cond_",condA, sep="")]) + 1)
-    }
-  }
-
-  ## DO NOT REMOVE THOSE WITH LESS THAN MIN COUNT AS WE SAVED ZERO-COUNT
-  ## GENES BEFORE, IN CASE THEY ARE OF INTEREST TO THE INVESTIGATOR
-
-  Res=list()
-  Res$DESeq         <- DESeqRes 
-  Res$filtered      <- ans
-  Res$DEgenes       <- rownames(ans)
-  Res$all.res       <- res
-  Res$max.p         <- max.p
-  Res$min.abs.fc    <- min.abs.fc
-  Res$min.count     <- min.count
-  Res$norm.factors  <- norm.factors
-
-  return(Res)
+  list(DESeq = rawRes,
+       filtered = resSig,
+       DEgenes = resSig$GeneID,
+       all.res = allRes,
+       max.p = max.p,
+       min.abs.fc = min.abs.fc,
+       min.count = min.count,
+       norm.factors = norm.factors)
   
 } 
 
@@ -271,18 +315,24 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
 #' @return DESeq's countDataSet object
 #' @export
 bic.get.deseq.cds <- function(raw.counts, conds,
-                           min.count=10, libsizeQ=F, percentile="100%",
-                           fitType="parametric", method="per-condition",
-                           sharingMode="maximum"){
+                              min.count=10, libsizeQ=F, percentile="100%",
+                              fitType="parametric", method="per-condition",
+                              sharingMode="maximum"){
 
-  cat("Getting DESeq countDataSet...")
-  ## filter raw counts: remove genes with total 
-  ## counts less than min.count
-  x <- apply(raw.counts,1,sum)
-  counts.tmp <- raw.counts[which(x >= min.count),]
+  log_debug("Getting DESeq countDataSet...")
+
+  counts.tmp <- raw.counts %>%
+                select(GeneID, dplyr::matches("^s_")) %>%
+                mutate(Total = rowSums(.[,2:ncol(.)])) %>%
+                filter(Total >= min.count) %>%
+                select(-Total)
+
+  ids <- counts.tmp$GeneID
+  mat <- as.matrix(counts.tmp[,-1])
+  rownames(mat) <- ids
 
   ## create CountDataSet, DESeq's main data structure
-  cds <- newCountDataSet(counts.tmp,conds)
+  cds <- newCountDataSet(mat, conds)
 
   ## by default, normalize counts using DESeq's method
   ## if otherwise specified, normalize by library size
@@ -291,31 +341,30 @@ bic.get.deseq.cds <- function(raw.counts, conds,
   }
 
   if(libsizeQ | length(which(is.na(sizeFactors(cds))))>0){
-    cat("\nEstimating sizeFactors using library size\n")
+    log_debug("\nEstimating sizeFactors using library size\n")
     if(percentile == "100%"){
-      libsizes <- apply(counts.tmp,2,sum)
+      libsizes <- apply(mat, 2, sum)
     } else {
-      libsizes <- apply(counts.tmp,2,util.scale.factor.quantile,percentile=percentile)
+      libsizes <- apply(mat, 2, util.scale.factor.quantile, percentile=percentile)
     }
     libsizes <- libsizes / median(libsizes)
     sizeFactors(cds) <- libsizes
   }
   
   cds <- tryCatch({
-           estimateDispersions(cds,fit=fitType,method=method,sharingMode=sharingMode)
+           estimateDispersions(cds, fit=fitType, method=method, sharingMode=sharingMode)
          }, error = function(err){
            if(!method == "pooled"){
              warning(paste("method='",method,"' did not work. Trying method='pooled'",sep=""))
              cds <- tryCatch({
-                  estimateDispersions(cds,fit=fitType,method='pooled',sharingMode=sharingMode)
+                  estimateDispersions(cds, fit=fitType, method='pooled', sharingMode=sharingMode)
                }, error = function(x){
                   if(!method == "blind"){
                     warning(paste("method='",method,"' did not work. Trying method='blind'",sep=""))
                     cds <- tryCatch({
-                         estimateDispersions(cds,fit=fitType,method='blind',sharingMode='fit-only')
+                         estimateDispersions(cds, fit=fitType, method='blind', sharingMode='fit-only')
                     }, error = function(x){
                          warning(paste("All methods '",method,"', 'pooled' and 'blind' failed.",sep=""))
-                         #quit(save="no",status=15,runLast=TRUE)
                          return(NULL)
                     })
                   }
@@ -323,11 +372,31 @@ bic.get.deseq.cds <- function(raw.counts, conds,
            } else {
              warning("method 'pooled' did not work. Please try another method.")
              return(NULL)
-             #quit(save="no",status=15,runLast=TRUE)
            }   
          })
-  cat("Done.\n")
+  log_debug("Done.\n")
   return(cds) 
+}
+
+
+bic.standard.clustering <- function(scaled.counts, out.dir, conds, mds.labels = NULL, pre = "TEMP"){
+
+    file.name <- file.path(out.dir, paste0(pre,"_counts_scaled_hclust.pdf"))
+    tryCatch({
+            bic.hclust.samples(scaled.counts,
+                               file.name = file.name,
+                               conds = conds,
+                               title = "All counts scaled using DESeq method")
+            }, error = function(err){
+              conditionMessage(err)
+          })
+
+    file.name <- file.path(out.dir, paste0(pre,"_counts_scaled_MDS.pdf"))
+    bic.mds.clust.samples(scaled.counts,
+                          file = file.name,
+                          conds=conds,
+                          labels = mds.labels)
+
 }
 
 
@@ -337,8 +406,18 @@ bic.get.deseq.cds <- function(raw.counts, conds,
 #' @param  file.name           File to which results should be written
 #' @export
 bic.write.normalized.counts.file <- function(norm.counts.mat,file.name){
-    write.table(norm.counts.mat,file=file.name,quote=F,col.names=T,row.names=F,sep="\t")
-    #openxlsx::write.xlsx(as.data.frame(norm.counts.mat), file=file.name)
+    if(grepl("\\.txt$", file.name)){
+        write.table(norm.counts.mat,
+                    file      = file.name, 
+                    quote     = F,
+                    col.names = T,
+                    row.names = F,
+                    sep       = "\t")
+    } else if(grepl("\\.xlsx$", file.name)){
+        openxlsx::write.xlsx(as.data.frame(norm.counts.mat), file=file.name)
+    } else {
+        stop(paste0("Unrecognized file type: .", gsub(".*\\.", "", file.name)))
+    }
 }
 
 #' Write results for ALL genes and for DE genes
@@ -356,7 +435,10 @@ bic.write.normalized.counts.file <- function(norm.counts.mat,file.name){
 #' @export
 bic.write.deseq.results <- function(res, file.name, orderPvalQ=FALSE){
 
-  head(res)
+  if(is.null(res) || nrow(res) == 0){
+      bic.write.empty.results(file.name)
+      return()
+  }
 
   ## Sort results  
   if(orderPvalQ){
@@ -408,9 +490,9 @@ bic.deseq.normalize.htseq.counts <- function(formatted.counts=NULL,htseq.file=NU
   }  
 
   if(is.null(formatted.counts)){
-    formatted.counts <- bic.format.htseq.counts(htseq.file,key)
+    formatted.counts <- bic.format.htseq.counts(htseq.file, key)
   }
-  counts.dat <- formatted.counts$raw
+
   idsAndGns <- formatted.counts$ids
   
   if(is.null(cds)){
@@ -427,31 +509,25 @@ bic.deseq.normalize.htseq.counts <- function(formatted.counts=NULL,htseq.file=NU
                              sharingMode=sharingMode)
   }
 
-  cat("Getting DESeq scaled counts...")
-  counts.scaled <- counts(cds,norm=T)
-  cat("Done.\n")
+  log_debug("Getting DESeq scaled counts...")
+  counts.scaled <- counts(cds, norm = T) %>%
+                   as_tibble(rownames = "GeneID") %>%
+                   left_join(formatted.counts$ids, by = "GeneID") %>%
+                   select(dplyr::matches("Gene"), key$Sample)
+  log_debug("Done.\n")
 
-  cat("Formatting scaled counts...")
-  counts.log.dat <- log2(counts.scaled+1)
-  dat <- 2^counts.log.dat-1
-  if (!is.null(key)){
-    key[,1] <- make.names(key[,1]) ## remove any invalid characters
-    dat <- dat[,key[,1]]
-    colnames(dat) <- paste(key[,1],key[,2],sep="__")
-  }
-  if (!is.null("idsAndGns")){
-    idsAndGns <- as.matrix(idsAndGns[rownames(counts.scaled),])
-    dat <- as.matrix(cbind(rownames(dat),idsAndGns,dat))
-    colnames(dat)[1:2] <- c("GeneID","GeneSymbol")
-  } else {
-    dat <- as.matrix(cbind(rownames(dat),dat))
-    colnames(dat)[1] <- "GeneSymbol"
-  }
-  cat("Done.\n")
- 
+  log_debug("Formatting scaled counts...")
+  if(!is.null(key)){
+    counts.scaled <- counts.scaled %>%
+                     gather(names(.)[!grepl("Gene", names(.))], key = "Sample", val = "Count") %>%
+                     left_join(key, by = "Sample") %>%
+                     unite("Sample_Group", "Sample", "Group", sep = "__") %>%
+                     spread(Sample_Group, Count)  
+  } 
+
   counts <- list()
-  counts$scaled <- dat
-  counts$raw <- counts.dat
+  counts$scaled <- counts.scaled
+  counts$raw <- formatted.counts$raw
   counts$ids <- idsAndGns
   return(counts) 
 }
@@ -477,7 +553,7 @@ bic.quantile.normalize.htseq.counts <- function(htseq.counts,key=NULL){
   ## read and reformat raw counts file
   ## use unique identifiers as rownames (e.g., ensembl IDs)
   ## but keep gene symbols (if given) for later use)
-  cat("Reformatting raw counts...")
+  log_debug("Reformatting raw counts...")
   HTSeq.dat <- bic.file2matrix(htseq.counts,header=T, sep="\t")
   HTSeq.dat <- bic.make.rownames(HTSeq.dat)
 
@@ -501,9 +577,9 @@ bic.quantile.normalize.htseq.counts <- function(htseq.counts,key=NULL){
   ## for kallisto counts, round floats to integers
   counts.dat <- round(bic.matrix2numeric(HTSeq.dat))
 
-  cat("Done.\n")
+  log_debug("Done.\n")
 
-  cat("Getting quantile-normalized counts...")
+  log_debug("Getting quantile-normalized counts...")
   counts.log.dat=log2(counts.dat+1)
   counts.log.norm.dat=normalizeBetweenArrays(counts.log.dat,method='quantile')
   dat=2^counts.log.norm.dat
@@ -515,7 +591,7 @@ bic.quantile.normalize.htseq.counts <- function(htseq.counts,key=NULL){
     dat=as.matrix(cbind(rownames(dat),dat))
     colnames(dat)[1]="GeneSymbol"
   }
-  cat("Done.\n")
+  log_debug("Done.\n")
 
   counts <- list()
   counts$normalized <- dat
@@ -535,26 +611,31 @@ bic.quantile.normalize.htseq.counts <- function(htseq.counts,key=NULL){
 #'                     
 #' @return filtered gsa.tab
 bic.get.gene.sets <- function(gsaRes,gsa.tab,fc2keep=log2(1.5),frac2keep=2,dir="Up"){
-  tmp <- cbind(gsa.tab,rep("",nrow(gsa.tab)),rep("",nrow(gsa.tab)))
-  colnames(tmp) <- c(colnames(gsa.tab),"GenesInGeneSet","GenesAndFC")
-  geneSets2remove=NULL
+
+  tmp <- gsa.tab %>% mutate(GenesInGeneSet = "", GenesAndFC = "")
+
+  geneSets2remove <- c()
   for(nn in 1:nrow(gsa.tab)){
-    fc <- geneSetSummary(gsaRes, gsa.tab[nn,1])$geneLevelStats
+    fc <- geneSetSummary(gsaRes, gsa.tab$Name[nn])$geneLevelStats
+
     o <- order(abs(fc),decreasing=T)
     fc <- fc[o]
-    gn.names <- rownames(as.matrix(fc))
-    gn.names.str <- bic.join.strings(gn.names,",")
-    gn.names.fc.str <- bic.join.strings(paste(gn.names,"=",fc),";")
-    tmp[nn,ncol(gsa.tab)+1] <- gn.names.str
-    tmp[nn,ncol(gsa.tab)+2] <- gn.names.fc.str
+    gn.names <- names(fc) 
+    gn.names.str <- paste0(gn.names, collapse = ",") 
+    gn.names.fc.str <- paste0(paste(gn.names,"=",fc), collapse = ";")
+    tmp$GenesInGeneSet[nn] <- gn.names.str
+    tmp$GenesAndFC[nn] <- gn.names.fc.str
 
     ## Add a condition that at least half of the genes have to have 
     ## FC >= log2(1.5) ! 
+
     if(dir == "Dn"){ jj <- length(which(fc <= -fc2keep)) }
     if(dir == "Up"){ jj <- length(which(fc >= fc2keep)) }
     if(jj <= length(fc)/frac2keep){ geneSets2remove=c(geneSets2remove,nn) }
   }
-  if(length(geneSets2remove) >= 1){ tmp <- tmp[-geneSets2remove,] }
+  if(length(geneSets2remove) > 0){ 
+      tmp <- tmp %>% filter(!row_number() %in% geneSets2remove) 
+  } 
 
   return(tmp)
 }
@@ -569,54 +650,50 @@ bic.get.gene.sets <- function(gsaRes,gsa.tab,fc2keep=log2(1.5),frac2keep=2,dir="
 #' 
 #' @return list of two matrices: one with up-regulated gene sets and one with down-regulated
 #'         gene sets
-bic.process.gsa.res <- function(gsaRes,max.p=0.1,fc2keep=log2(1.5),frac2keep=2,fcQ=T)
-{
-  gsa.tab.dn <- NULL
-  gsa.tab.up <- NULL
-  tmp=as.matrix(GSAsummaryTable(gsaRes))
-  if(!is.null(tmp)){
-    gsa.tab.dn <- NULL
-    gsa.tab.up <- NULL
+bic.process.gsa.res <- function(gsaRes,max.p=0.1,fc2keep=log2(1.5),frac2keep=2,fcQ=T){
 
-    indxDn <- which(tmp[,"p adj (dist.dir.dn)"] <= max.p)
-    indxUp <- which(tmp[,"p adj (dist.dir.up)"] <= max.p)
-    colsDn <- c("Name","Genes (tot)", "Stat (dist.dir)",
-             "p adj (dist.dir.dn)","Genes (down)")
-    colsUp <- c("Name","Genes (tot)", "Stat (dist.dir)",
+  gsa.tab.dn <- gsa.tab.up <- NULL
+  up.cols <- c("Name","Genes (tot)", "Stat (dist.dir)",
              "p adj (dist.dir.up)","Genes (up)")
-    if(length(indxDn) >= 1){
-      if(length(indxDn) == 1){
-        tmpDn <- t(as.matrix(tmp[indxDn,colsDn]))
-      } else {
-        tmpDn <- as.matrix(tmp[indxDn,colsDn])
-      }
-      tmpDn <- as.matrix(tmpDn[order(abs(as.numeric(tmpDn[,"Stat (dist.dir)"])),decreasing=T),])
-      if(length(indxDn) == 1){
-        tmpDn <- t(tmpDn)
-      }
-      if(fcQ){
-        gsa.tab.dn <- bic.get.gene.sets(gsaRes,gsa.tab=tmpDn,fc2keep=fc2keep,frac2keep=frac2keep,dir="Dn")
-      } else {
-        gsa.tab.dn <- tmpDn
-      }
+  dn.cols <- c("Name","Genes (tot)", "Stat (dist.dir)",
+             "p adj (dist.dir.dn)","Genes (down)")
+
+  tmp <- GSAsummaryTable(gsaRes) %>% 
+         as_tibble() %>%
+         arrange(desc(abs(`Stat (dist.dir)`)))
+
+  if(!is.null(tmp) && nrow(tmp) > 0){
+    dn <- tmp %>%
+          select_at(dn.cols) %>%
+          filter(`p adj (dist.dir.dn)` <= max.p)
+
+    if(nrow(dn) > 0){
+       gsa.tab.dn <- dn
+       if(fcQ){
+           gsa.tab.dn <- bic.get.gene.sets(gsaRes, 
+                                           gsa.tab = dn, 
+                                           fc2keep = fc2keep, 
+                                           frac2keep = frac2keep, 
+                                           dir = "Dn")
+       }
     }
-    if(length(indxUp)>=1){
-      if(length(indxUp) == 1){
-        tmpUp <- t(as.matrix(tmp[indxUp,colsUp]))
-      } else {
-        tmpUp <- as.matrix(tmp[indxUp,colsUp])
-      }
-      tmpUp <- as.matrix(tmpUp[order(abs(as.numeric(tmpUp[,"Stat (dist.dir)"])),decreasing=T),])
-      if(length(indxUp) == 1){
-        tmpUp <- t(tmpUp)
-      }
-      if(fcQ){
-        gsa.tab.up <- bic.get.gene.sets(gsaRes,gsa.tab=tmpUp,fc2keep=fc2keep,frac2keep=frac2keep,dir="Up")
-      } else {
-        gsa.tab.up <- tmpUp
-      }
+
+    up <- tmp %>% 
+          select_at(up.cols) %>%
+          filter(`p adj (dist.dir.up)` <= max.p) 
+
+    if(nrow(up) > 0){
+       gsa.tab.up <- up
+       if(fcQ){
+           gsa.tab.up <- bic.get.gene.sets(gsaRes, 
+                                           gsa.tab = up, 
+                                           fc2keep = fc2keep, 
+                                           frac2keep = frac2keep,
+                                           dir = "Up")
+       }
     }
   }
+
   tab.res <- list()
   tab.res$gsa.tab.dn <- gsa.tab.dn
   tab.res$gsa.tab.up <- gsa.tab.up
@@ -632,8 +709,8 @@ bic.process.gsa.res <- function(gsaRes,max.p=0.1,fc2keep=log2(1.5),frac2keep=2,f
 #' are then calculated and gene sets with a significant number of
 #' of up- or down-regulated genes are reported in the output. Gene Sets
 #' included are from the MSigDB Collections:
-#' 
-#' C1: positional gene sets
+#'
+#' H:  hallmark gnee sets 
 #' C2: curated gene sets
 #' C3: motif gene sets
 #' C5: GO gene sets
@@ -666,78 +743,87 @@ bic.process.gsa.res <- function(gsaRes,max.p=0.1,fc2keep=log2(1.5),frac2keep=2,f
 #'         significantly UP-regulated and one with gene sets found
 #'         to be significantly DOWN-regulated
 #' @export
-bic.run.gsa <- function(species,deseq.res,gmt.dir,min.gns=5,max.gns=1000,
-                        max.p=0.1,nPerm=1e4,fcQ=T,
-                        fc2keep=log2(1.5),frac2keep=4){
+bic.run.gsa <- function(species, deseq.res, gmt.dir, min.gns=5, max.gns=1000,
+                        max.p=0.1, nPerm=1e4, fcQ=T,
+                        fc2keep=log2(1.5), frac2keep=4){
 
-  if (species %in% c("hg19","hg18","hybrid")){
-    species = "human"
-  }
-  if (species %in% c("mm9","mm10")){
-    species = "mouse"
-  }
-  if (!species %in% c("human","mouse")){
-    cat("    Error: Only human and mouse data supported. 
-                    Can not run Gene Set Analysis\n")
-    q()
+  spMap <- list(human = "human", hybrid = "human", 
+                b37 = "human", hg19 = "human", hg18 = "human", 
+                mouse = "mouse", mm9 = "mouse", mm10 = "mouse")
+
+  gs.names <- list(human = c("h.all.v7.1.symbols.gmt", "c2.all.v7.1.symbols.gmt",
+                             "c3.all.v7.1.symbols.gmt", "c5.all.v7.1.symbols.gmt",
+                             "c6.all.v7.1.symbols.gmt", "c7.all.v7.1.symbols.gmt"),
+                   mouse = c("Mm.h.all.v7.1.gmt", "Mm.c2.all.v7.1.gmt",
+                             "Mm.c3.all.v7.1.gmt", "Mm.c5.all.v7.1.gmt",
+                             "Mm.c6.all.v7.1.gmt", "Mm.c7.all.v7.1.gmt"))
+
+  species <- spMap[[species]]
+  gs.names <- gs.names[[species]]
+
+  if(is.null(species) || length(species) == 0){
+    log_error("    Only human and mouse data supported.") 
+    log_error("        Can not run Gene Set Analysis\n")
+    return(NULL)
   }
 
-  if(species == "human"){
-    gs.names.list <- c("h.all.v7.1.symbols.gmt", "c2.all.v7.1.symbols.gmt",
-                       "c3.all.v7.1.symbols.gmt","c5.all.v7.1.symbols.gmt",
-                       "c6.all.v7.1.symbols.gmt","c7.all.v7.1.symbols.gmt")
-  } else {
-    gs.names.list <- c("Mm.h.all.v7.1.gmt", "Mm.c2.all.v7.1.gmt",
-                       "Mm.c3.all.v7.1.gmt", "Mm.c5.all.v7.1.gmt",
-                       "Mm.c6.all.v7.1.gmt", "Mm.c7.all.v7.1.gmt")
-  }                 
+  all.up.res <- all.dn.res <- tibble()
 
-  all.res <- list()
-  all.up.res <- NULL
-  all.dn.res <- NULL
-  for (gs in gs.names.list){
-    print(gs)
-    gs.name <- bic.remove.sub(gs,"\\.gmt",part2take=1)
-    gs.cat <- toupper(bic.remove.sub(bic.remove.sub(gs,".all.v4.0.symbols.gmt",part2take=1),"-1",part2take=1))
+  for (gs in gs.names){
+    log_debug(paste0(gs, "\n"))
+    gs.name <- gsub("\\.gmt", "", gs)
+    gs.cat <- toupper(gsub("Mm\\.", "", gsub("\\.all.*", "", gs.name)))
+
     gsc <- loadGSC(file.path(gmt.dir, gs)) 
 
-    res <- deseq.res[,-1]  ## remove ensembl IDs; since this function only supports
-                           ## human and mouse, we can be confident that the first
-                           ## column always has ensembl IDs
-    fc  <- as.matrix(res[,c(1,4)])
-    fc <- bic.average.by.name(fc)
+    fcCol <- names(deseq.res)[grep("log2", names(deseq.res))]
+    fc <- deseq.res %>% 
+          select(GeneSymbol, !!as.name(fcCol)) %>% 
+          group_by(GeneSymbol) %>%
+          summarize(FC = mean(!!as.name(fcCol))) 
 
-    gsa.res <- runGSA(fc,geneSetStat="mean",gsc=gsc,
-                     gsSizeLim=c(min.gns,max.gns),nPerm=nPerm)
+    vec <- fc$FC
+    names(vec) <- fc$GeneSymbol
+    
+    gsa.res <- runGSA(vec,
+                      geneSetStat = "mean",
+                      gsc = gsc,
+                      gsSizeLim = c(min.gns,max.gns),
+                      nPerm = nPerm)
 
-    tab.res <- bic.process.gsa.res(gsa.res,max.p=max.p,
-                                   fc2keep=fc2keep,frac2keep=frac2keep,fcQ=fcQ)
+    tab.res <- bic.process.gsa.res(gsa.res,
+                                   max.p = max.p,
+                                   fc2keep = fc2keep,
+                                   frac2keep = frac2keep,
+                                   fcQ = fcQ)
+
     if(!is.null(tab.res$gsa.tab.up)){
-      if(is.null(dim(tab.res$gsa.tab.up))){
-          tab.res$gsa.tab.up = t(as.matrix(tab.res$gsa.tab.up))
-      }
-      up.res <- cbind(gs.cat,tab.res$gsa.tab.up)
-      colnames(up.res)[1] <- "Gene Set Category" 
-      if(is.null(all.up.res)){
-        all.up.res <- up.res
-      } else {
-        all.up.res <- rbind(all.up.res,up.res)
-      }
-    }
+        tab.res$gsa.tab.up <- tab.res$gsa.tab.up %>% mutate(`Gene Set Category` = toupper(gs.name))
+        all.up.res <- all.up.res %>% bind_rows(tab.res$gsa.tab.up)
+    } 
     if(!is.null(tab.res$gsa.tab.dn)){
-      if(is.null(dim(tab.res$gsa.tab.dn))){
-        tab.res$gsa.tab.dn = t(as.matrix(tab.res$gsa.tab.dn))
-      }
-      dn.res <- cbind(gs.cat,tab.res$gsa.tab.dn)
-      colnames(dn.res)[1] <- "Gene Set Category"
-      if(is.null(all.dn.res)){
-        all.dn.res <- dn.res
-      } else {
-        all.dn.res <- rbind(all.dn.res,dn.res)
-      }
+        tab.res$gsa.tab.dn <- tab.res$gsa.tab.dn %>% mutate(`Gene Set Category` = toupper(gs.name))
+        all.dn.res <- all.dn.res %>% bind_rows(tab.res$gsa.tab.dn)
     }
   }
-  all.res$up <- all.up.res
-  all.res$dn <- all.dn.res
-  return(all.res)
+
+  noRes <- tibble(`Gene Set Category` = "",
+                  Name = "",
+                  `Genes (tot)` = "",
+                  `Stat (dist.dir)` = "",
+                  `p adj (dist.dir.up)` = "",
+                  `Genes (up)` = "",
+                  `GenesInGeneSet` = "",
+                  GenesAndFC = "")
+
+  if(nrow(all.up.res) == 0){
+    all.up.res <- noRes
+  }
+  if(nrow(all.dn.res) == 0){
+    all.dn.res <- noRes %>%
+                  rename(`p adj (dist.dir.dn)` = `p adj (dist.dir.up)`,
+                         `Genes (down)` = `Genes (up)`)               
+  }
+  list(up = all.up.res, dn = all.dn.res)
+
 }

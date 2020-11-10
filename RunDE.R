@@ -1,78 +1,73 @@
-#! /opt/common/CentOS_6/R/R-3.2.0/bin/R
-.libPaths("/opt/common/CentOS_6/R/R-3.2.0/lib64/R/library")
+#!/opt/common/CentOS_6/R/R-4.0.0/bin/R
 
 usage <- function(){
 
-    usage.str = "\nUsage: Rscript RunDE.R
-    \"counts.file    = '[Required: absolute path to htseq counts file]'\"
+  cat("\nUsage: Rscript RunDE.R
 
-    \"key.file       = '[Required for differential expression analysis: 
-                        absolute path to key file]'\"
-    \"comps          = [Required for differential expression analysis: vector 
-                       containing all comparisons to be made based on conditions 
-                       in key file. Must be in the following format: c('CondA - CondB',
-                       'CondA - CondC','CondB - CondC')]\"
-    \"species        = '[Required for gene set analysis: (hg19|human|mm9|mm10|mouse)] 
-                        Note: only human or mouse currently supported; specific
-                        build does not matter, as long as it is clearly human or mouse']\"
+  [REQUIRED]
 
-    \"Rlibs          = [Optional (default=NULL): path to R libraries\"
-    \"pre            = [Optional (default='TEMP'): prefix for all output files]\"
-    \"diff.exp       = [Optional (default=TRUE): run differential expression analysis]\"
-    \"GSA            = [Optional (default=TRUE): run gene set analysis; if running GSA 
-                       but not DESeq, BE SURE TO SET diff.exp.dir (see below) to point
-                       to existing DESeq results directory.]\"
-    \"gmt.dir        = [Required if GSA=TRUE: directory containing GMT files for correct species]\"
-    \"heatmaps       = [Optional (default=TRUE): generate a heatmap for each comparison
-                       showing relative expression of the top ~100 DE genes]\"
+    --counts.file     absolute path to htseq counts file
 
-    \"counts.dir     = [Optional (default='$PWD/counts_gene')]\"
-    \"clustering.dir = [Optional (default='$PWD/clustering')]\"
-    \"diff.exp.dir   = [Optional (default='$PWD/differentialExpression_gene')]: if 
-                        running DESeq, this is where output will go; if NOT running 
-                        DESeq, this is wherever DESeq results already exist. Must 
-                        be correct in order for GSA to run properly.\"
-    \"gsa.dir        = [Optional (default='$PWD/GSA')]\"
 
-    \"no.replicates  = [Optional (default=F): T|F, automatically sets fitType, 
-                        method, and sharingMode to accommodate comparison
-                        of single samples]\"
-    \"q.cut          = [Optional (default=0.05): insert description here]\"
-    \"lfc            = [Optional (default=1): insert description here]\"
-    \"fc.cut         = [Optional (default=2): Fold change cutoff]\"
-    \"count.cut      = [Optional (default=15): minimum total reads required for a gene
-                        to be included in analysis]\"
-    \"fitType        = [Optional (default='parametric'): 'parametric'|'local', See DESeq docs]\"
-    \"orderPvalQ     = [Optional (default=T): T|F, sort final results by adjusted Pvalue]\"
+  [CONDITIONALLY REQUIRED]
 
-    \"method         = [Optional (default='per-condition'): 'pooled'|'per-condition'|'blind', 
-                        See DESeq docs.]\"
-    \"sharingMode    = [Optional (default='maximum'): 'maximum'|'fit-only'|'gene-est-only', 
-                        See DESeq docs.]\"
-    \"zeroaddQ       = [Optional (default=T): T|F, include genes with zero counts in one
-                        condition even if their pValues are insignificant]\"
-    \"libsizeQ       = [Optional (default=F): T|F, normalize data using library size]\"
-    \"test           = [Optional (default=F): T|F, run test data provided with bicrnaseq package]\"
-    \n\n"
-    cat(usage.str)
+    --comp.file       absolute path to file of sample group assignments and comparisons; when not 
+                      provided, script will look for individual [pre]_sample_key*.txt and 
+                      [pre]_sample_comparisons*.txt files 
+    --species         required when running GSA; [hg19|human|mm9|mm10|mouse|hybrid] Note: only human 
+                      or mouse currently supported; specific build does not matter, as long as 
+                      it is clearly human or mouse (hybrid will be run as human)
+    --gmt.dir         required when running GSA; directory containing GMT files for correct species
+
+
+  [OPTIONAL]
+
+    --Rlibs          default = NULL: path to R libraries 
+    --pre            default = 'TEMP'; prefix for all output files
+    --diff.exp       default = T; run differential expression analysis
+    --GSA            default = T; run gene set analysis; if running GSA but not DESeq, BE SURE TO SET 
+                     {diff.exp.dir} (see below) to point to existing DESeq results directory.
+    --heatmaps       default = T; generate a heatmap for each comparison showing relative expression of the 
+                     top ~100 DE genes
+    --counts.dir     default = ./counts_gene
+    --clustering.dir default = ./clustering
+    --diff.exp.dir   default = ./differentialExpression_gene; if running DESeq, this is where 
+                     output will go; if NOT running DESeq, this is wherever DESeq results already 
+                     exist. Must be correct in order for GSA to run properly.
+    --gsa.dir        default = ./GSA
+    --no.replicates  default = F: T|F, automatically sets fitType, method, and sharingMode to 
+                     accomodate comparison of single samples
+    --min.abs.fc     default = 2: Fold change cutoff
+    --min.count      default = 15: minimum total reads required for a gene
+                     to be included in analysis
+    --fitType        default = 'parametric': ['parametric'|'local', See DESeq docs]
+    --orderPvalQ     default = T: T|F, sort final results by adjusted Pvalue
+    --method         default = 'per-condition': ['pooled'|'per-condition'|'blind']; See DESeq docs.
+    --sharingMode    default = 'maximum': ['maximum'|'fit-only'|'gene-est-only']; See DESeq docs.
+    --zeroaddQ       default = T: [T|F], include genes with zero counts in one condition even if 
+                     their pValues are insignificant
+    --libsizeQ       default = F: [T|F], normalize data using library size
+    --java           default = NULL: path to java for generating PDF report
+    --javacp         default = NULL: java class path for generating PDF report
+    --pdfjar         default = NULL: jar file for generating PDF report
+    --request        default = NULL: project request file for generating PDF report
+    \n\n")
 }
 
-cat(c("\n++++++++++++++++ BIC RNA-Seq Counts Analysis ++++++++++++++++\n\n"))
-
-pd = getwd()
 
 ################################################################################
 ####   Set defaults
 ################################################################################
-test              <- FALSE
+pd                <- getwd()
 counts.dir        <- file.path(pd,"counts_gene")
 clustering.dir    <- file.path(pd,"clustering")
 diff.exp.dir      <- file.path(pd,"differentialExpression_gene")
+all.gene.dir      <- file.path(pd,"all_gene")
 gsa.dir           <- file.path(pd,"GSA")
 gmt.dir           <- NULL
 max.p             <- 0.05
-lfc               <- 1   #0.57#log2(fc.cut)
-min.abs.fc        <- 2   #2^0.57
+lfc               <- 1   
+min.abs.fc        <- 2   
 min.count         <- 15
 percentile        <- "100%"
 fitType           <- "parametric"
@@ -90,369 +85,289 @@ heatmaps          <- T
 pre               <- "TEMP"
 
 key.file          <- NULL
+comp.file         <- NULL
 counts.file       <- NULL
 
 norm.counts       <- NULL
 cds               <- NULL
 mds.labels        <- FALSE
 Rlibs             <- NULL
- 
+
+java              <- NULL
+javacp            <- NULL
+pdfjar            <- NULL
+request           <- NULL
+svnrev            <- NULL 
+report            <- TRUE
 ################################################################################
 ####   get user input
 ################################################################################
-args=(commandArgs(TRUE))
 
-if(length(args)==0){
-    usage()
-    q()
+tmpargs <- commandArgs(trailingOnly = TRUE)
+
+if(any(grepl("Rlibs", tmpargs))){
+    Rlibs = tmpargs[grep("Rlibs$", tmpargs) + 1]
+    print(paste0("Loading libraries from ", Rlibs)) 
+    .libPaths(Rlibs)
+    suppressPackageStartupMessages(library(R.utils))
+    suppressPackageStartupMessages(library(logger))
+    log_threshold(DEBUG)
 }
+
+log_info(c("\n++++++++++++++++ BIC RNA-Seq Counts Analysis ++++++++++++++++\n\n"))
+
+## after loading R.utils, get command args again in list format
+args <- commandArgs(trailingOnly = TRUE, asValue = TRUE, adhoc = TRUE)
 for(i in 1:length(args)){
-print(args[i])
-    eval(parse(text=args[i]))
+    assign(names(args)[i], args[[i]]) 
 }
 
-if(!is.null(Rlibs)){
-  .libPaths(c(Rlibs,.libPaths()))
+log_debug(paste0("LD_LIBRARY_PATH  ", Sys.getenv("LD_LIBRARY_PATH")))
+log_debug(paste0("PATH             ", Sys.getenv("PATH")))
+
+log_debug(paste0("pre: ", pre))
+log_debug(paste0("counts.file: ", counts.file))
+log_debug(paste0("counts.dir: ", counts.dir))
+log_debug(paste0("clustering.dir: ", clustering.dir))
+log_debug(paste0("all.gene.dir: ", all.gene.dir))
+log_debug(paste0("diff.exp.dir: ", diff.exp.dir))
+log_debug(paste0("gsa.dir: ", gsa.dir))
+log_debug(paste0("gmt.dir: ", gmt.dir))
+log_debug(paste0("max.p: ", max.p))
+log_debug(paste0("lfc: ", lfc))
+log_debug(paste0("min.abs.fc: ", min.abs.fc))
+log_debug(paste0("min.count: ", min.count))
+log_debug(paste0("percentile: ", percentile))
+log_debug(paste0("fitType: ", fitType))
+log_debug(paste0("orderPvalQ: ", orderPvalQ))
+log_debug(paste0("method: ", method))
+log_debug(paste0("sharingMode: ", sharingMode))
+log_debug(paste0("zeroaddQ: ", zeroaddQ))
+log_debug(paste0("libsizeQ: ", libsizeQ))
+log_debug(paste0("no.replicates: ", no.replicates))
+log_debug(paste0("key: ", key))
+log_debug(paste0("conds: ", conds))
+log_debug(paste0("GSA: ", GSA))
+log_debug(paste0("diff.exp: ", diff.exp))
+log_debug(paste0("heatmaps: ", heatmaps))
+log_debug(paste0("key.file: ", key.file))
+log_debug(paste0("comp.file: ", comp.file))
+log_debug(paste0("java: ", java))
+log_debug(paste0("javacp: ", javacp))
+log_debug(paste0("pdfjar: ", pdfjar))
+log_debug(paste0("request: ", request))
+log_debug(paste0("svnrev: ", svnrev))
+log_debug(paste0("report: ", report))
+
+if(any(is.null(java), is.null(javacp), is.null(pdfjar), is.null(request), is.null(svnrev))){
+    log_warn("Missing parameter(s) needed to make PDF report is here. Turning 'report' OFF.\n")
+    log_warn("Parameters required for creating report:\n")
+    log_warn("    java, javacp, pdfjar, request, svnrev\n")
+    report <- FALSE
 }
 
-diff.exp.fig.dir  <- file.path(diff.exp.dir,"figures")
-diff.exp.rdat.dir <- file.path(diff.exp.dir,"Rdata")
-gsa.rdat.dir      <- file.path(gsa.dir,"Rdata")
-
-if(test){
-  ## run everything to test
-  counts.file <- system.file("extdata","htseq_counts.txt",package="bicrnaseq")
-  key.file <- system.file("extdata","sample_key.txt",package="bicrnaseq")
-  comps=c('GroupA - GroupB', 'GroupB - GroupC')
-  GSA=TRUE
-  species='human'
-}
-
-################################################################################
-####   validate input
-################################################################################
-if (!exists("counts.file")){
-    cat("Error: Please specify a counts file. See usage for details\n")
-    q()
-}
-if (!file.exists(counts.file)){
-    cat(c("Error: counts file",counts.file,"doesn't exist.\n"))
-    q()
-}
-if (exists("key.file") && !is.null(key.file) && !file.exists(key.file)){
-    cat(c("Error: key file",key.file,"doesn't exist.\n"))
-    q()
-}
-if (GSA && exists("key.file") && exists("comps") && !exists("species")){
-    cat ("Error: Gene set analysis is turned ON. Please either turn it OFF or specify which species this data is from\n")
-    q()
-}
-
-################################################################################
-####   only load lib if input is valid
-################################################################################
-cat("Loading bicrnaseq library...")
+log_info("Loading bicrnaseq library...")
 source(file.path(bin, "bicrnaseqR/source_bicrnaseq.R"))
-cat("Done.\n")
+log_info("Done.\n")
 
-################################################################################
-## if key file is given, create key 
-## and check for replicates
-################################################################################
-#key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
-dir.create(diff.exp.dir,showWarnings=FALSE,mode="0755")
-dir.create(diff.exp.fig.dir,showWarnings=FALSE,mode="0755")
-dir.create(diff.exp.rdat.dir,showWarnings=FALSE,mode="0755")
+## do some validation
+if(GSA && (!is.character(species) || is.null(species) || 
+             (is.character(species) && 
+                !species %in% c("human", "mouse", "hg19", "b37", "mm10", "hybrid")))){
+    log_warn("Invalid or missing species (GSA only supported for human and mouse). Turning off GSA.\n")
+    GSA <- FALSE
+    gsa.dir <- NULL
+}
+if(!diff.exp){ diff.exp.dir = NULL }
 
-if(exists("key.file") && !is.null(key.file)){
-    key = as.matrix(read.delim(key.file,header=F,strip.white=T,sep="\t"))
-    ##remove samples to be excluded
-    ex = grep("_EXCLUDE_",key[,2])
-    if(length(ex)>0){
-        key = key[-ex,]
+## For now, automatically search working directory for 'sample_key*.txt' and 'comparisons*.txt';
+## In the future, possibly provide a single key file that will contain a table where each
+## column contains exactly two unique values that represent groups to be compared
+keysAndComps <- bic.get.keys.and.comparisons(pre, path = ".") 
+compSetNums  <- lapply(keysAndComps$keys, function(x) !is.null(x)) %>% unlist() %>% which()
+multi.comps  <- length(keysAndComps$keys) > 1 || !1 %in% compSetNums 
+
+out.dirs <- bic.setup.directories(counts.dir, clustering.dir,
+                                  all.gene.dir = all.gene.dir, 
+                                  diff.exp.dir = diff.exp.dir, 
+                                  gsa.dir = gsa.dir, 
+                                  multi.comps = multi.comps, 
+                                  comp.set.nums = compSetNums) 
+
+nc <- min(detectCores()/2, 6, length(keysAndComps$keys))
+cl <- makeCluster(nc, type = "FORK", outfile = "")
+clusterExport(cl, 
+              c('pre', 'keysAndComps', 'out.dirs', 'diff.exp', 'GSA', 'counts.file', 
+                'min.count', 'min.abs.fc', 'libsizeQ', 'zeroaddQ', 'percentile',
+                'fitType', 'mds.labels', 'method', 'sharingMode', 'orderPvalQ',
+                'heatmaps', 'report', 
+                'java', 'javacp', 'pdfjar', 'request', 'svnrev'), 
+              envir = environment())
+
+errorsThrown <<- FALSE
+
+parLapply(cl, compSetNums, function(compSet){
+
+    log_info(paste0("Analyzing comparison set [", compSet, "]\n"))
+    log <- file.path(dirname(out.dirs[[compSet]]$DEdir), paste0("comparisons_", compSet, ".log"))
+    log_info(paste0("Output to be captured in log file [", log, "]\n"))
+    lf <- file(log)
+    sink(lf, type = "output")
+    sink(lf, type = "message") 
+
+    key   <- keysAndComps$keys[[compSet]]
+    comps <- keysAndComps$comparisons[[compSet]]
+    conds <- key$Group
+
+    ## format counts
+    formatted.counts <- bic.format.htseq.counts(counts.file, key=key)
+
+    ## if no conditions given, create a vector of one mock condition, 
+    ## needed for normalization
+    if(ncol(key) < 2 || is.null(conds)){
+        conds <- rep("s", ncol(formatted.counts$raw))
+        mds.labels <- TRUE
     }
+
+    ## get DESeq countDataSet
+    cds <- bic.get.deseq.cds(formatted.counts$raw,
+                             conds,
+                             min.count = min.count,
+                             libsizeQ = libsizeQ,
+                             percentile = percentile,
+                             fitType = fitType,
+                             method = method,
+                             sharingMode = sharingMode)
+
+    if(is.null(cds)){
+        log_info("\nZERO RESULTS\n")
+        bic.write.all.empty.results(comps, out.dirs[[compSet]]$DEdir)
+        next
+    }
+
+    log_info("Running clustering and QC...")
+    bic.deseq.qc(cds, out.dirs[[compSet]]$clusterDir)
+    log_info("Done.\n")
+
+    log_info("Writing normalized counts to file...")
+    norm.counts <- bic.deseq.normalize.htseq.counts(formatted.counts = formatted.counts, 
+                                                    cds = cds, 
+                                                    key = key) 
+    file.name <- file.path(out.dirs[[compSet]]$countsDir, paste0(pre, "_counts_scaled_DESeq.xlsx"))
+    bic.write.normalized.counts.file(norm.counts$scaled, file.name)
+    log_info("Done.\n")
+
+    if(!is.null(norm.counts$scaled)){
+        log_info("Clustering all samples...")
+        bic.standard.clustering(norm.counts$scaled, 
+                                out.dirs[[compSet]]$clusterDir, 
+                                conds, 
+                                mds.labels = mds.labels, 
+                                pre = pre)
+        log_info("Done.\n")
+    } else {
+       log_info("ERROR: Can not find normalized counts matrix. Can not cluster samples or run DESeq.\n")
+        next
+    }
+
     
-    key[,1] = make.names(key[,1])
-    conds=key[,2]
-    
-    t=table(conds)
-    for(cond in conds){
-        if(t[names(t)==cond]<2){
-            cat(c("No replicates found for condition \"",
-                  cond,"\". Setting no.replicates=TRUE\n"))
-            no.replicates=TRUE
+    if(diff.exp == T){
+
+        log_info("Running differential expression analysis...\n")
+        all_results <- list(norm.counts = norm.counts$scaled,
+                            cds = cds)
+
+        for (comp in comps){
+            compName <- paste(unlist(strsplit(comp, " - "))[2:1], collapse = "_vs_")
+
+            all_results[[compName]] <- list()
+            if(file.exists(file.path(dirname(out.dirs[[compSet]]$countsDir), "all_results.rda"))){
+                all_results <- readRDS(file.path(dirname(out.dirs[[compSet]]$countsDir), "all_results.rda"))
+            }
+
+            if(is.null(all_results[[compName]]$DE)){
+                all_results[[compName]]$DE <- 
+                     tryCatch({
+                         bic.complete.de.analysis(cds, 
+                                                  norm.counts$scaled, 
+                                                  conds, 
+                                                  out.dirs[[compSet]]$allGeneDir,
+                                                  out.dirs[[compSet]]$DEdir,
+                                                  out.dirs[[compSet]]$DEfigDir,
+                                                  condA       = gsub(".*_vs_", "", compName), 
+                                                  condB       = gsub("_vs_.*", "", compName),
+                                                  max.p       = max.p,
+                                                  min.abs.fc  = min.abs.fc,
+                                                  min.count   = min.count,
+                                                  zeroaddQ    = zeroaddQ,
+                                                  orderPvalQ  = orderPvalQ, 
+                                                  geneSymbols = norm.counts$ids,
+                                                  heatmaps = heatmaps)
+                   }, error = function(e){
+                       print(e)
+                       log_error("\nERROR running DESeq\n")
+                       errorsThrown <- TRUE
+                  })
+            }
+
+            if(is.null(all_results[[compName]]$DE)){ next }
+
+            if(GSA){
+                if(is.null(all_results[[compName]]$GSA)){
+                    log_info("Running GSA...\n")
+                    fcCol <- paste0("log2[", gsub("_vs_", "/", compName), "]")
+                    allRes <- all_results[[compName]]$DE$all.res %>% filter(!is.na(!!as.name(fcCol)))
+                    all_results[[compName]]$GSA <- 
+                        tryCatch({
+                            bic.complete.gsa.analysis(allRes,
+                                                      compName, 
+                                                      species,                          
+                                                      gmt.dir, 
+                                                      out.dirs[[compSet]]$GSAdir)
+                          }, error = function(e){
+                            print(e)
+                            log_error("\nError running GSA")
+                            errorsThrown <- TRUE
+                       })
+                    log_info("Done.\n")
+                } else {
+                    log_info("GSA is turned OFF.")
+                }
+            }
+
+            ## save after every comparison is complete
+            saveRDS(all_results, file.path(dirname(out.dirs[[compSet]]$countsDir), "all_results.rda"))
+
         }
-    }
 
-} else {
-    key = NULL
-}
-
-
-## format counts
-formatted.counts <- bic.format.htseq.counts(counts.file,key=key)
-
-## if no conditions given, create a vector of one mock condition, 
-## needed for normalization
-if(is.null(conds)){
-  conds <- rep("s",length(colnames(formatted.counts$raw)))
-  mds.labels <- TRUE
-} else if(length(colnames(formatted.counts$raw)) < 20){
-  mds.labels <- TRUE
-}
-
-## get DESeq countDataSet
-cds <- bic.get.deseq.cds(formatted.counts$raw,
-                         conds,
-                         min.count = min.count,
-                         libsizeQ = libsizeQ,
-                         percentile = percentile,
-                         fitType = fitType,
-                         method = method,
-                         sharingMode = sharingMode)
-if(is.null(cds)){
-  for(c in comps){
-      condA <- unlist(strsplit(c, " - "))[1]
-      condB <- unlist(strsplit(c, " - "))[2]
-      file.name <- paste(diff.exp.dir,
-                         paste("ResDESeq_",condB,"_vs_",condA,".xls",sep=""),
-                         sep="/")
-      file.name2 <- gsub("Res","ALLRes",file.name)
-      cat("\nZERO RESULTS\n")
-      res <- as.data.frame(matrix(NA, nrow=1, ncol=6))
-      names(res) = c("GeneID","GeneSymbol", "P.adj",
-                  paste("log2[",condB,"/",condA,"]",sep=""),
-                  paste("Mean_at_cond_",condA, sep=""),
-                  paste("Mean_at_cond_",condB, sep=""))
-      write_csv(res, file.name)
-      write_csv(res, file.name2)
-  }
-  quit(save="no", status=0)
-}
-save(cds,file=file.path(diff.exp.rdat.dir,"cds.Rdata"),compress=TRUE)
-
-################################################################################
-####                           clustering & QC                              ####
-################################################################################
-cat("Running clustering and QC...")
-setwd(pd)
-
-tmp <- tryCatch({
-         capture.output(
-          suppressMessages(
-           bic.deseq.heatmap(cds,
-                             file=file.path(clustering.dir,
-                                            paste0(pre,"_heatmap_50_most_highly_expressed_genes.pdf")),
-                             transform=TRUE,
-                             num.gns=50)
-         )
-       )
-      }, error = function(e){
-           print("WARNING: There was an error while creating heatmap of the 50 most highly expressed genes.")
-      })
-tmp <- tryCatch({
-         capture.output(
-          suppressMessages(
-           bic.sample.to.sample.distances(cds,
-                   conds,
-                   file=file.path(sub("/$","",clustering.dir),paste0(pre,"_heatmap_sample_to_sample_distances.pdf"))
-           )
-         )
-       )
-      }, error = function(e){
-           print("WARNING: There was an error while creating heatmap of sample to sample distances")
-      })
-tmp <- tryCatch({
-         capture.output(
-          suppressMessages(
-           bic.deseq.plot.pca(cds,
-                              file=file.path(clustering.dir,paste0(pre,"_PCA.pdf"))
-           )
-         )
-       )
-      }, error = function(e){
-           print("WARNING: There was an error while creating PCA plot.")
-      })
-tmp <- tryCatch({
-         capture.output(
-          suppressMessages(
-           bic.plot.dispersion.estimates(cds,
-                                         out.dir=clustering.dir,file.prefix=pre)))
-       }, error = function(e){
-           print("WARNING: There was an error while creating dispersion estimate plot.")
-       })
-cat("Done.\n")
-
-
-################################################################################
-####                  Normalize raw HTSeq counts (always)                   ####
-################################################################################
-setwd(pd)
-dir.create(counts.dir,showWarnings=FALSE,mode="0755")
-## normalize and format counts
-norm.counts <- bic.deseq.normalize.htseq.counts(formatted.counts=formatted.counts, cds=cds, key=key) 
-norm.counts.mat <- norm.counts$scaled
-counts.raw <- norm.counts$raw
-counts.ids <- norm.counts$ids
-
-cat("Writing normalized counts to file...")
-file.name <- paste(counts.dir,"counts_scaled_DESeq.xls",sep="/")
-dat <- cbind(counts.ids,norm.counts.mat)
-bic.write.normalized.counts.file(dat,file.name)
-cat("Done.\n")
-
-################################################################################
-####                         Cluster samples (always)                       ####
-################################################################################
-setwd(pd)
-if(exists("norm.counts.mat") && !is.null("norm.counts.mat")){
-
-  cat("Clustering all samples...")
-  file.name <- file.path(clustering.dir,paste0(pre,"_counts_scaled_hclust.pdf"))
-  tryCatch({
-      bic.hclust.samples(norm.counts.mat,file.name=file.name,conds=conds,title="All counts scaled using DESeq method")
-    }, error = function(err){
-      conditionMessage(err)
-    })
-  file.name <- file.path(clustering.dir,paste0(pre,"_counts_scaled_MDS.pdf"))
-  bic.mds.clust.samples(norm.counts.mat,file=file.name,conds=conds,labels=mds.labels)
-  cat("Done.\n")
-} else {
-  cat("ERROR: Can not find normalized counts matrix. Can not cluster samples.\n")
-}
-
-################################################################################
-####        run differential expression analysis if comps and key given     ####
-################################################################################
-all_results <- list()
-all_results$norm.counts <- norm.counts
-all_results$cds <- cds
-all_results$de <- list()
-
-if(diff.exp == T){
-  if(exists("comps") && !is.null(comps) && !is.null(key)){
-
-    setwd(pd)
-    if(GSA){
-      dir.create(gsa.dir,showWarnings=FALSE,mode="0755")
-      dir.create(gsa.rdat.dir,showWarnings=FALSE,mode="0755")
-    }
-
-    cat("Running differential expression analysis...\n")
-
-    #load("/ifs/work/byrne/pipelines/rnaseq_pipeline/all_DE_results.Rdata")
-
-    for (comp in comps){
-      condA = unlist(strsplit(comp," - "))[1]
-      condB = unlist(strsplit(comp," - "))[2]
-      conds = key[grep(paste(condA,condB,sep="|"),key[,2]),2]
-
-      ## run DESeq comparison
-      cat(paste("  Comparing: ",condA," vs ",condB,"...", sep="") )
-      de.res <- bic.run.deseq.comparison(cds, conds, condA, condB,
-                                         max.p = max.p, 
-                                         min.abs.fc = min.abs.fc, 
-                                         min.count = min.count, 
-                                         zeroaddQ = zeroaddQ, 
-                                         genes = counts.ids)
-      cat("Done.\n")
-
-      all_results$de[[paste(condA,"_vs_",condB,sep="")]] <- de.res
-
-      #de.res <- all_results$de[[paste(condA,"_vs_",condB,sep="")]]
-
-      ##
-      ## DESeq visualization
-      ##
-      cat("    Drawing DESeq plots...")
-      bic.plot.ma(de.res$DESeq,
-                  file=file.path(diff.exp.fig.dir,
-                                 paste0(pre,"_MAplot_",condA,"_vs_",condB,".pdf")
-                       )
-                 )
-      bic.pval.histogram(de.res$DESeq,
-                         file=file.path(diff.exp.fig.dir,
-                                        paste0(pre,"_pval_histogram_",condA,"_vs_",condB,".pdf",sep="")
-                              )      
-                        )
-      cat("Done.\n")
-      ##
-      ## format and write DE results to file
-      ##
-      cat("    Writing results for DE genes to file...")
-      file.name <- paste(diff.exp.dir,
-                         paste("ResDESeq_",condB,"_vs_",condA,".xls",sep=""),
-                         sep="/")
-      if(is.null(de.res$filtered)){
-          cat(paste0("\n    ZERO RESULTS AFTER FILTERING\n  "))
-          write(paste(c("GeneID","GeneSymbol", "P.adj",
-                      paste("log2[",condB,"/",condA,"]",sep=""),
-                      paste("Mean_at_cond_",condA, sep=""),
-                      paste("Mean_at_cond_",condB, sep="")),collapse="\t"),file=file.name,append=FALSE)
-      } else {
-          bic.write.deseq.results(de.res$filtered,file.name=file.name,orderPvalQ=orderPvalQ)
-          cat("Done.\n")
-      }
-      ##
-      ## write All DE results to file
-      ##
-      cat("    Writing results for ALL genes to file...")
-      file.name <- paste(diff.exp.dir,
-                         paste("ALLResDESeq_",condB,"_vs_",condA,".xls",sep=""),
-                         sep="/")
-      if(is.null(de.res$all.res)){
-          cat(paste0("\n    ZERO RESULTS GENERATED BY DESEQ\n  "))
-          write(paste(c("GeneID","GeneSymbol", "P.adj",
-                      paste("log2[",condB,"/",condA,"]",sep=""),
-                      paste("Mean_at_cond_",condA, sep=""),
-                      paste("Mean_at_cond_",condB, sep="")),collapse="\t"),file=file.name,append=FALSE)
-      } else {
-          bic.write.deseq.results(de.res$all.res,file.name=file.name,orderPvalQ=orderPvalQ)
-          cat("Done.\n")
-      }
-      ##
-      ## heatmap of top DE genes
-      ##
-      if(heatmaps & !is.null(de.res$filtered) & length(rownames(de.res$filtered)) > 0){
-        genes <- de.res$DEgenes
-        out.file <- file.path(diff.exp.fig.dir,
-                              paste(pre,"_heatmap_",condA,"_vs_",condB,".pdf",sep="")
-                    )
-        tryCatch({
-            bic.standard.heatmap(norm.counts.mat,condA,condB,genes=genes,file=out.file)
-          }, error = function(e){
-              warning(paste0("Could not generate heatmap for ",condA," vs ",condB))
-          })
-      }
-
-      ##
-      ## gene set analysis
-      ##
-      if(GSA){
-        if(exists("species") & !is.null(species)){
-          gsa.res <- bic.run.gsa(species,de.res$all.res,gmt.dir) 
-          if(!is.null(gsa.res$dn)){
-            out.file <- file.path(gsa.dir,
-                              paste("GeneSet_Dn_",condB,"_vs_",condA,".xls",sep="")
-                        )
-            bic.write.dat(gsa.res$dn,file=out.file)
-          }
-          if(!is.null(gsa.res$up)){
-            out.file <- file.path(gsa.dir,
-                              paste("GeneSet_Up_",condB,"_vs_",condA,".xls",sep="")
-                        )
-            bic.write.dat(gsa.res$up,file=out.file)
-          }
-          all_results$gsa[[paste(condA,"_vs_",condB,sep="")]] <- gsa.res
+        if(report){
+            log_info("Making DESeq PDF report...")
+            tryCatch({
+                system(paste(java, "-cp", javacp, "-jar", pdfjar,
+                             "-rf", request,
+                             "-v", svnrev,
+                             "-cd", out.dirs[[compSet]]$clusterDir,
+                             "-df", out.dirs[[compSet]]$DEfigDir,
+                             "-o", out.dirs[[compSet]]$DEdir))
+                log_info("Done.\n")
+              }, error = function(e){
+                print(e)
+                log_error("ERROR making DESeq PDF report.")
+                errorsThrown <- TRUE
+            })
         }
-      }
-    }
-    #save(all_results,file=file.path(diff.exp.rdat.dir,"all_DE_results.Rdata"),compress=T)
-  } else{
-     cat("No sample key or comparisons found. Can not run differential 
-          expression analysis.\n")
-  }
-} else {
-    cat("Differential expression analysis is turned OFF.\n")
-}
 
+    } else {
+        log_info("Differential expression is OFF. No DE and no GSA analysis to run.")
+    }
+    sink(type = "output")
+    sink(type = "message")
+}) ## end for compSet in allcomp sets
+
+stopCluster(cl)
+
+if(errorsThrown){
+    stop("One or more errors were thrown during analysis. See comparisons_*.log for details")
+} else {
+    log_info("All analyses complete.")
+}

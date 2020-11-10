@@ -1,0 +1,41 @@
+Package: S4Vectors
+Title: Foundation of vector-like and list-like containers in
+        Bioconductor
+Description: The S4Vectors package defines the Vector and List virtual classes
+	and a set of generic functions that extend the semantic of ordinary
+	vectors and lists in R. Package developers can easily implement
+	vector-like or list-like objects as concrete subclasses of Vector or
+	List. In addition, a few low-level concrete subclasses of general
+	interest (e.g. DataFrame, Rle, and Hits) are implemented in the
+	S4Vectors package itself (many more are implemented in the IRanges
+	package and in other Bioconductor infrastructure packages).
+Version: 0.26.1
+Encoding: UTF-8
+Author: H. Pagès, M. Lawrence and P. Aboyoun
+Maintainer: Bioconductor Package Maintainer <maintainer@bioconductor.org>
+biocViews: Infrastructure, DataRepresentation
+Depends: R (>= 3.3.0), methods, utils, stats, stats4, BiocGenerics (>=
+        0.31.1)
+Suggests: IRanges, GenomicRanges, SummarizedExperiment, Matrix,
+        DelayedArray, ShortRead, graph, data.table, RUnit, BiocStyle
+License: Artistic-2.0
+Collate: S4-utils.R show-utils.R utils.R normarg-utils.R bindROWS.R
+        LLint-class.R isSorted.R subsetting-utils.R vector-utils.R
+        integer-utils.R character-utils.R raw-utils.R eval-utils.R
+        map_ranges_to_runs.R DataTable-class.R Annotated-class.R
+        Vector-class.R Vector-comparison.R Vector-setops.R
+        Vector-merge.R Hits-class.R Hits-comparison.R Hits-setops.R
+        Rle-class.R Rle-utils.R Factor-class.R List-class.R
+        List-comparison.R splitAsList.R List-utils.R SimpleList-class.R
+        HitsList-class.R DataFrame-class.R DataFrame-comparison.R
+        TransposedDataFrame-class.R Pairs-class.R expand-methods.R
+        FilterRules-class.R aggregate-methods.R shiftApply-methods.R
+        zzz.R
+git_url: https://git.bioconductor.org/packages/S4Vectors
+git_branch: RELEASE_3_11
+git_last_commit: 935769c
+git_last_commit_date: 2020-05-15
+Date/Publication: 2020-05-16
+NeedsCompilation: yes
+Packaged: 2020-05-17 00:49:58 UTC; biocbuild
+Built: R 4.0.0; x86_64-pc-linux-gnu; 2020-10-06 19:56:37 UTC; unix

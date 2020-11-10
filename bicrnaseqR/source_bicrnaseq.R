@@ -1,5 +1,6 @@
-#! /opt/common/CentOS_6/R/R-3.2.0/bin/R
+#! /opt/common/CentOS_6/R/R-4.0.0 
 
+suppressPackageStartupMessages(library(parallel))
 suppressPackageStartupMessages(library(rlang))
 suppressPackageStartupMessages(library(lattice))
 suppressPackageStartupMessages(library(locfit))
@@ -18,9 +19,8 @@ suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(gridExtra))
 suppressPackageStartupMessages(library(scales))
 suppressPackageStartupMessages(library(GSA))
-
-
-#suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(openxlsx))
 
 source(file.path(bin,"bicrnaseqR/bic_analyze_counts.R"))
 source(file.path(bin,"bicrnaseqR/bic_plots.R"))

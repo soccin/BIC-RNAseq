@@ -1,0 +1,28 @@
+Package: marray
+Version: 1.66.0
+Date: 2009-08-15
+Title: Exploratory analysis for two-color spotted microarray data
+Author: Yee Hwa (Jean) Yang <jeany@maths.usyd.edu.au> with contributions
+        from Agnes Paquet and Sandrine Dudoit.
+Depends: R (>= 2.10.0), limma, methods
+Suggests: tkWidgets
+Maintainer: Yee Hwa (Jean) Yang <jean@biostat.ucsf.edu>
+Description: Class definitions for two-color spotted microarray data.
+        Fuctions for data input, diagnostic plots, normalization and
+        quality checking.
+License: LGPL
+URL: http://www.maths.usyd.edu.au/u/jeany/
+biocViews: Microarray, TwoChannel, Preprocessing
+Collate: maClasses.R maGet.R maSet.R maPrint.R maSubset.R maBind.R
+        maComp.R maDots.R maInput.R maNorm.R maOutput.R maWidget.R
+        maPlots.R maAnnotate.R maRankGenes.R maSMA.R maSearch.R
+        maWrap.R
+LazyLoad: yes
+git_url: https://git.bioconductor.org/packages/marray
+git_branch: RELEASE_3_11
+git_last_commit: 6f46d91
+git_last_commit_date: 2020-04-27
+Date/Publication: 2020-04-27
+NeedsCompilation: no
+Packaged: 2020-04-27 23:43:46 UTC; biocbuild
+Built: R 4.0.0; ; 2020-11-02 16:21:45 UTC; unix

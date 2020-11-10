@@ -1,0 +1,66 @@
+---
+title: "Introduction to logger"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to logger}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+If you are not only using R in the interactive console for ad-hoc data analysis, but running eg batch jobs (for ETL, reporting, modeling, forecasting etc) as well, then logging the status(changes) of your script is a must so that later on you can review / debug what have happened.
+
+For most cases, it's enough to load the package and use the functions with the `log` prefix to log important and not so important messages, for example:
+
+```{r}
+library(logger)
+log_info('Loading data')
+data(mtcars)
+log_info('The dataset includes {nrow(mtcars)} rows')
+if (max(mtcars$hp) < 1000) {
+    log_warn('Oh, no! There are no cars with more than 1K horsepower in the dataset :/')
+    log_debug('The most powerful car is {rownames(mtcars)[which.max(mtcars$hp)]} with {max(mtcars$hp)} hp')
+}
+```
+
+Interestingly, the most powerful car was not being logged -- because by default the `logger` prints messages with at least the `INFO` log level:
+
+```{r}
+log_threshold()
+```
+
+To change that, specify the new log level threshold, eg `TRACE` to log everything:
+
+```{r}
+log_threshold(TRACE)
+```
+
+The rerunning the above code chunk:
+
+```{r}
+log_info('Loading data')
+data(mtcars)
+log_info('The dataset includes {nrow(mtcars)} rows')
+if (max(mtcars$hp) < 1000) {
+    log_warn('Oh, no! There are no cars with more than 1K horsepower in the dataset :/')
+    log_debug('The most powerful car is {rownames(mtcars)[which.max(mtcars$hp)]} with {max(mtcars$hp)} hp')
+}
+```
+
+You may also find the `?log_eval` function useful to log both an R expression and its result in the same log record:
+
+```{r}
+f <- sqrt
+g <- mean
+x <- 1:31
+log_eval(y <- f(g(x)), level = INFO)
+str(y)
+```
+
+For more details, check the [function reference in the manual](https://daroczig.github.io/logger/reference/index.html), or start with the [The Anatomy of a Log Request](https://daroczig.github.io/logger/articles/anatomy.html) and [Customizing the Format and the Destination of a Log Record](https://daroczig.github.io/logger/articles/customize_logger.html) vignettes.

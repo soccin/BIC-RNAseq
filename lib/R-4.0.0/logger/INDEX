@@ -1,0 +1,46 @@
+FATAL                   Log levels
+appender_console        Append log record to stdout
+appender_file           Append log messages to a file
+appender_pushbullet     Send log messages to Pushbullet
+appender_slack          Send log messages to a Slack channel
+appender_tee            Append log messages to a file and stdout as
+                        well
+colorize_by_log_level   Colorize string by the related log level
+formatter_glue          Apply 'glue' to convert R objects into a
+                        character vector
+formatter_glue_or_sprintf
+                        Apply 'glue' and 'sprintf'
+formatter_logging       Mimic the default formatter used in the
+                        'logging' package
+formatter_paste         Concatenate R objects into a character vector
+                        via 'paste'
+formatter_sprintf       Apply 'sprintf' to convert R objects into a
+                        character vector
+get_logger_meta_variables
+                        Collect useful information about the logging
+                        environment to be used in log messages
+grayscale_by_log_level
+                        Render a string with light/dark gray based on
+                        the related log level
+layout_glue             Format a log message with 'glue'
+layout_glue_colors      Format a log message with 'glue' and ANSI
+                        escape codes to add colors
+layout_glue_generator   Generate log layout function using common
+                        variables available via glue syntax
+layout_json             Generate log layout function rendering JSON
+layout_logging          Format a log record as the logging package does
+                        by default
+layout_simple           Format a log record by concatenating the log
+                        level, timestamp and message
+log_appender            Get or set log record appender function
+log_eval                Evaluate an expression and log results
+log_formatter           Get or set log message formatter
+log_layout              Get or set log record layout
+log_level               Log a message with given log level
+log_threshold           Get or set log level threshold
+logger                  Generate logging utility
+skip_formatter          Adds the skip_formatter attribute to an object
+                        so that logger will skip calling the formatter
+                        function on the object(s) to be logged
+with_log_threshold      Evaluate R expression with a temporarily
+                        updated log level threshold

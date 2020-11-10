@@ -1,0 +1,38 @@
+Package: fgsea
+Title: Fast Gene Set Enrichment Analysis
+Version: 1.14.0
+Authors@R: c(person("Gennady", "Korotkevich", role = "aut"),
+             person("Vladimir", "Sukhov", role = "aut"),
+			 person("Alexey", "Sergushichev", email = "alsergbox@gmail.com", role = c("aut", "cre")))
+Description: The package implements an algorithm for fast gene set enrichment
+    analysis. Using the fast algorithm allows to make more permutations and get
+    more fine grained p-values, which allows to use accurate stantard approaches to
+    multiple hypothesis correction.
+biocViews: GeneExpression, DifferentialExpression, GeneSetEnrichment,
+        Pathways
+SystemRequirements: C++11
+Depends: R (>= 3.3)
+Imports: Rcpp, data.table, BiocParallel, stats, ggplot2 (>= 2.2.0),
+        gridExtra, grid, fastmatch, Matrix, utils
+Suggests: testthat, knitr, rmarkdown, reactome.db, AnnotationDbi,
+        parallel, org.Mm.eg.db, limma, GEOquery
+License: MIT + file LICENCE
+LazyData: true
+LinkingTo: Rcpp, BH
+RoxygenNote: 7.0.2
+Encoding: UTF-8
+VignetteBuilder: knitr
+URL: https://github.com/ctlab/fgsea/
+BugReports: https://github.com/ctlab/fgsea/issues
+git_url: https://git.bioconductor.org/packages/fgsea
+git_branch: RELEASE_3_11
+git_last_commit: 6389c58
+git_last_commit_date: 2020-04-27
+Date/Publication: 2020-04-27
+NeedsCompilation: yes
+Packaged: 2020-04-28 02:29:36 UTC; biocbuild
+Author: Gennady Korotkevich [aut],
+  Vladimir Sukhov [aut],
+  Alexey Sergushichev [aut, cre]
+Maintainer: Alexey Sergushichev <alsergbox@gmail.com>
+Built: R 4.0.0; x86_64-pc-linux-gnu; 2020-11-02 17:41:10 UTC; unix
