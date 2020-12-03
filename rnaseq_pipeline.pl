@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript);
+my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript, $alignment_only);
 
 $pre = 'TEMP';
 $output = "results";
@@ -84,7 +84,8 @@ GetOptions ('map=s' => \$map,
 	    'r2adaptor=s' => \$r2adaptor,
  	    'priority_project=s' => \$priority_project,
  	    'priority_group=s' => \$priority_group,
-            'lincrna_BROAD' => \$lincrna_BROAD) or exit(1);
+            'lincrna_BROAD' => \$lincrna_BROAD,
+            'alignment_only' =>\$alignment_only) or exit(1);
 
 
 if(!$map || !$species || !$strand || !$config || !$request || $help){
@@ -1064,7 +1065,10 @@ foreach my $sample (keys %samp_libs_run){
 	    $reorderj = "$pre\_$uID\_REORDER_$sample";
 	    $ran_reorder = 1;
             push @thro_jids, $reorderj;
+            push @syncJobs, $reorderj;
 	}
+
+        next if($alignment_only);
 	
 	if($cufflinks){
 	    `/bin/mkdir -m 775 -p $output/cufflinks`;
@@ -1269,7 +1273,10 @@ my $standardParams = Schedule::queuing(%stdParams);
 	    $staraddrgj = "$pre\_$uID\_STAR_AORRG_$sample";
 	    $ran_staraddrg = 1;
             push @staraddrg_jids, $staraddrgj;
+            push @syncJobs, $staraddrgj;
 	}
+
+        next if($alignment_only);
 
 	if($cufflinks){
 	    `/bin/mkdir -m 775 -p $output/cufflinks`;
@@ -2286,6 +2293,7 @@ if($r1adaptor){
 }
 close LOG;
 
+
 my $sj = join(",", @syncJobs);
 my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSYNC", job_hold => "$sj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSYNC_3.log");
 my $standardParams = Schedule::queuing(%stdParams);
@@ -2294,7 +2302,6 @@ my $additionalParams = Schedule::additionalParams(%addParams);
 $ENV{'LSB_JOB_REPORT_MAIL'} = 'Y';
 `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams /usr/bin/rsync -azvP --exclude 'intFiles' --exclude 'progress' $curDir $rsync`;
 `/bin/touch $output/progress/$pre\_$uID\_RSYNC.done`;
-
 
 
 sub verifyConfig{

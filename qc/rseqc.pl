@@ -71,19 +71,19 @@ while(<CONFIG>){
     my @conf = split(/\s+/, $_);
     if($conf[0] =~ /^python$/i){
         if(!-e "$conf[1]/python"){
-            die "CAN'T FIND PYTHON IN $conf[1] $!";
+        #    die "CAN'T FIND PYTHON IN $conf[1] $!";
         }
         $PYTHON = $conf[1];
     }
     elsif($conf[0] =~ /singularity/i){
         if(!-e "$conf[1]/singularity"){
-            die "CAN'T FIND singularity IN $conf[1] $!";
+        #    die "CAN'T FIND singularity IN $conf[1] $!";
         }
         $SINGULARITY = $conf[1];
     }
     elsif($conf[0] =~ /^r$/i){
         if(!-e "$conf[1]/R"){
-            die "CAN'T FIND R IN $conf[1] $!";
+        #    die "CAN'T FIND R IN $conf[1] $!";
         }
         $singularityenv_prepend_path .= ":$conf[1]";
     }
