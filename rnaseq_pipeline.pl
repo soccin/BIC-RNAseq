@@ -1719,6 +1719,12 @@ my $standardParams = Schedule::queuing(%stdParams);
     }
 }
 
+if($alignment_only) {
+    &rsyncJob();
+    exit(0);
+}
+
+
 my $ran_shmatrix = 0;
 my $shmatrixj = '';
 my $ran_deseq = 0;
@@ -2294,14 +2300,20 @@ if($r1adaptor){
 close LOG;
 
 
-my $sj = join(",", @syncJobs);
-my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSYNC", job_hold => "$sj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSYNC_3.log");
-my $standardParams = Schedule::queuing(%stdParams);
-my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1", mail => "$email");
-my $additionalParams = Schedule::additionalParams(%addParams);
-$ENV{'LSB_JOB_REPORT_MAIL'} = 'Y';
-`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams /usr/bin/rsync -azvP --exclude 'intFiles' --exclude 'progress' $curDir $rsync`;
-`/bin/touch $output/progress/$pre\_$uID\_RSYNC.done`;
+&rsyncJob();
+
+
+
+sub rsyncJob{
+    my $sj = join(",", @syncJobs);
+    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSYNC", job_hold => "$sj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_RSYNC_3.log");
+    my $standardParams = Schedule::queuing(%stdParams);
+    my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1", mail => "$email");
+    my $additionalParams = Schedule::additionalParams(%addParams);
+    $ENV{'LSB_JOB_REPORT_MAIL'} = 'Y';
+    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams /usr/bin/rsync -azvP --exclude 'intFiles' --exclude 'progress' $curDir $rsync`;
+    `/bin/touch $output/progress/$pre\_$uID\_RSYNC.done`;
+}
 
 
 sub verifyConfig{
