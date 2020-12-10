@@ -188,10 +188,10 @@ compSetNums  <- lapply(keysAndComps$keys, function(x) !is.null(x)) %>% unlist() 
 multi.comps  <- length(keysAndComps$keys) > 1 || !1 %in% compSetNums 
 
 out.dirs <- bic.setup.directories(counts.dir, clustering.dir,
-                                  all.gene.dir = all.gene.dir, 
-                                  diff.exp.dir = diff.exp.dir, 
-                                  gsa.dir = gsa.dir, 
-                                  multi.comps = multi.comps, 
+                                  all.gene.dir  = all.gene.dir, 
+                                  diff.exp.dir  = diff.exp.dir, 
+                                  gsa.dir       = gsa.dir, 
+                                  multi.comps   = multi.comps, 
                                   comp.set.nums = compSetNums) 
 
 nc <- min(detectCores()/2, 6, length(keysAndComps$keys))

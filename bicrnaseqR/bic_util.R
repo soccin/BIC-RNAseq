@@ -130,6 +130,7 @@ bic.setup.comparisons.from.standard.files <- function(keyFile, compFile){
 
     key   <- read.csv(keyFile, header = F, sep = "\t", check.names = F) %>%
              as_tibble() %>%
+             select_if(~!all(is.na(.))) %>%
              rename(Sample = V1, Group = V2) 
     if(any(grepl("EXCLUDE", key$Group))){
         log_warn(paste0("Excluding samples: ", 
