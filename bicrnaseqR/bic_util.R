@@ -180,8 +180,8 @@ bic.setup.comparisons.from.multi.column.files <- function(keyFile, compFile){
 
 bic.setup.comparisons.from.individual.files <- function(pre, path = "."){
 
-    keys  <- file.path(path, dir(path)[grepl("sample_key", dir(path))])
-    comps <- file.path(path, dir(path)[grepl("comparisons", dir(path))])
+    keys  <- file.path(path, dir(path)[grepl("sample_key.*\\.txt", dir(path))])
+    comps <- file.path(path, dir(path)[grepl("comparisons.*\\.txt", dir(path))])
 
     keyNums  <- gsub(".txt", "", gsub(".*_sample_key", "", keys))
     compNums <- gsub(".txt", "", gsub(".*_sample_comparisons", "", comps))
