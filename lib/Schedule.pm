@@ -372,7 +372,7 @@ sub singularityBind{
         $sBind = "/scratch/,/tmp/,/ifs/,/common/lsf/";
     }
     elsif($scheduler =~ /JUNO/i){
-        $sBind = "/scratch/,/tmp/,/ifs/,/juno/,/work/,/common/lsf/,/common/juno/,/admin/,/opt/common/CentOS_6/defuse/defuse-0.6.2/reference_dataset/,/opt/common/CentOS_6/STAR-Fusion/STAR-Fusion_v0.5.4/STAR-Fusion-master/Hg19_CTAT_resource_lib,/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/,/opt/common/CentOS_6/fusioncatcher/fusioncatcher_v0.99.3e/data/";
+        $sBind = "/scratch/,/tmp/,/igo/,/ifs/,/juno/,/work/,/common/lsf/,/common/juno/,/admin/,/opt/common/CentOS_6/defuse/defuse-0.6.2/reference_dataset/,/opt/common/CentOS_6/STAR-Fusion/STAR-Fusion_v0.5.4/STAR-Fusion-master/Hg19_CTAT_resource_lib,/opt/common/CentOS_6/rsem/RSEM-1.2.25/data/,/opt/common/CentOS_6/fusioncatcher/fusioncatcher_v0.99.3e/data/";
     }
     return $sBind;
 }
