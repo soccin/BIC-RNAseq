@@ -383,20 +383,23 @@ bic.standard.clustering <- function(scaled.counts, out.dir, conds, mds.labels = 
 
     file.name <- file.path(out.dir, paste0(pre,"_counts_scaled_hclust.pdf"))
     tryCatch({
-            bic.hclust.samples(scaled.counts,
-                               file.name = file.name,
-                               conds = conds,
-                               title = "All counts scaled using DESeq method")
-            }, error = function(err){
-              conditionMessage(err)
-          })
+        bic.hclust.samples(scaled.counts,
+                           file.name = file.name,
+                           conds = conds,
+                           title = "All counts scaled using DESeq method")
+      }, error = function(err){
+          log_error(err)
+      })
 
     file.name <- file.path(out.dir, paste0(pre,"_counts_scaled_MDS.pdf"))
-    bic.mds.clust.samples(scaled.counts,
-                          file = file.name,
-                          conds=conds,
-                          labels = mds.labels)
-
+    tryCatch({
+        bic.mds.clust.samples(scaled.counts,
+                              file = file.name,
+                              conds=conds,
+                              labels = mds.labels)
+      }, error = function(err){
+          log_error(err) 
+      })
 }
 
 

@@ -775,7 +775,7 @@ bic.hclust.samples <- function(norm.counts, conds = NULL, log2 = FALSE,
 
   if(length(colnames(norm.counts)) < 3){
     cat("Less than three samples; can not run cluster analysis\n")
-    return()
+    stop("Can not cluster less than three samples")
   }
 
   if(is.null(file.name)){
@@ -827,7 +827,7 @@ bic.mds.clust.samples <- function(norm.counts, log2 = FALSE, file = NULL,
 
   if(length(colnames(norm.counts)) < 3){
     cat("Less than three samples; can not run cluster analysis\n")
-    return
+    stop("Can not cluster less than three samples")
   }
 
   if(is.null(conds)){
