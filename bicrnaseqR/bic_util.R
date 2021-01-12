@@ -52,7 +52,7 @@ bic.setup.directories <- function(counts.dir, clustering.dir, all.gene.dir = NUL
 
 bic.empty.deseq.table <- function(condA, condB){
     res <- as.data.frame(matrix(NA, nrow=1, ncol=6))
-    names(res) = c("GeneID","GeneSymbol", "P.adj",
+    names(res) = c("ID","GeneSymbol", "P.adj",
                    paste("log2[",condB,"/",condA,"]",sep=""),
                    paste("Mean_at_cond_",condA, sep=""),
                    paste("Mean_at_cond_",condB, sep=""))

@@ -146,7 +146,7 @@ if(!$run){
     $run = "r_001";
 }
 
-my $delivery_root = "/ifs/res/seq";
+my $delivery_root = "/juno/res/";
 my $delivery_path = "$delivery_root/$pi/$inv/$proj/$run";
 print "Done.\n";
 

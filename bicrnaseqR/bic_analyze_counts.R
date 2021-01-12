@@ -40,7 +40,7 @@ bic.complete.gsa.analysis <- function(de.res, comp.name, species, gmt.dir, gsa.d
 #' @param diff.exp.fig.dir  directory where DESeq figures should be saved
 #' @param condA             condition A (denominator of comparison)
 #' @param condB             condition B (numerator of comparison)
-#' @param geneSymbols       optional; two-column tibble with columns GeneID and GeneSymbol
+#' @param geneSymbols       optional; two-column tibble with columns ID and GeneSymbol
 #' @param max.p             maximum p.value to pass filter
 #' @param min.abs.fc        minumum absolute fold change to pass filter
 #' @param min.count         minimum mean gene counts
@@ -123,13 +123,13 @@ bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.
 #'
 #' Reformatting includes removing samples that are not in 
 #' sample key (if key is provided), rounding counts to
-#' nearest integer, assigning GeneIDs to rownames of matrix,
-#' and removing GeneID column from matrix if it also contains
+#' nearest integer, assigning IDs to rownames of matrix,
+#' and removing ID column from matrix if it also contains
 #' a GeneSymbol column.
 #'
 #' @param htseq.files tab-delimited file containing raw HTseq
 #'                    counts; columns are samples and rows are
-#'                    genes; must contain GeneID column but may 
+#'                    genes; must contain ID column but may 
 #'                    also contain a GeneSymbol column
 #' @param key         two-column matrix where column one contains
 #'                    all samples to be included in analysis and
@@ -137,7 +137,7 @@ bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.
 #'                    the samples belong
 #' @return a list of two items: 1) a matrix of raw counts formatted 
 #'         for BIC differential expression analysis and 2) a vector
-#'         of gene symbols named by the GeneID in htseq file (this
+#'         of gene symbols named by the ID in htseq file (this
 #'         vector will be NULL if there is no GeneSymbol column in
 #'         the htseq file.
 #' @export
@@ -146,8 +146,12 @@ bic.format.htseq.counts <- function(htseq.file,key=NULL){
   log_debug("Reformatting raw counts...")
 
   HTSeq.dat <- read.csv(htseq.file, header = T, sep = "\t", check.names = F) %>%
-               as_tibble() %>%
-               filter(!grepl("alignment_not_unique|ambiguous|no_feature|not_aligned|too_low_aQual", GeneID))
+               as_tibble()
+
+  names(HTSeq.dat)[1] <- "ID" 
+
+  HTSeq.dat <- HTSeq.dat %>%
+               filter(!grepl("alignment_not_unique|ambiguous|no_feature|not_aligned|too_low_aQual", ID))
 
   ## subset/sort data according to key
   if(!is.null(key)){
@@ -157,12 +161,12 @@ bic.format.htseq.counts <- function(htseq.file,key=NULL){
                      paste(smps[!smps %in% names(HTSeq.dat)], collapse=", ")))
         smps <- smps[smps %in% names(HTSeq.dat)] 
     }
-    HTSeq.dat = HTSeq.dat %>% select_at(c("GeneID", "GeneSymbol", smps))
+    HTSeq.dat = HTSeq.dat %>% select_at(c("ID", "GeneSymbol", smps))
   }
 
   formatted.counts <- list()
   formatted.counts$raw <- HTSeq.dat %>% mutate_if(is.numeric, round)
-  formatted.counts$ids <- HTSeq.dat %>% select(GeneID, GeneSymbol)
+  formatted.counts$ids <- HTSeq.dat %>% select(ID, GeneSymbol)
 
   return(formatted.counts)
 }
@@ -225,7 +229,7 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
   ng  <- c()  ## significant genes 
   
   rawRes <- tryCatch({ 
-                nbinomTest(cds, condA, condB) %>% as_tibble() %>% rename(GeneID = id) 
+                nbinomTest(cds, condA, condB) %>% as_tibble() %>% rename(ID = id) 
               }, error = function(e){
                 print(e)
                 return(NULL)
@@ -237,7 +241,7 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
   if(!is.null(genes)){
     res <- res %>% 
            left_join(genes, by = intersect(names(.), names(genes))) %>%
-           select(dplyr::matches("Gene"), everything())
+           select(ID, dplyr::matches("Gene"), everything())
   }
 
   norm.factors <- sizeFactors(cds)
@@ -248,13 +252,13 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
                abs(log2FoldChange) >= log2(min.abs.fc),
                (baseMeanA >= min.count/mean(norm.factors) | 
                   baseMeanB >= min.count/mean(norm.factors))) %>%
-        pull(GeneID)
+        pull(ID)
 
   if(zeroaddQ){
     jj <- res %>%
           filter((baseMeanA == 0 & baseMeanB >= min.count/mean(norm.factors)) |
                  (baseMeanB == 0 & baseMeanA >= min.count/mean(norm.factors))) %>%
-          pull(GeneID)
+          pull(ID)
     ng <- unique(c(ng, jj))
   }
 
@@ -262,7 +266,7 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
             mutate(log2FoldChange = ifelse(log2FoldChange == Inf, 
                                              log2((baseMeanB + 1)/(baseMeanA + 1)), 
                                              log2FoldChange)) %>%
-            select(dplyr::matches("Gene"),
+            select(dplyr::matches("ID|Gene"),
                    pval, 
                   `P.adj` = padj,
                   !!as.name(paste0("log2[", condB, "/", condA, "]")) := log2FoldChange,
@@ -273,7 +277,7 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
                     !!as.name(paste0("Mean_at_cond_", condB)) >= min.count)
 
   ## prepare filtered output
-  resSig <- allRes %>% filter(GeneID %in% ng) 
+  resSig <- allRes %>% filter(ID %in% ng) 
 
   if(nrow(resSig) == 0){
     log_debug("\n===================================================\n")
@@ -288,7 +292,7 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
 
   list(DESeq = rawRes,
        filtered = resSig,
-       DEgenes = resSig$GeneID,
+       DEgenes = resSig$ID,
        all.res = allRes,
        max.p = max.p,
        min.abs.fc = min.abs.fc,
@@ -322,12 +326,13 @@ bic.get.deseq.cds <- function(raw.counts, conds,
   log_debug("Getting DESeq countDataSet...")
 
   counts.tmp <- raw.counts %>%
-                select(GeneID, dplyr::matches("^s_")) %>%
+                select(ID, dplyr::matches("^s_")) %>%
+                mutate_at(vars(matches("^s_")), funs(as.integer(.))) %>%
                 mutate(Total = rowSums(.[,2:ncol(.)])) %>%
                 filter(Total >= min.count) %>%
                 select(-Total)
 
-  ids <- counts.tmp$GeneID
+  ids <- counts.tmp$ID
   mat <- as.matrix(counts.tmp[,-1])
   rownames(mat) <- ids
 
@@ -514,15 +519,15 @@ bic.deseq.normalize.htseq.counts <- function(formatted.counts=NULL,htseq.file=NU
 
   log_debug("Getting DESeq scaled counts...")
   counts.scaled <- counts(cds, norm = T) %>%
-                   as_tibble(rownames = "GeneID") %>%
-                   left_join(formatted.counts$ids, by = "GeneID") %>%
-                   select(dplyr::matches("Gene"), key$Sample)
+                   as_tibble(rownames = "ID") %>%
+                   left_join(formatted.counts$ids, by = "ID") %>%
+                   select(ID, dplyr::matches("Gene"), key$Sample)
   log_debug("Done.\n")
 
   log_debug("Formatting scaled counts...")
   if(!is.null(key)){
     counts.scaled <- counts.scaled %>%
-                     gather(names(.)[!grepl("Gene", names(.))], key = "Sample", val = "Count") %>%
+                     gather(names(.)[!grepl("^ID|^Gene", names(.))], key = "Sample", val = "Count") %>%
                      left_join(key, by = "Sample") %>%
                      unite("Sample_Group", "Sample", "Group", sep = "__") %>%
                      spread(Sample_Group, Count)  
@@ -589,7 +594,7 @@ bic.quantile.normalize.htseq.counts <- function(htseq.counts,key=NULL){
   ## append gene symbols to matrix if there are any
   if (exists("gns")){
     dat=as.matrix(cbind(rownames(dat),gns,dat))
-    colnames(dat)[1:2]=c("GeneID","GeneSymbol")
+    colnames(dat)[1:2]=c("ID","GeneSymbol")
   } else {
     dat=as.matrix(cbind(rownames(dat),dat))
     colnames(dat)[1]="GeneSymbol"
@@ -725,7 +730,7 @@ bic.process.gsa.res <- function(gsaRes,max.p=0.1,fc2keep=log2(1.5),frac2keep=2,f
 #'
 #' @param species   currently only human and mouse are supported
 #' @param deseq.res the matrix of ALL DESeq results (unfiltered)
-#'                  in BIC format (GeneID,GeneSymbol,pval,P.adj,
+#'                  in BIC format (ID,GeneSymbol,pval,P.adj,
 #'                  log2[condB/condA],Mean_at_cond_condA,
 #'                  Mean_at_cond_condB
 #' @param min.gns   minimum number of genes a set must have in 

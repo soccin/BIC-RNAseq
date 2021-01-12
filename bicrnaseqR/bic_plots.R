@@ -755,7 +755,7 @@ bic.pdf.hclust<-function(dat,conds=NULL,file.name="tmp.pdf",title="",width=20,he
 #' 
 #' @param norm.counts  data matrix containing normalized counts, where
 #'                     a column represents a sample and a row represents
-#'                     a gene. may or may not contain "GeneID" and "GeneSymbol"
+#'                     a gene. may or may not contain "ID" and "GeneSymbol"
 #'                     columns.
 #' @param conds        vector of sample conditions, in same order as column names 
 #'                     in matrix or sample.labels; if given, nodes will be colored
@@ -768,14 +768,14 @@ bic.pdf.hclust<-function(dat,conds=NULL,file.name="tmp.pdf",title="",width=20,he
 bic.hclust.samples <- function(norm.counts, conds = NULL, log2 = FALSE, 
                                file.name = NULL, title = ""){
 
-  if("GeneID" %in% colnames(norm.counts) | "GeneSymbol" %in% colnames(norm.counts)){
-    norm.counts <- norm.counts[,-grep("GeneID|GeneSymbol",colnames(norm.counts))]
+  if("ID" %in% colnames(norm.counts) | "GeneSymbol" %in% colnames(norm.counts)){
+    norm.counts <- norm.counts[,-grep("ID|GeneSymbol",colnames(norm.counts))]
   }
   norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
 
   if(length(colnames(norm.counts)) < 3){
-    cat("Less than three samples; can not run cluster analysis\n")
-    stop("Can not cluster less than three samples")
+    log_warn("Less than three samples; can not run cluster analysis\n")
+    return(NULL) 
   }
 
   if(is.null(file.name)){
@@ -818,16 +818,16 @@ bic.hclust.samples <- function(norm.counts, conds = NULL, log2 = FALSE,
 bic.mds.clust.samples <- function(norm.counts, log2 = FALSE, file = NULL, 
                                   conds = NULL, labels = TRUE){
 
-  if("GeneID" %in% colnames(norm.counts) |
+  if("ID" %in% colnames(norm.counts) |
      "GeneSymbol" %in% colnames(norm.counts)){
-    norm.counts <- norm.counts[,-grep("GeneID|GeneSymbol",colnames(norm.counts))]
+    norm.counts <- norm.counts[,-grep("ID|GeneSymbol",colnames(norm.counts))]
   }
 
   norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
 
   if(length(colnames(norm.counts)) < 3){
-    cat("Less than three samples; can not run cluster analysis\n")
-    stop("Can not cluster less than three samples")
+    log_warn("Less than three samples; can not run cluster analysis\n")
+    return(NULL) 
   }
 
   if(is.null(conds)){
@@ -870,16 +870,16 @@ bic.mds.clust.samples <- function(norm.counts, log2 = FALSE, file = NULL,
 #' be included in the heatmap. Color scheme is red/black/green.
 #'
 #' @param norm.counts         tibble of normalized counts, where a row is a gene
-#'                            and a column is a sample. May contain "GeneID" and/or
+#'                            and a column is a sample. May contain "ID" and/or
 #'                            "GeneSymbol" column. If GeneSymbol column is present, 
-#'                            it will be used for heatmap labeling. If not, GeneID 
+#'                            it will be used for heatmap labeling. If not, ID 
 #'                            column will be used.
 #' @param condA               the first condition named in the bic.deseq.file name
 #' @param condB               the second condition named in the bic.deseq.file name
 #' @param genes               a vector of genes to be included in the heatmap;
 #'                            if normalized counts matrix includes "GeneSymbol" column,
 #'                            genes must be from that column. Otherwise, they must
-#'                            be from the "GeneID" column.                      
+#'                            be from the "ID" column.                      
 #' @param file                name of PDF file to which heatmap should be written. (optional) 
 #' 
 #' @export
@@ -889,11 +889,11 @@ bic.standard.heatmap <- function(norm.counts, condA, condB, genes = NULL, file =
 
   tryCatch({ 
     htmp.dat <- dat %>%
-                filter(GeneID %in% genes, complete.cases(.)) %>%
+                filter(ID %in% genes, complete.cases(.)) %>%
                 filter(row_number() < 101) %>%
-                select(dplyr::matches("Gene"), grep(paste(c(condA, condB), collapse = "|"), names(.)))
+                select(ID, dplyr::matches("Gene"), grep(paste(c(condA, condB), collapse = "|"), names(.)))
                 
-    gns <- htmp.dat$GeneID
+    gns <- htmp.dat$ID
     if("GeneSymbol" %in% names(htmp.dat)){
         htmp.dat <- htmp.dat %>%
                     filter(!duplicated(GeneSymbol))

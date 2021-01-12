@@ -16,7 +16,7 @@ PERL			/opt/common/CentOS_6/perl/perl-5.22.0/bin
 PICARD			/opt/common/CentOS_6/picard/picard-tools-1.124
 PYTHON			/opt/common/CentOS_6/python/python-2.7.8/bin
 R			/opt/common/CentOS_6/R/R-4.0.0/bin
-RSEM			/opt/common/CentOS_6/rsem/RSEM-1.2.25
+RSEM			/opt/common/bic/rsem/RSEM-1.3.3
 SAMTOOLS                /opt/common/CentOS_6/samtools/samtools-0.1.19
 STAR			/opt/common/CentOS_6/star/STAR-STAR_2.5.0a/bin/Linux_x86_64
 STAR_FUSION		/opt/common/CentOS_6/STAR-Fusion/STAR-Fusion_v0.5.4/STAR-Fusion-master

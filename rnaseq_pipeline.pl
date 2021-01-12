@@ -309,7 +309,7 @@ if($chimerascan || $star_fusion || $mapsplice || $defuse || $fusioncatcher){
 }
 
 if($deseq || $dexseq || $htseq || $cufflinks){
-    if(!$star && !$tophat){
+    if(!$star && !$tophat && !$rsem){
 	$star = 1;
 
 	my @currentTime = &getTime();
@@ -2175,16 +2175,17 @@ if($rsem){
 }
 
 
-if($deseq){    
+if($deseq){   
+    my $deseq_species = $species;
+    if($species =~ /hybrid/i){
+        $deseq_species = "human";
+    }
+ 
     if($star){
 	`/bin/mkdir -m 775 -p $output/gene/differentialExpression_gene`;
 	`/bin/mkdir -m 775 -p $output/gene/clustering`;
 	`/bin/mkdir -m 775 -p $output/gene/gsa`;
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_STAR.done" || $ran_shmatrix){
-            my $deseq_species = $species; 
-            if($species =~ /hybrid/i){
-                $deseq_species = "human";
-            }
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_STAR", job_hold => "$shmatrixj", cpu => "6", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_DESeq_STAR.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
@@ -2236,6 +2237,8 @@ if($deseq){
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_RSEM", job_hold => "$rmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_RSEM.log");
 	    my $standardParams = Schedule::queuing(%stdParams);
 	    #`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PERL/perl $Bin/run_DESeq_wrapper.pl -pre $pre -diff_out $output/transcript/rsem/differentialExpression_trans -count_out $output/transcript/rsem/counts_trans -cluster_out $output/transcript/rsem/clustering -config $config -bin $Bin -species $species -counts $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt -samplekey $samplekey -comparisons $comparisons $reps -Rlibs $Bin/lib/R`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $R/Rscript $Bin/RunDE.R --bin $Bin --counts.file $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt --species $deseq_species --Rlibs $Bin/lib/R-4.0.0 --pre $pre --diff.exp.dir $output/transcript/rsem/differentialExpression_trans --all.gene.dir $output/transcript/rsem/all_trans --counts.dir $output/transcript/rsem/counts_trans --clustering.dir $output/transcript/rsem/clustering --GSA FALSE --java $JAVA/java --javacp .:lib/*:lib/java/* --pdfjar $Bin/lib/java/PDFReport.jar --request $request --svnrev $svnRev`;
+
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_RSEM.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_RSEM";
 	}
