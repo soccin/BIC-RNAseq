@@ -69,9 +69,7 @@ bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.
     ##
     log_debug("    Writing results for ALL genes to file...")
     file.name <- file.path(all.gene.dir, paste0("ALLResDESeq_",condB,"_vs_",condA,".xlsx"))
-    bic.write.deseq.results(de.res$all.res,
-                            file.name = file.name,
-                            orderPvalQ = orderPvalQ)
+    bic.write.deseq.results(de.res$all.res, file.name, condA, condB, orderPvalQ)
     log_debug("Done.\n")
 
     ##
@@ -79,9 +77,7 @@ bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.
     ##
     log_debug("    Writing results for DE genes to file...")
     file.name <- file.path(diff.exp.dir, paste("ResDESeq_",condB,"_vs_",condA,".xlsx",sep=""))
-    bic.write.deseq.results(de.res$filtered,
-                            file.name = file.name,
-                            orderPvalQ = orderPvalQ)
+    bic.write.deseq.results(de.res$filtered, file.name, condA, condB, orderPvalQ)
     log_debug("Done.\n")
 
     ##
@@ -441,10 +437,10 @@ bic.write.normalized.counts.file <- function(norm.counts.mat,file.name){
 #' @param orderPvalQ  Logical indicating results should be sorted by pValue instead of FC 
 #' @return Nothing.   Files are written.
 #' @export
-bic.write.deseq.results <- function(res, file.name, orderPvalQ=FALSE){
+bic.write.deseq.results <- function(res, file.name, condA, condB, orderPvalQ=FALSE){
 
   if(is.null(res) || nrow(res) == 0){
-      bic.write.empty.results(file.name)
+      bic.write.empty.results(file.name, condA, condB)
       return()
   }
 

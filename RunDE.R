@@ -171,9 +171,9 @@ source(file.path(bin, "bicrnaseqR/source_bicrnaseq.R"))
 log_info("Done.\n")
 
 ## do some validation
-if(GSA && (!is.character(species) || is.null(species) || 
+if((GSA && (!is.character(species) || is.null(species) || 
              (is.character(species) && 
-                !species %in% c("human", "mouse", "hg19", "b37", "mm10", "hybrid")))){
+                !species %in% c("human", "mouse", "hg19", "b37", "mm10", "hybrid")))) || GSA == FALSE){
     log_warn("Invalid or missing species (GSA only supported for human and mouse). Turning off GSA.\n")
     GSA <- FALSE
     gsa.dir <- NULL
