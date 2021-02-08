@@ -18,7 +18,7 @@ tmpargs <- commandArgs(trailingOnly = TRUE)
 
 if(any(grepl("Rlibs", tmpargs))){
     Rlibs = tmpargs[grep("Rlibs$", tmpargs) + 1]
-    print(paste0("Loading libraries from ", Rlibs))
+    #print(paste0("Loading libraries from ", Rlibs))
     .libPaths(Rlibs)
     suppressPackageStartupMessages(library(R.utils))
     suppressPackageStartupMessages(library(logger))
@@ -38,7 +38,7 @@ if(length(args) == 0 || !all(c("pre", "bin") %in% names(args))){
     q("no", 1, FALSE)
 }
 for(i in 1:length(args)){
-    print(paste0(names(args)[i], " = ", args[[i]]))
+    #print(paste0(names(args)[i], " = ", args[[i]]))
     assign(names(args)[i], args[[i]])
 }
 if(!exists("pdir") || is.null(pdir)){ pdir <- "." }
