@@ -37,6 +37,7 @@ fileExts = {'Mismatch profile' : '.mismatch_profile.pdf',
             'Deletion profile' : '.deletion_profile.pdf'
             }
 
+errorsFound = False
 for smp in samples:
     allFound = True
     
@@ -44,6 +45,7 @@ for smp in samples:
         expFile = os.path.join(imgDir, "rseqc_" + smp + fe)
         if not os.path.exists(expFile) or os.path.getsize(expFile) == 0:
             allFound = False
+            errorsFound = True
             print >> sys.stderr, " "
             print >> sys.stderr, "ERROR: Missing " + nm + " for sample " + smp
             print >> sys.stderr, "   [" + expFile + "] does not exist or is empty."
@@ -52,39 +54,39 @@ for smp in samples:
     if allFound:
         print >> sys.stdout, "All files for sample " + smp + " are good." 
 
+if not errorsFound:
+    ### check for project-wide files in image directory 
+    projFiles = {'5prime/3prime bias' : '_picard_5prime3prime_bias.pdf',
+                 'Alignment distribution' : '_picard_alignment_distribution.pdf',
+                 'Alignment distribution as percentages' : '_picard_alignment_distribution_percentage.pdf',
+                 'Alignment summary' : '_picard_alignment_summary.pdf',
+                 'Alignment summary as percentages' : '_picard_alignment_summary_percentage.pdf',
+                 'Coverage' : '_picard_coverage.pdf',
+                 'Clipping profiles' : '_rseqc_clipping_profiles.pdf', 
+                 'Deletion profiles' : '_rseqc_deletion_profiles.pdf',
+                 'GC content' : '_rseqc_gc_content.pdf',
+                 'Insertion profiles' : '_rseqc_insertion_profiles.pdf',
+                 #'Read distribution' : '_rseqc_read_distribution.pdf',
+                 #'Read distribution as percentages' : '_rseqc_read_distribution_percentage.pdf'
+                 }
 
-### check for project-wide files in image directory 
-projFiles = {'5prime/3prime bias' : '_picard_5prime3prime_bias.pdf',
-             'Alignment distribution' : '_picard_alignment_distribution.pdf',
-             'Alignment distribution as percentages' : '_picard_alignment_distribution_percentage.pdf',
-             'Alignment summary' : '_picard_alignment_summary.pdf',
-             'Alignment summary as percentages' : '_picard_alignment_summary_percentage.pdf',
-             'Coverage' : '_picard_coverage.pdf',
-             'Clipping profiles' : '_rseqc_clipping_profiles.pdf', 
-             'Deletion profiles' : '_rseqc_deletion_profiles.pdf',
-             'GC content' : '_rseqc_gc_content.pdf',
-             'Insertion profiles' : '_rseqc_insertion_profiles.pdf',
-             #'Read distribution' : '_rseqc_read_distribution.pdf',
-             #'Read distribution as percentages' : '_rseqc_read_distribution_percentage.pdf'
-             }
-
-maxSampFiles = ['Alignment distribution', 'Alignment distribution as percentages', 
+    maxSampFiles = ['Alignment distribution', 'Alignment distribution as percentages', 
                 'Alignment summary', 'Alignment summary as percentages', '5prime/3prime bias']
 
-nSamples = len(samples)
-print >> sys.stdout, ""
-allFound = True
-for pf, fe in projFiles.items():
-    expFile = os.path.join(imgDir, projID + fe)
-    if not os.path.exists(expFile) or os.path.getsize(expFile) == 0:
-        allFound = False
-        if nSamples > 50 and pf in maxSampFiles:
-            print >> sys.stderr, "WARNING: Missing " + pf + "; likely due to large number of samples (n=" + str(nSamples) + ")."
-            print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
-        else:
-            print >> sys.stderr, "ERROR: Missing " + pf 
-            print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
-if allFound:
+    nSamples = len(samples)
+    print >> sys.stdout, ""
+    for pf, fe in projFiles.items():
+        expFile = os.path.join(imgDir, projID + fe)
+        if not os.path.exists(expFile) or os.path.getsize(expFile) == 0:
+            allFound = False
+            if nSamples > 50 and pf in maxSampFiles:
+                print >> sys.stderr, "WARNING: Missing " + pf + "; likely due to large number of samples (n=" + str(nSamples) + ")."
+                print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
+            else:
+                print >> sys.stderr, "ERROR: Missing " + pf 
+                print >> sys.stderr, "    [" + expFile + "] does not exist or is empty."
+
+if not errorsFound:
     print >> sys.stdout, "All project PDFs good for " + projID
 else:
     print >> sys.stdout, "One or more project PDF(s) is missing. See errors for details."
