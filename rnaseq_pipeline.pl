@@ -51,7 +51,7 @@ GetOptions ('map=s' => \$map,
 	    'pre=s' => \$pre,
 	    'config=s' => \$config,
             'request=s' => \$request,
-	    #'samplekey=s' => \$samplekey,
+	    'samplekey=s' => \$samplekey,
 	    #'comparisons=s' => \$comparisons,
 	    'h|help' => \$help,
 	    'star' => \$star,
@@ -178,9 +178,9 @@ if($request){
 if($strand){
     $commandLine .= " -strand $strand";
 }
-#if($samplekey){
-#    $commandLine .= " -samplekey $samplekey";
-#}
+if($samplekey){
+    $commandLine .= " -samplekey $samplekey";
+}
 #if($comparisons){
 #    $commandLine .= " -comparisons $comparisons";
 #}
@@ -319,6 +319,31 @@ if($deseq || $dexseq || $htseq || $cufflinks){
 
 `/bin/mkdir -m 775 -p $output`;
 
+## if no sample key specified, check for any that exist and if they do, 
+## read them to check for samples that should be excluded
+my @sample_keys = $samplekey;
+my @excluded_samples = ();
+if($deseq){
+    if(!$samplekey){
+        @sample_keys = glob("*sample_key*.txt");
+        foreach my $fl (@sample_keys){
+            print "$fl\n";
+        }
+    }
+    foreach my $sample_key (@sample_keys){
+        print "Checking for exclusions in $sample_key\n";
+        open(SK, "$sample_key") or die "Can't open sample key $sample_key $!";
+        while(<SK>){
+            chomp;
+            my @samp_group = split(/\s+/, $_);
+            if($samp_group[1] =~ /_exclude_/i){
+                push(@excluded_samples, $samp_group[0]);
+            }
+        }
+        close SK;
+    }
+}
+
 my %mapping_samples = ();
 my %ism_samples = ();
 open(MA, "$map") or die "Can't open mapping file $map $!";
@@ -327,6 +352,11 @@ while(<MA>){
     
     my @data = split(/\s+/, $_);
     
+    if(grep(/^$data[1]$/, @excluded_samples)){
+        print "EXCLUDING sample $data[1]\n";
+        next;
+    }
+
     $mapping_samples{$data[1]} = 1;
     if(!-d $data[3]){
 	die "$data[3] does not exist\n";
@@ -1931,10 +1961,11 @@ if($star){
         my $standardParams = Schedule::queuing(%stdParams);
         `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/python $Bin/qc/check_rseqc.py $pre $map $output/metrics/images`;
         `/bin/touch $output/progress/$pre\_$uID\_RSEQC_CHECK_STAR.done`;
+        push @qcpdf_jids, "$pre\_$uID\_RSEQC_CHECK_STAR";
     }
 
     ## QCPDF containing plots of merged data
-    if(!-e "$output/progress/$pre\_$uID\_QCPDF_STAR.done" || $ran_rseqc || $ran_plots){
+    if(!-e "$output/progress/$pre\_$uID\_QCPDF_STAR.done" || $ran_rseqc_merge || $ran_plots){
         sleep(3);
         my $qcpdfj = join(",",@qcpdf_jids);
         my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_QCPDF_STAR", job_hold => "$qcpdfj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_QCPDF_STAR.log");

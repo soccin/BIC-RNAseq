@@ -90,3 +90,4 @@ if not errorsFound:
     print >> sys.stdout, "All project PDFs good for " + projID
 else:
     print >> sys.stdout, "One or more project PDF(s) is missing. See errors for details."
+    sys.exit(1)
