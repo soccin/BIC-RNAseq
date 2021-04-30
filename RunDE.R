@@ -87,6 +87,7 @@ pre               <- "TEMP"
 key.file          <- NULL
 comp.file         <- NULL
 counts.file       <- NULL
+multi.comps       <- FALSE
 
 norm.counts       <- NULL
 cds               <- NULL
@@ -119,6 +120,8 @@ log_info(c("\n++++++++++++++++ BIC RNA-Seq Counts Analysis ++++++++++++++++\n\n"
 ## after loading R.utils, get command args again in list format
 args <- commandArgs(trailingOnly = TRUE, asValue = TRUE, adhoc = TRUE)
 for(i in 1:length(args)){
+    print(names(args)[i])
+    print(args[[i]])
     assign(names(args)[i], args[[i]]) 
 }
 
@@ -184,8 +187,12 @@ if(!diff.exp){ diff.exp.dir = NULL }
 ## In the future, possibly provide a single key file that will contain a table where each
 ## column contains exactly two unique values that represent groups to be compared
 keysAndComps <- bic.get.keys.and.comparisons(pre, path = ".") 
-compSetNums  <- lapply(keysAndComps$keys, function(x) !is.null(x)) %>% unlist() %>% which()
-multi.comps  <- length(keysAndComps$keys) > 1 || !1 %in% compSetNums 
+compSetNums <- 1
+
+if(!is.null(keysAndComps)){
+    compSetNums  <- lapply(keysAndComps$keys, function(x) !is.null(x)) %>% unlist() %>% which()
+    multi.comps  <- length(keysAndComps$keys) > 1 || !1 %in% compSetNums 
+}
 
 out.dirs <- bic.setup.directories(counts.dir, clustering.dir,
                                   all.gene.dir  = all.gene.dir, 
@@ -194,7 +201,7 @@ out.dirs <- bic.setup.directories(counts.dir, clustering.dir,
                                   multi.comps   = multi.comps, 
                                   comp.set.nums = compSetNums) 
 
-nc <- min(detectCores()/2, 6, length(keysAndComps$keys))
+nc <- min(detectCores()/2, 6, length(compSetNums))
 cl <- makeCluster(nc, type = "FORK", outfile = "")
 clusterExport(cl, 
               c('pre', 'keysAndComps', 'out.dirs', 'diff.exp', 'GSA', 'counts.file', 
@@ -208,24 +215,29 @@ errorsThrown <<- FALSE
 
 parLapply(cl, compSetNums, function(compSet){
 
-    log_info(paste0("Analyzing comparison set [", compSet, "]\n"))
-    log <- file.path(dirname(out.dirs[[compSet]]$DEdir), paste0("comparisons_", compSet, ".log"))
+    if(diff.exp){
+        log_info(paste0("Analyzing comparison set [", compSet, "]\n"))
+        log <- file.path(dirname(out.dirs[[compSet]]$DEdir), paste0("comparisons_", compSet, ".log"))
+
+        key   <- keysAndComps$keys[[compSet]]
+        comps <- keysAndComps$comparisons[[compSet]]
+        conds <- key$Group
+
+    } else {
+        log <- file.path(dirname(out.dirs[[compSet]]$clusterDir), paste0("clustering.log"))
+    }
     log_info(paste0("Output to be captured in log file [", log, "]\n"))
     lf <- file(log)
     sink(lf, type = "output")
     sink(lf, type = "message") 
 
-    key   <- keysAndComps$keys[[compSet]]
-    comps <- keysAndComps$comparisons[[compSet]]
-    conds <- key$Group
-
     ## format counts
-    formatted.counts <- bic.format.htseq.counts(counts.file, key=key)
+    formatted.counts <- bic.format.htseq.counts(counts.file, key=key) ## this function can handle null key
 
     ## if no conditions given, create a vector of one mock condition, 
     ## needed for normalization
     if(ncol(key) < 2 || is.null(conds)){
-        conds <- rep("s", ncol(formatted.counts$raw))
+        conds <- rep("s", ncol(formatted.counts$raw) - 2)
         mds.labels <- TRUE
     }
 
@@ -241,7 +253,11 @@ parLapply(cl, compSetNums, function(compSet){
 
     if(is.null(cds)){
         log_info("\nZERO RESULTS\n")
-        bic.write.all.empty.results(comps, out.dirs[[compSet]]$DEdir)
+        if(diff.exp){
+            bic.write.all.empty.results(comps, out.dirs[[compSet]]$DEdir)
+        } else {
+            log_info("Could not cluster data.")
+        }
         next
     }
 
@@ -266,12 +282,12 @@ parLapply(cl, compSetNums, function(compSet){
                                 pre = pre)
         log_info("Done.\n")
     } else {
-       log_info("ERROR: Can not find normalized counts matrix. Can not cluster samples or run DESeq.\n")
+        log_info("ERROR: Can not find normalized counts matrix. Can not cluster samples or run DESeq.\n")
         next
     }
 
     
-    if(diff.exp == T){
+    if(diff.exp){
 
         log_info("Running differential expression analysis...\n")
         all_results <- list(norm.counts = norm.counts$scaled,

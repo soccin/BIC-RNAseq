@@ -30,7 +30,7 @@ use Cluster;
 ###                    THIS WILL CAUSE FUSIONS TO NOT WORK BECAUSE OF UNEVEN READ FILES CAUSE DURING CAT OF ALL READS
 
 
-my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $rsem, $kallisto, $express, $standard_gene, $differential_gene, $standard_transcript, $differential_transcript, $alignment_only);
+my ($map, $pre, $config, $request, $help, $species, $cufflinks, $dexseq, $htseq, $chimerascan, $samplekey, $comparisons, $deseq, $star_fusion, $mapsplice, $defuse, $fusioncatcher, $detectFusions, $allfusions, $tophat, $star, $pass1, $lncrna, $lincrna_BROAD, $output, $strand, $r1adaptor, $r2adaptor, $scheduler, $rsem, $kallisto, $express, $standard_gene, $clustering_only, $differential_gene, $standard_transcript, $differential_transcript, $alignment_only);
 
 $pre = 'TEMP';
 $output = "results";
@@ -74,6 +74,7 @@ GetOptions ('map=s' => \$map,
             'strand=s' => \$strand,
             'standard_gene' => \$standard_gene,
             'differential_gene|diff_gene' => \$differential_gene,
+            'clustering_only' => \$clustering_only,
             'standard_transcript|standard_trans' => \$standard_transcript,
             'differential_transcript|diff_trans' => \$differential_transcript,
             'lncrna' => \$lncrna,
@@ -282,6 +283,11 @@ if($differential_gene){
     $deseq = 1;
 }
 
+if($clustering_only){
+    $star = 1;
+    $htseq = 1;
+}
+
 if($standard_transcript){
     $rsem = 1;
 }
@@ -323,12 +329,16 @@ if($deseq || $dexseq || $htseq || $cufflinks){
 ## read them to check for samples that should be excluded
 my @sample_keys = $samplekey;
 my @excluded_samples = ();
-if($deseq){
+if($deseq || $clustering_only){
     if(!$samplekey){
         @sample_keys = glob("*sample_key*.txt");
         foreach my $fl (@sample_keys){
             print "$fl\n";
         }
+    }
+    my $keyCount = scalar @sample_keys;
+    if($keyCount == 0 && $deseq){
+        die "No key file found. Can not run DESeq.\n";
     }
     foreach my $sample_key (@sample_keys){
         print "Checking for exclusions in $sample_key\n";
@@ -839,8 +849,12 @@ my @currentTime = &getTime();
 close IN;
 
 ## QC sample key(s) and comparison file(s)
-if($deseq){
-    my $qc = `$singularityParams $R/Rscript $Bin/RunDE_inputQC.R --bin $Bin --Rlibs $Bin/lib/R-4.0.0 --pre $pre 2>&1`;
+if($deseq || $clustering_only){
+    my $cluster_only = '';
+    if($clustering_only){
+        $cluster_only = '--clustering_only TRUE';
+    }
+    my $qc = `$singularityParams $R/Rscript $Bin/RunDE_inputQC.R --bin $Bin --Rlibs $Bin/lib/R-4.0.0 --pre $pre $cluster_only 2>&1`;
     my $ec = $? >> 8;
     print("$qc");
     if($ec == 1){
@@ -2203,6 +2217,25 @@ if($rsem){
 	push @syncJobs, "$pre\_$uID\_MATRIX_RSEM";
 	$ran_rmatrix = 1;
     }
+}
+
+if($clustering_only){
+    if($star){
+        `/bin/mkdir -m 775 -p $output/gene/clustering`;
+        if(!-e "$output/progress/$pre\_$uID\_SAMPLE_CLUSTERING_STAR.done" || $ran_shmatrix){
+            sleep(3);
+            my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_SAMPLE_CLUSTERING_STAR", job_hold => "$shmatrixj", cpu => "6", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_SAMPLE_CLUSTERING_STAR.log");
+            my $standardParams = Schedule::queuing(%stdParams);
+
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $R/Rscript $Bin/RunDE.R --bin $Bin --counts.file $output/gene/counts_gene/$pre\_htseq_all_samples.txt --Rlibs $Bin/lib/R-4.0.0 --pre $pre --counts.dir $output/gene/counts_gene --clustering.dir $output/gene/clustering --diff.exp FALSE --GSA FALSE`; 
+
+            `/bin/touch $output/progress/$pre\_$uID\_SAMPLE_CLUSTERING_STAR.done`;
+            push @syncJobs, "$pre\_$uID\_SAMPLE_CLUSTERING_STAR";
+        }
+    }
+
+    #### TODO: ADD CLUSTERING FOR TOPHAT, RSEM, KALLISTO AND DELETE OLD VERSION BELOW
+
 }
 
 

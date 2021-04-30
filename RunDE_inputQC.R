@@ -7,8 +7,10 @@ usage <- function(){
       --bin       pipeline directory
 
     [OPTIONAL]
-      --pdir      project directory (default = $PWD)
-      --Rlibs     absolute path to htseq counts file
+      --pdir             project directory (default = $PWD)
+      --Rlibs            path to R libraries
+      --clustering_only  logical; when TRUE, will assume no differential 
+                         expression or GSA analyses will be run
     \n"
   )
 
@@ -18,7 +20,6 @@ tmpargs <- commandArgs(trailingOnly = TRUE)
 
 if(any(grepl("Rlibs", tmpargs))){
     Rlibs = tmpargs[grep("Rlibs$", tmpargs) + 1]
-    #print(paste0("Loading libraries from ", Rlibs))
     .libPaths(Rlibs)
     suppressPackageStartupMessages(library(R.utils))
     suppressPackageStartupMessages(library(logger))
@@ -51,13 +52,19 @@ source(file.path(bin, "bicrnaseqR/bic_util.R"))
 #
 ## parse & qc key and comparisons files
 #
-keysAndComps <- bic.get.keys.and.comparisons(pre, path = pdir) 
+ec <<- 0
+
+keysAndComps <- bic.get.keys.and.comparisons(pre, path = pdir)
+if(is.null(keysAndComps) && !is.null(args$clustering_only) && args$clustering_only == FALSE){
+    log_error(paste0("No key/comparison files found. Can not run DESeq."))
+    ec <<- 1  
+    q(save = "no", status = ec, runLast = FALSE)  
+} 
 
 # make sure all samples in key files are in mapping file
 mapping <- file.path(pdir, dir(pdir)[grep("_sample_mapping.txt", dir(pdir))])
 pSamples <- unique(read.csv(mapping, header = F, sep = "\t")$V2)
 
-ec <<- 0
 tmp <- lapply(1:length(keysAndComps$keys), function(z){ 
          x <- keysAndComps$keys[[z]]
          if(is.null(x)){ return(NULL) }

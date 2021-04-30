@@ -158,7 +158,7 @@ bic.format.htseq.counts <- function(htseq.file,key=NULL){
         smps <- smps[smps %in% names(HTSeq.dat)] 
     }
     HTSeq.dat = HTSeq.dat %>% select_at(c("ID", "GeneSymbol", smps))
-  }
+  } 
 
   formatted.counts <- list()
   formatted.counts$raw <- HTSeq.dat %>% mutate_if(is.numeric, round)
