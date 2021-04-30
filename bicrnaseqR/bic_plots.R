@@ -345,16 +345,14 @@ bic.sample.to.sample.distances <- function(cds,conds,file=NULL){
 #' @param cds  DESeq countDataSet
 #' @param file PDF file to which plot should be saved
 #' @export
-bic.deseq.plot.pca <- function(cds,file=NULL){
-  #if(is.null(file)){
-  #  file="pca.pdf"
-  #}
+bic.deseq.plot.pca <- function(cds, file=NULL){
   cdsBlind <- estimateDispersions(cds,method="blind")
   vst <- varianceStabilizingTransformation(cdsBlind)
   if(!is.null(file)){
     pdf(file)
   }
   plt <- DESeq::plotPCA(vst)
+
   print(plt)
   if(!is.null(file)){
     dev.off()
@@ -768,12 +766,12 @@ bic.pdf.hclust<-function(dat,conds=NULL,file.name="tmp.pdf",title="",width=20,he
 bic.hclust.samples <- function(norm.counts, conds = NULL, log2 = FALSE, 
                                file.name = NULL, title = ""){
 
-  if("ID" %in% colnames(norm.counts) | "GeneSymbol" %in% colnames(norm.counts)){
-    norm.counts <- norm.counts[,-grep("ID|GeneSymbol",colnames(norm.counts))]
+  if("ID" %in% names(norm.counts) | "GeneSymbol" %in% names(norm.counts)){
+    norm.counts <- norm.counts[,-grep("ID|GeneSymbol",names(norm.counts))]
   }
   norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
-
-  if(length(colnames(norm.counts)) < 3){
+log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
+  if(ncol(norm.counts) < 3){
     log_warn("Less than three samples; can not run cluster analysis\n")
     return(NULL) 
   }
@@ -818,20 +816,21 @@ bic.hclust.samples <- function(norm.counts, conds = NULL, log2 = FALSE,
 bic.mds.clust.samples <- function(norm.counts, log2 = FALSE, file = NULL, 
                                   conds = NULL, labels = TRUE){
 
-  if("ID" %in% colnames(norm.counts) |
-     "GeneSymbol" %in% colnames(norm.counts)){
-    norm.counts <- norm.counts[,-grep("ID|GeneSymbol",colnames(norm.counts))]
+  if("ID" %in% names(norm.counts) |
+     "GeneSymbol" %in% names(norm.counts)){
+    norm.counts <- norm.counts[,-grep("ID|GeneSymbol", names(norm.counts))]
   }
 
   norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
+log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
 
-  if(length(colnames(norm.counts)) < 3){
+  if(ncol(norm.counts) < 3){
     log_warn("Less than three samples; can not run cluster analysis\n")
     return(NULL) 
   }
 
   if(is.null(conds)){
-    conds=rep('s',length(colnames(norm.counts)))
+    conds=rep('s',length(names(norm.counts)))
   }
 
   if(log2==FALSE){

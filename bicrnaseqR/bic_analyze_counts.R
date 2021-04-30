@@ -499,15 +499,16 @@ bic.deseq.normalize.htseq.counts <- function(formatted.counts=NULL,htseq.file=NU
 
   idsAndGns <- formatted.counts$ids
   
+  conds <- NULL
+  if(is.null(key)){
+    nsamp <- ncol(formatted.counts$raw) - 2
+    smps <- names(formatted.counts$raw)
+    smps <- smps[!smps %in% c("ID", "GeneSymbol")]
+    key = tibble(Sample = smps, Group = "s")
+    warning("No sample key given. Creating countDataSet using one condition for all samples.")
+  }
+
   if(is.null(cds)){
-    if(is.null(key)){
-      warning("No sample key given. Creating countDataSet using one condition for all samples.")
-      nsamp <- ncol(formatted.counts$raw)
-      if(length(grep("Gene",colnames(formatted.counts$raw)))>0){
-        nsamp <- ncol(formatted.counts$raw) - length(grep("Gene",colnames(formatted.counts$raw)))
-      }
-      conds <- rep("s",nsamp)
-    }
     cds <- bic.get.deseq.cds(formatted.counts$raw, conds, min.count=min.count, libsizeQ=libsizeQ, 
                              percentile=percentile, fitType=fitType, method=method,
                              sharingMode=sharingMode)
