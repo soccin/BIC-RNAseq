@@ -352,7 +352,6 @@ bic.deseq.plot.pca <- function(cds, file=NULL){
     pdf(file)
   }
   plt <- DESeq::plotPCA(vst)
-
   print(plt)
   if(!is.null(file)){
     dev.off()
@@ -368,9 +367,6 @@ bic.deseq.plot.pca <- function(cds, file=NULL){
 #' @param file  PDF file to which plot should be saved (optional)
 #' @export
 bic.plot.ma <- function(res, file=NULL){
-  #if(is.null(file)){
-  #  file = "ma_plot.pdf"
-  #}
   if(!is.null(file)){
     pdf(file)
   }
@@ -386,9 +382,6 @@ bic.plot.ma <- function(res, file=NULL){
 #' @param file PDF file to which plot should be saved (optional)
 #' @export
 bic.pval.histogram <- function(dat,file=NULL){
-  #if(is.null(file)){
-  #  file="pval_histogram.pdf"
-  #}
   if(!is.null(file)){
     pdf(file)
   }
@@ -846,13 +839,11 @@ log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
     pdf(file,width=18,height=12)
   }
 
+  grps = as.factor(gsub(".*__", "", rownames(md)))
+  plot(md, col=grps, lwd=2.5, cex=1.5, main="Multidimensional Scaling (MDS)")
+  legend("topleft", levels(grps), col=factor(levels(grps)),pch=1,cex=1.3)
   if(labels){
-    plot(md, col=as.factor(conds),lwd=2.5,cex=1.5, main="Multidimensional Scaling (MDS)")
-    legend("topleft", levels(as.factor(conds)),col=as.factor(levels(as.factor(conds))),pch=1,cex=1.2)
-    text(md,colnames(counts2hclust),cex=0.9)
-  } else {
-    plot(md, col=as.factor(conds),pch=21,main="Multidimensional Scaling (MDS)",lwd=2.5,cex=1.5)
-    legend("topleft", levels(as.factor(conds)),col=seq(along=levels(as.factor(conds))),pch=21,cex=1.2)
+    text(md, rownames(md), pos = 1, offset = 1, cex=0.9)
   }
   if(!is.null(file)){
     dev.off()
