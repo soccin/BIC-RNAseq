@@ -218,14 +218,17 @@ parLapply(cl, compSetNums, function(compSet){
     if(diff.exp){
         log_info(paste0("Analyzing comparison set [", compSet, "]\n"))
         log <- file.path(dirname(out.dirs[[compSet]]$DEdir), paste0("comparisons_", compSet, ".log"))
-
-        key   <- keysAndComps$keys[[compSet]]
-        comps <- keysAndComps$comparisons[[compSet]]
-        conds <- key$Group
-
     } else {
         log <- file.path(dirname(out.dirs[[compSet]]$clusterDir), paste0("clustering.log"))
     }
+
+    key <- conds <- comps <- NULL
+    if(!is.null(keysAndComps)){
+        key   <- keysAndComps$keys[[compSet]]
+        conds <- key$Group
+        comps <- keysAndComps$comparisons[[compSet]]
+    }
+
     log_info(paste0("Output to be captured in log file [", log, "]\n"))
     lf <- file(log)
     sink(lf, type = "output")
