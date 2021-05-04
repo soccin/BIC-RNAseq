@@ -347,12 +347,15 @@ if($deseq || $clustering_only){
             chomp;
             my @samp_group = split(/\s+/, $_);
             if($samp_group[1] =~ /_exclude_/i){
+print "Excluding $samp_group[0]\t$samp_group[1]\n";
                 push(@excluded_samples, $samp_group[0]);
             }
         }
         close SK;
     }
 }
+
+#die;
 
 my %mapping_samples = ();
 my %ism_samples = ();
@@ -797,6 +800,11 @@ while(<IN>){
     chomp;
 
     my @data = split(/\s+/, $_);
+    if(grep(/^$data[1]$/, @excluded_samples)){
+        print "EXCLUDING sample $data[1]\n";
+        next;
+    }
+
     if($data[1] =~ /^\d+/){
 	$data[1] = "s_" . "$data[1]";
     }
