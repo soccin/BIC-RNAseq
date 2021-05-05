@@ -10,13 +10,25 @@ import glob
 projID = sys.argv[1]
 sMap = sys.argv[2]
 imgDir = sys.argv[3]
+keys = glob.glob(projID + "_sample_key*.txt")
 
+excl = []
+if len(keys) > 0:
+    print("Checking for samples to exclude")
+    for key in keys:
+        with open(key) as sKey:
+            for line in sKey:
+                smp,grp = line.strip().split('\t')
+                if 'exclude' in grp.lower():
+                    excl.append(smp)
 
 ### get list of expected samples
 samples = []
 with open(sMap) as fl:
     for line in fl:
-        samples.append(line.strip().split("\t")[1])
+        smp = line.strip().split("\t")[1]
+        if not smp in excl:
+            samples.append(smp)
 samples = set(samples)
 
 ### check for per-sample pdf files in image directory
