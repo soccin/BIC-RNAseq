@@ -261,7 +261,7 @@ parLapply(cl, compSetNums, function(compSet){
         } else {
             log_info("Could not cluster data.")
         }
-        next
+        return 
     }
 
     log_info("Running clustering and QC...")
@@ -285,8 +285,8 @@ parLapply(cl, compSetNums, function(compSet){
                                 pre = pre)
         log_info("Done.\n")
     } else {
-        log_info("ERROR: Can not find normalized counts matrix. Can not cluster samples or run DESeq.\n")
-        next
+        log_error("Can not find normalized counts matrix. Can not cluster samples or run DESeq.\n")
+        return
     }
 
     
@@ -329,7 +329,7 @@ parLapply(cl, compSetNums, function(compSet){
                   })
             }
 
-            if(is.null(all_results[[compName]]$DE)){ next }
+            if(is.null(all_results[[compName]]$DE)){ return }
 
             if(GSA){
                 if(is.null(all_results[[compName]]$GSA)){
