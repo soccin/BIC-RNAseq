@@ -259,7 +259,7 @@ bic.run.deseq.comparison <- function(countDataSet, conds, condA, condB,
   }
 
   allRes <- res %>%
-            mutate(log2FoldChange = ifelse(log2FoldChange == Inf, 
+            mutate(log2FoldChange = ifelse(log2FoldChange %in% c(Inf,-Inf), 
                                              log2((baseMeanB + 1)/(baseMeanA + 1)), 
                                              log2FoldChange)) %>%
             select(dplyr::matches("ID|Gene"),
@@ -789,7 +789,7 @@ bic.run.gsa <- function(species, deseq.res, gmt.dir, min.gns=5, max.gns=1000,
 
     vec <- fc$FC
     names(vec) <- fc$GeneSymbol
-    
+   
     gsa.res <- runGSA(vec,
                       geneSetStat = "mean",
                       gsc = gsc,
@@ -803,11 +803,15 @@ bic.run.gsa <- function(species, deseq.res, gmt.dir, min.gns=5, max.gns=1000,
                                    fcQ = fcQ)
 
     if(!is.null(tab.res$gsa.tab.up)){
-        tab.res$gsa.tab.up <- tab.res$gsa.tab.up %>% mutate(`Gene Set Category` = toupper(gs.name))
+        tab.res$gsa.tab.up <- tab.res$gsa.tab.up %>% 
+                              mutate(`Gene Set Category` = toupper(gs.name)) %>%
+                              select(`Gene Set Category`, everything())
         all.up.res <- all.up.res %>% bind_rows(tab.res$gsa.tab.up)
     } 
     if(!is.null(tab.res$gsa.tab.dn)){
-        tab.res$gsa.tab.dn <- tab.res$gsa.tab.dn %>% mutate(`Gene Set Category` = toupper(gs.name))
+        tab.res$gsa.tab.dn <- tab.res$gsa.tab.dn %>% 
+                              mutate(`Gene Set Category` = toupper(gs.name)) %>%
+                              select(`Gene Set Category`, everything())
         all.dn.res <- all.dn.res %>% bind_rows(tab.res$gsa.tab.dn)
     }
   }
