@@ -174,13 +174,21 @@ source(file.path(bin, "bicrnaseqR/source_bicrnaseq.R"))
 log_info("Done.\n")
 
 ## do some validation
-if((GSA && (!is.character(species) || is.null(species) || 
-             (is.character(species) && 
-                !species %in% c("human", "mouse", "hg19", "b37", "mm10", "hybrid")))) || GSA == FALSE){
-    log_warn("Invalid or missing species (GSA only supported for human and mouse). Turning off GSA.\n")
-    GSA <- FALSE
-    gsa.dir <- NULL
+gsa_species = NULL
+if(GSA && !is.null(species)){
+    if(grepl("human|hg19|b37|hybrid", species)){
+        gsa_species = "human"
+        log_debug("GSA species: ", gsa_species)
+    } else if(grepl("mouse|mm10|mm9", species)) {
+        gsa_species = "mouse"
+        log_debug("GSA species: ", gsa_species)
+    } else {
+        log_warn("Invalid or missing species (GSA only supported for human and mouse). Turning off GSA.\n")
+        GSA <- FALSE
+        gsa.dir <- NULL
+    }
 }
+
 if(!diff.exp){ diff.exp.dir = NULL }
 
 ## For now, automatically search working directory for 'sample_key*.txt' and 'comparisons*.txt';
@@ -207,7 +215,7 @@ clusterExport(cl,
               c('pre', 'keysAndComps', 'out.dirs', 'diff.exp', 'GSA', 'counts.file', 
                 'min.count', 'min.abs.fc', 'libsizeQ', 'zeroaddQ', 'percentile',
                 'fitType', 'mds.labels', 'method', 'sharingMode', 'orderPvalQ',
-                'heatmaps', 'report', 
+                'heatmaps', 'report', 'gsa_species', 'species',
                 'java', 'javacp', 'pdfjar', 'request', 'svnrev'), 
               envir = environment())
 
@@ -340,7 +348,7 @@ parLapply(cl, compSetNums, function(compSet){
                         tryCatch({
                             bic.complete.gsa.analysis(allRes,
                                                       compName, 
-                                                      species,                          
+                                                      gsa_species,                          
                                                       gmt.dir, 
                                                       out.dirs[[compSet]]$GSAdir)
                           }, error = function(e){
