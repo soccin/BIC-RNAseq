@@ -448,7 +448,7 @@ my $GMT_DIR = '';
 
 my $STAR_MAX_MEM = 100;
 
-if($species =~ /human|hg19/i){
+if($species =~ /human|^hg19$/i){
     $species = 'hg19';
     $REF_SEQ = '/juno/depot/assemblies/H.sapiens/hg19/hg19.fasta';
     $DEXSEQ_GTF = "$Bin/data/human/gencode.v18.annotation_dexseq.gtf";
@@ -510,7 +510,7 @@ elsif($species =~ /mouse|^mm10$/i){
 
     $STAR_MAX_MEM = 30;
 }
-elsif($species =~ /mm9/i){
+elsif($species =~ /^mm9$/i){
     $species = 'mm9';
     $REF_SEQ = '/juno/depot/assemblies/M.musculus/mm9/mm9.fasta';
     $GTF = "$Bin/data/mm9/Mus_musculus.NCBIM37.67_ENSEMBL.gtf";
@@ -536,7 +536,7 @@ elsif($species =~ /mm9/i){
 
     $STAR_MAX_MEM = 30;
 }
-elsif($species =~ /human-mouse|mouse-human|hybrid|^b37_mm10$/i){
+elsif($species =~ /human-mouse|mouse-human|hybrid|^hg19_mm10$/i){
     $species = 'hybrid';
     $REF_SEQ = '/juno/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/hg19_mm10.fasta';
     $GTF = "$Bin/data/human/gencode.v18.annotation.gtf";
@@ -563,7 +563,7 @@ elsif($species =~ /human-mouse|mouse-human|hybrid|^b37_mm10$/i){
 
     $STAR_MAX_MEM = 60;
 }
-elsif($species =~ /rat|Rn6/i){
+elsif($species =~ /rat|^Rn6$/i){
     $species = 'Rn6';
     $REF_SEQ = '/juno/depot/assemblies/R.norvegicus/Rnor_6.0/Rnor_6.0.fasta';
     $GTF = "$Bin/data/rn6/Rattus_norvegicus.Rnor_6.0.92.gtf";
@@ -751,6 +751,10 @@ elsif($species =~ /yeast|s288c|R64|sacCer3/i){
 
     $STAR_MAX_MEM = 30;
 }
+else{
+    die "Species $species is not currently supported in the rnaseq pipeline $!";
+}
+
 
 open(MA, "$map") or die "Can't open mapping file $map $!";
 while(<MA>){
