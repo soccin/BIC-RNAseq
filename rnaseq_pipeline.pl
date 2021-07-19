@@ -483,7 +483,7 @@ if($species =~ /human|hg19/i){
 
     $STAR_MAX_MEM = 35;
 }
-elsif($species =~ /mouse|mm10/i){
+elsif($species =~ /mouse|^mm10$/i){
     $species = 'mm10';
     $REF_SEQ = '/juno/depot/assemblies/M.musculus/mm10/mm10.fasta';
     $QC_BED = "$Bin/data/mm10/mm10_GENCODE_VM9_basic.bed";
@@ -536,7 +536,7 @@ elsif($species =~ /mm9/i){
 
     $STAR_MAX_MEM = 30;
 }
-elsif($species =~ /human-mouse|mouse-human|hybrid/i){
+elsif($species =~ /human-mouse|mouse-human|hybrid|^b37_mm10$/i){
     $species = 'hybrid';
     $REF_SEQ = '/juno/depot/assemblies/hybrids/H.sapiens_M.musculus/hg19_mm10/hg19_mm10.fasta';
     $GTF = "$Bin/data/human/gencode.v18.annotation.gtf";
