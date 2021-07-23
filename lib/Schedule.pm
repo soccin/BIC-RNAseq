@@ -296,10 +296,10 @@ sub juno {
 
     my $jobMem;
     if($junoParams{'mem'} =~ /^(\d+)[Gg]?$/){
-    $jobMem = min(ceil($1 / $junoParams{'cpu'}), floor(240 / $junoParams{'cpu'}) );
+    $jobMem = min(ceil($1 / $junoParams{'cpu'}), floor(740 / $junoParams{'cpu'}) );
     }
     else{
-    $jobMem = floor(240 / $junoParams{'cpu'} );
+    $jobMem = floor(740 / $junoParams{'cpu'} );
     }
     $cluster->mem("-R \"rusage[mem=$jobMem]\"");
 
