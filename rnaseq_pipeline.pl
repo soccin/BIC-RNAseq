@@ -1624,14 +1624,14 @@ my $standardParams = Schedule::queuing(%stdParams);
 		}
 
 		if(!-e "$output/progress/$pre\_$uID\_FC_$sample.done" || $ran_zcat2){
-		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_FC_$sample", job_hold => "$zcat2j", cpu => "6", mem => "15", cluster_out => "$output/progress/$pre\_$uID\_FC_$sample.log");
+		    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_FC_$sample", job_hold => "$zcat2j", cpu => "6", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_FC_$sample.log");
 		    my $standardParams = Schedule::queuing(%stdParams);
 		    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $FUSIONCATCHER/bin/fusioncatcher -d $FUSIONCATCHER/data/ensembl_v77d $inReads -o $output/fusion/fusioncatcher/$sample -p 6 --skip-update-check --config=$FUSIONCATCHER/bin/configuration.cfg`;
 		    `/bin/touch $output/progress/$pre\_$uID\_FC_$sample.done`;
-		    push @fusion_jids, "$pre\_$uID\_FC_$sample";
+		    #push @fusion_jids, "$pre\_$uID\_FC_$sample";
 		    $ran_fusion = 1;
 		}
-		push @fusions, "--fusioncatcher $output/fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
+		#push @fusions, "--fusioncatcher $output/fusion/fusioncatcher/$sample/final-list_candidate-fusion-genes.txt";
 	    }
 
 	    my $mergeFusions = join(" ", @fusions);
@@ -1639,7 +1639,7 @@ my $standardParams = Schedule::queuing(%stdParams);
 	    my $ran_merge_fusion = 0;
 	    my $merge_fusionj = '';
 	    if(!-e "$output/progress/$pre\_$uID\_MERGE_FUSION_$sample.done" || $ran_fusion){
-		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_FUSION_$sample", job_hold => "$fusionj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_FUSION_$sample.log");
+		my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_MERGE_FUSION_$sample", job_hold => "$fusionj", job_hold_status => "attempted", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_MERGE_FUSION_$sample.log");
 		my $standardParams = Schedule::queuing(%stdParams);
 		`$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $Bin/MergeFusion $mergeFusions --out $output/fusion/$pre\_merged_fusions_$sample\.txt --normalize_gene $Bin/data/human/hugo_data_073013.tsv`;
 		`/bin/touch $output/progress/$pre\_$uID\_MERGE_FUSION_$sample.done`;
