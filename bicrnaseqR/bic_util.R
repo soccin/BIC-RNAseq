@@ -86,13 +86,13 @@ bic.write.all.empty.results <- function(comps, diff.exp.dir){
     }
 }
 
-bic.get.keys.and.comparisons <- function(pre, key.file = NULL, comp.file = NULL, path = "."){
+bic.get.keys.and.comparisons <- function(pre, sample.key = NULL, comps.only = NULL, comp.file = NULL, path = "."){
 
-    if(!is.null(key.file) && !is.null(comp.file)){
-        bic.setup.comparisons.from.multi.column.files(key.file, comp.file)
-    } else {
-        bic.setup.comparisons.from.individual.files(pre, path = path)
-    }
+    #if(!is.null(key.file) && !is.null(comp.file)){
+    #    bic.setup.comparisons.from.multi.column.files(key.file, comp.file)
+    #} else {
+        bic.setup.comparisons.from.individual.files(pre, path = path, comps.only = comps.only, sample.key = sample.key)
+    #}
 }
 
 bic.qc.comparison.set <- function(key, comps){
@@ -178,20 +178,28 @@ bic.setup.comparisons.from.multi.column.files <- function(keyFile, compFile){
 }
 
 
-bic.setup.comparisons.from.individual.files <- function(pre, path = "."){
+bic.setup.comparisons.from.individual.files <- function(pre, path = ".", sample.key = NULL, comps.only = NULL){
 
     allKeys <- list()
     allComps <- list()
 
+    if(!is.null(sample.key)){
+        if(is.null(comps.only)){
+            stop("If a single key file is specified, a comparisons file must be given too.")
+        }
+        keyNcomp <- bic.setup.comparisons.from.standard.files(sample.key, comps.only)
+        return(list(keys = list(keyNcomp$keys), comparisons = list(keyNcomp$comparisons)))
+    }
+
     keys  <- file.path(path, dir(path)[grepl("sample_key.*\\.txt", dir(path))])
     comps <- file.path(path, dir(path)[grepl("comparisons.*\\.txt", dir(path))])
+
+    keyNums  <- gsub(".txt", "", gsub(".*_sample_key", "", keys))
+    compNums <- gsub(".txt", "", gsub(".*_sample_comparisons", "", comps))
 
     if(length(keys) == 0){
         return(NULL)
     }
-
-    keyNums  <- gsub(".txt", "", gsub(".*_sample_key", "", keys))
-    compNums <- gsub(".txt", "", gsub(".*_sample_comparisons", "", comps))
 
     if(!identical(keyNums, compNums)){
         stop("Sample key and comparison files must have 1:1 relationship indicated by a single number appended to each file name") 

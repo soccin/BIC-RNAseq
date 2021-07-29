@@ -14,6 +14,8 @@ usage <- function(){
     --comp.file       absolute path to file of sample group assignments and comparisons; when not 
                       provided, script will look for individual [pre]_sample_key*.txt and 
                       [pre]_sample_comparisons*.txt files 
+    --sample.key
+    --comps.only
     --species         required when running GSA; [hg19|human|mm9|mm10|mouse|hybrid] Note: only human 
                       or mouse currently supported; specific build does not matter, as long as 
                       it is clearly human or mouse (hybrid will be run as human)
@@ -84,7 +86,8 @@ diff.exp          <- T
 heatmaps          <- T
 pre               <- "TEMP"
 
-key.file          <- NULL
+sample.key        <- NULL
+comps.only        <- NULL
 comp.file         <- NULL
 counts.file       <- NULL
 multi.comps       <- FALSE
@@ -153,7 +156,8 @@ log_debug(paste0("conds: ", conds))
 log_debug(paste0("GSA: ", GSA))
 log_debug(paste0("diff.exp: ", diff.exp))
 log_debug(paste0("heatmaps: ", heatmaps))
-log_debug(paste0("key.file: ", key.file))
+log_debug(paste0("sample.key: ", sample.key))
+log_debug(paste0("comps.only: ", comps.only))
 log_debug(paste0("comp.file: ", comp.file))
 log_debug(paste0("java: ", java))
 log_debug(paste0("javacp: ", javacp))
@@ -194,7 +198,7 @@ if(!diff.exp){ diff.exp.dir = NULL }
 ## For now, automatically search working directory for 'sample_key*.txt' and 'comparisons*.txt';
 ## In the future, possibly provide a single key file that will contain a table where each
 ## column contains exactly two unique values that represent groups to be compared
-keysAndComps <- bic.get.keys.and.comparisons(pre, path = ".") 
+keysAndComps <- bic.get.keys.and.comparisons(pre, path = ".", comp.file = comp.file, comps.only = comps.only, sample.key = sample.key) 
 compSetNums <- 1
 
 if(!is.null(keysAndComps)){
