@@ -75,29 +75,30 @@ while(<CONFIG>){
         }
         $PYTHON = $conf[1];
     }
-    elsif($conf[0] =~ /singularity/i){
+    elsif($conf[0] =~ /^singularity$/i){
         if(!-e "$conf[1]/singularity"){
         #    die "CAN'T FIND singularity IN $conf[1] $!";
         }
         $SINGULARITY = $conf[1];
     }
-    elsif($conf[0] =~ /^r$/i){
+    elsif($conf[0] =~ /singularity_r/i){
         if(!-e "$conf[1]/R"){
         #    die "CAN'T FIND R IN $conf[1] $!";
         }
-        $singularityenv_prepend_path .= ":$conf[1]";
+        #### config now contains new R, but this needs to run with old R
+        $singularityenv_prepend_path = "$conf[1]:$singularityenv_prepend_path";
     }
 }
 
 my $root_bin = dirname($Bin);
-##added by Julia on 07/22/2019 ###
 my %sinParams = (singularity_exec => "$SINGULARITY/singularity", singularity_image => "$root_bin/rnaseq_pipeline_singularity_prod.simg");
 $singularityParams = Schedule::singularityParams(%sinParams);
 $singularityBind = Schedule::singularityBind($scheduler);
 
 $ENV{'SINGULARITYENV_PREPEND_PATH'} = $singularityenv_prepend_path;
 $ENV{'SINGULARITY_BINDPATH'} = $singularityBind;
-##added by Julia on 07/22/2019 ended## 
+
+$ENV{'LD_LIBRARY_PATH'} = "/opt/common/CentOS_6/gcc/gcc-4.9.3/lib64:$ENV{'LD_LIBRARY_PATH'}";
 close CONFIG;
 
 my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
@@ -164,7 +165,7 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_MP_$sample.done" || $forceall){
 if(!-e "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.done" || $forceall){
     print "Running read_duplication.py\n";
     my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RDP_$sample", cpu => "1", mem => "60", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RDP_$sample.log");
-    my $standardParams = Schedule::queuing(%stdParams);    
+    my $standardParams = Schedule::queuing(%stdParams);   
     `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_duplication.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RDP_$sample.done`;
     $ran_rdp = 1;

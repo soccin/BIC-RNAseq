@@ -3,6 +3,8 @@
 #use strict;
 use Getopt::Long qw(GetOptions);
 use FindBin qw($Bin);
+use File::Find;
+use File::Basename;
 use lib "$Bin/lib";
 use Schedule;
 use Cluster;
@@ -146,7 +148,7 @@ if(!$run){
     $run = "r_001";
 }
 
-my $delivery_root = "/juno/res/";
+my $delivery_root = "/juno/res/delivery";
 my $delivery_path = "$delivery_root/$pi/$inv/$proj/$run";
 print "Done.\n";
 
@@ -324,13 +326,27 @@ print "Writing processed data file info...";
 print $GEO "[PROCESSED DATA FILES]\n";
 print $GEO "file name\tfile type\tfile checksum\n";
 if($deseq){
-    my $current_counts_file = $output . "/gene/counts_gene/counts_scaled_DESeq.xls";
-    my $del_counts_file = $delivery_path . "/gene/counts_gene/counts_scaled_DESeq.xls";
-    my $geo_counts_file = $processedDir . "/" . "counts_scaled_DESeq.txt";
-    my $counts_md5 = `md5sum $current_counts_file | awk '{ print \$1 }'`;
-    print $GEO "counts_scaled_DESeq.txt\ttab-delimited\t$counts_md5\n";
 
-    `ln -s $del_counts_file $geo_counts_file`;
+    my @keyFiles = glob("*sample_key*.txt");
+    my $counts_dir = "gene/counts_gene";
+    my $counts_file_name = $pre . "_counts_scaled_DESeq.xlsx";
+    foreach my $kf (@keyFiles){
+        if($kf =~ /sample_key([0-9]){1,2}\.txt/mp){ ## in order to NOT match project ID, match up to 99 keys
+            my $keyNum = $1;
+            $counts_dir = "gene/comparisons_" . $keyNum . "/counts_gene_" . $keyNum;
+            $counts_file_name = $pre . "_counts_scaled_DESeq_comparisons_" . $keyNum . ".xlsx";             
+        }
+
+        my $counts_path = basename($output) . "/" . $counts_dir;
+        my $current_counts_file = $counts_path . "/" . $pre . "_counts_scaled_DESeq.xlsx";
+        my $del_counts_file = $delivery_path . "/" . $current_counts_file; 
+        my $geo_counts_file = $processedDir . "/" . $counts_file_name; 
+
+        my $counts_md5 = `md5sum $current_counts_file | awk '{ print \$1 }'`;
+        print $GEO "counts_scaled_DESeq.txt\ttab-delimited\t$counts_md5\n";
+
+        `ln -s $del_counts_file $geo_counts_file`;
+    }
 }
 print "Done.\n";
 

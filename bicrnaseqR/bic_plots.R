@@ -1,3 +1,17 @@
+font <- "Roboto"
+#showtext_auto()
+
+bicTheme <- theme_minimal() +
+            theme(text = element_text(size = 16, family = font, color = "black"),
+                  plot.title = element_text(size = 20, margin = unit(c(0.2, 0, 0.1, 0), "in")),
+                  plot.subtitle = element_text(size = 13, face = "italic", margin = unit(c(0.1, 0, 0.2, 0), "in")),
+                  axis.text.x = element_text(color = "black"),
+                  axis.text.y = element_text(color = "black"),
+                  axis.line.x = element_line(size = 0.5),
+                  axis.line.y = element_line(size = 0.5))
+
+clrPal <- c("#e5f5e0", "royalblue4", "#fae8fc", "#c4c2c3", "indianred3", "lightsalmon", "yellowgreen", "slategray1"> "turquoise4", "lightyellow2", "steelblue3", "orange2", "violetred3", "#a1788d", "gold", "orchid4", "burlywood1", "da> seagreen3", "royalblue3", "lightpink1", "plum", "snow2", "#7e8c76")
+
 c3 <- c("#5395b4", "#f1592a", "#85c440")
 c48 <- c("#1d915c","#5395b4",
                  "#964a48",
@@ -87,11 +101,6 @@ bic.check.line.chart.data <- function(dat,dat2=NULL){
         stop("second data set contains non-numeric values")
       }
     )
-    #if(!all(dim(dat) == dim(dat2))){
-    #  stop(paste("first and second data sets have different dimensions\n\tdim(dat) = ",
-    #             dim(dat),"\tdim(dat2) = ",dim(dat2),sep="")
-    #      )
-    #}
   }
   invisible(NULL)
 } 
@@ -251,19 +260,95 @@ bic.plot.read.distribution <- function(dat,file=NULL,stack=TRUE,pct=FALSE,col.pa
 #' 
 #' @param cds          DESeq countsDataSet
 #' @param out.dir      Directory in which plots should be saved; Default: $PWD
-#' @param file.prefix  String to prepend to PDF file names (optional)
+#' @param file.prefix  prefix for each ouput PDF file (optional)
 #'
 #' @export
-bic.plot.dispersion.estimates <- function(cds,out.dir=getwd(),file.prefix=""){
-  if(file.prefix != ""){
-    file.prefix <- paste(file.prefix,"_",sep="")
-  }
+bic.plot.dispersion.estimates <- function(cds, out.dir = NULL, file.prefix = NULL){
+
+  plotList <- list()
+
   for(cond in ls(cds@fitInfo)){
-    pdf(file.path(out.dir,paste(file.prefix,"dispersion_estimates_",cond,".pdf",sep="")))
-    plotDispEsts(cds,name=cond)
-    dev.off()
-  }  
+      ## data prep taken directly from plotDispEsts()
+      px <- rowMeans(counts(cds, normalized = TRUE))
+      sel = (px > 0)
+      px = px[sel]
+      py = fitInfo(cds, name = cond)$perGeneDispEsts[sel]
+      ymin = 10^floor(log10(min(py[py > 0], na.rm = TRUE)) - 0.1)
+      xg = 10^seq(-0.5, 5, length.out = 100)
+
+      dat <- tibble(Gene = names(px), Vals = px, Y = py) %>% 
+             mutate(Y = pmax(Y, ymin))
+      dat2 <- tibble(x = xg, y = fitInfo(cds, name = cond)$dispFun(xg))
+      p <- ggplot(dat, aes(x = Vals, y = Y)) +
+           geom_point(color = "black", alpha = 0.7, size = 0.5) +
+           scale_y_continuous(trans = "log10") +
+           scale_x_continuous(trans = "log10", breaks = c(1, 100, 10000)) + 
+           geom_line(data = dat2, aes(x = x, y = y), color = "red", size = 1) +
+           xlab('mean of normalized counts') +
+           ylab('dispersion') +
+           labs(title = cond) +
+           bicTheme +
+           theme(plot.margin = margin(t = 0.25, b = 0.25, r = 0.25, l = 0.25, unit = "cm"))
+      plotList[[cond]] <- p 
+ 
+      if(!is.null(file.prefix)){
+          if(is.null(out.dir)){ out.dir <- getwd() }
+          file <- paste0(file.prefix, "_", cond, ".pdf")
+          if(out.dir != ""){ file <- file.path(out.dir, file) }
+          pdf(file, height = 7, width = 7) 
+          print(p)
+          dev.off()
+      }
+   }
+
+   plotList
 }
+
+
+ensemblIDtoGeneSymbol <- function(ensemblIDs, species){
+
+    library('biomaRt')
+    ds <- NULL 
+    if(species == 'human'){
+        ds <- 'hsapiens_gene_ensembl'
+    } else if (species == 'mouse') {
+        ds <- 'mmusculus_gene_ensembl'
+    } else {
+        stop("don't know which biomart dataset to use")
+    }
+    mart <- useMart("ensembl", dataset=ds)
+    gnList <- getBM(filters= "ensembl_gene_id", 
+                    attributes= c("ensembl_gene_id","external_gene_name"), 
+                    values=ensemblIDs, 
+                    mart= mart)
+    if(nrow(gnList) > 0 && !any(is.na(gnList[,2]))){
+        return(gnList)
+    } else {
+        return(NULL)
+    }
+}
+
+matchPanelHeights <- function(g1, g2){
+
+    panelIDs <- unique(g1$layout[grepl("panel", g1$layout$name), "t"])
+    heights <- g1$heights[panelIDs]
+
+    g2$heights[panelIDs] <- unit.c(do.call(unit, list(heights, 'null')))
+
+    return(list(g1,g2))
+}
+
+matchPanelWidths <- function(g1, g2){
+
+    panelIDs <- unique(g1$layout[grepl("panel", g1$layout$name), "t"])
+    widths <- g1$widths[panelIDs]
+
+    g2$widths[panelIDs] <- unit.c(do.call(unit, list(widths, 'null')))
+
+    return(list(g1,g2))
+}
+
+
 
 #' Draw a heatmap of counts table
 #' 
@@ -277,34 +362,42 @@ bic.plot.dispersion.estimates <- function(cds,out.dir=getwd(),file.prefix=""){
 #' @param transform logical indicating whether to transform counts; 
 #'                  Default: FALSE
 #' @export
-bic.deseq.heatmap <- function(cds,file=NULL,num.gns=100,transform=FALSE){
-  hmcol <- colorRampPalette(brewer.pal(9,"GnBu"))(100)
-  dat <- NULL
-  if(transform){
-    cdsBlind <- estimateDispersions(cds, method="blind")
-    vst <- varianceStabilizingTransformation(cdsBlind)
-    dat <- exprs(vst)
-    dat <- dat[!grepl("alignment_not_unique|ambiguous|no_feature|not_aligned|too_low_aQual",
-                           rownames(dat)),]
-    select <- order(rowMeans(dat),decreasing=TRUE)[1:num.gns]
-    dat <- dat[select,]
-  } else {
-    counts.cds <- counts(cds)
-    counts.cds <- counts.cds[!grepl("alignment_not_unique|ambiguous|no_feature|not_aligned|too_low_aQual",
-                           rownames(counts.cds)),]
-    select <- order(rowMeans(counts.cds), decreasing=TRUE)[1:num.gns]
-    dat <- counts.cds[select,]
-  }
-  if(!is.null(file)){
-    pdf(file)
-  }
-  par(cex.main=0.8)
-  heatmap.2(dat, col=hmcol, trace="none", margin=c(10,10),
-            main=paste("Expression of the \n",num.gns," most highly expressed genes",sep=""),
-            cexRow=0.6,cexCol=1.0,keysize=1.5,key.title=NA)
-  if(!is.null(file)){
-    dev.off()
-  }
+bic.high.expression.heatmap <- function(cds, num.gns=100, transform = TRUE, idMap = NULL, 
+                                        height = 8.5, width = 11, file = NULL, key = NULL,
+                                        clrs = NULL){
+
+    ##
+    ## PREP DATA
+    ##
+    if(transform){
+        dat <- cds %>% estimateDispersions(method="blind") %>%
+               varianceStabilizingTransformation() %>%
+               exprs()
+    } else {
+        dat <- log(counts(cds) + 1)
+    }
+    dat <- dat %>%
+           as_tibble(rownames = "ID") %>%
+           filter(!grepl("alignment_not_unique|ambiguous|no_feature|not_aligned|too_low_aQual", "ID")) %>%
+           arrange(desc(rowMeans(.[,-1]))) %>%
+           filter(row_number() <= num.gns) %>%
+           gather(2:ncol(.), key = "Sample", value = "Val")
+
+    if(!is.null(idMap)){
+        dat <- dat %>% left_join(idMap, by = c("ID")) %>% select(ID = GeneSymbol, Sample, Val) 
+    }
+
+    if(is.null(clrs) && !is.null(key)){
+        clrs <- bic.get.colors(length(unique(key$Group)))
+        names(clrs) <- unique(key$Group)
+    }
+
+    htmp <- bic.rnaseq.heatmap(dat, cols = "Sample", rows = "ID", clusterCols = TRUE, clusterRows = FALSE,
+                                colAnnot = key, annClrs = clrs,
+                                title = "Normalized Gene Expression", 
+                                subtitle = paste(num.gns, "most highly expressed genes"),
+                                width = 11, height = 8.5, file = file)
+    htmp
 }
 
 #' Draw a heatmap showing sample-to-sample distances using variance 
@@ -314,49 +407,498 @@ bic.deseq.heatmap <- function(cds,file=NULL,num.gns=100,transform=FALSE){
 #' between every pair of samples. Save plot to PDF file.
 #' 
 #' @param cds    DESeq countDataSet
-#' @param conds  vector of sample conditions that was used to generate \code{cds}
+#' @param key    tibble containing sample names and group assigments (optional) 
 #' @param file   PDF file to which heatmap whould be saved (optional)
 #' 
 #' @export
-bic.sample.to.sample.distances <- function(cds,conds,file=NULL){
-  #if(is.null(file)){
-  #  file = "heatmap_sample_to_sample_distances.pdf"
-  #}
-  hmcol = colorRampPalette(brewer.pal(9, "GnBu"))(100)
-  cdsBlind <- estimateDispersions(cds,method="blind")
-  vst <- varianceStabilizingTransformation(cdsBlind)
-  distances <- dist(t(exprs(vst)))
-  dist.mat <- as.matrix(distances)
-  rownames(dist.mat) = colnames(dist.mat) = with(pData(cdsBlind), paste(rownames(dist.mat), " : " ,conds,sep=""))
-  if(!is.null(file)){
-    pdf(file)
-  }
-  par(cex.main=0.8)
-  heatmap.2(dist.mat, main="Sample to Sample Distances", trace="none", col=rev(hmcol), margin=c(13,13), key.title=NA)
-  if(!is.null(file)){
-    dev.off()
-  }
+bic.sample.to.sample.distances <- function(cds, key = NULL, clrs = NULL, file=NULL, width = 8.5, height = 11){
+  
+    dat <- cds %>%
+           estimateDispersions(method = "blind") %>%
+           varianceStabilizingTransformation() %>%
+           exprs %>% t %>% dist %>% as.matrix %>% as_tibble %>%
+           mutate(Sample = names(.)) %>%
+           select(Sample, everything()) %>%
+           gather(2:ncol(.), key = "Sample2", value = "Val")
+
+    key2 <- NULL 
+    if(!is.null(key)){
+        if(is.null(clrs)){
+            clrs <- bic.get.colors(length(unique(key$Group)))
+            names(clrs) <- unique(key$Group)
+        }
+        key2 <- key %>% select(Sample2 = Sample, Group)
+    }
+
+    htmp <- bic.rnaseq.heatmap(dat, cols = "Sample", rows = "Sample2", clusterCols = TRUE, 
+                                clusterRows = TRUE, 
+                                rowAnnot = key2, colAnnot = key, annClrs = clrs,
+                                title = "Sample to Sample Distances",
+                                width = 11, height = 8.5, file = file)
+
+    htmp
+}
+
+
+bic.get.colors <- function(numClrs, sort = FALSE){
+
+    aClrs <- c("green4","hotpink","gold","mediumorchid3", "mediumturquoise", 
+               "yellowgreen", "royalblue3", "violetred3", "chocolate2", 
+               "plum", "deepskyblue1")
+
+    clrsDist <- c("#7e8c76", "hotpink", "gold3", "steelblue3",
+                  "gold", "burlywood1", "#a1788d", "mediumturquoise", 
+                  "#fcba03", "turquoise4", "lightpink1", "royalblue3", 
+                  "plum", "firebrick2", "green4", "slategray1", 
+                  "chocolate2", "mediumorchid3", "royalblue4", "yellowgreen", 
+                  "lightsalmon", "#c4c2c3", "deepskyblue1", "violetred3")
+
+    clrsGradient <- c("firebrick2", "chocolate2", "#fcba03", "lightsalmon", 
+                      "burlywood1", "gold", "gold3", "#7e8c76", 
+                      "turquoise4", "green4", "yellowgreen", "mediumturquoise", 
+                      "royalblue4", "royalblue3", "steelblue3", "deepskyblue1",
+                      "slategray1", "#a1788d", "mediumorchid3", "plum", 
+                      "violetred3", "hotpink", "lightpink1", "#c4c2c3") 
+
+    lens <- list(a = length(aClrs), dist = length(clrsDist), grad = length(clrsGradient))
+    idxs <- seq(numClrs)
+
+    if(numClrs > max(unlist(lens))){
+        ## return the uglier, but larger palette
+        if(sort){ log_warn("Color sorting is not supported when using >", max(unlist(lens)), " colors.") }
+        return(c48[idxs])
+    }
+    if(numClrs <= lens$a){
+        if(sort){ 
+            return(clrsGradient[clrsGradient %in% aClrs][idxs])
+        }
+        return(aClrs[idxs])
+    }
+    if(sort){
+        return(clrsGradient[idxs])
+    }
+    return(clrsDist[idxs])
 }
 
 #' Plot PCA
 #' 
 #' Run DESeq \code{plotPCA()} on variance stabilised tranformed data
 #' 
-#' @param cds  DESeq countDataSet
-#' @param file PDF file to which plot should be saved
+#' @param cds    DESeq countDataSet
+#' @param file   PDF file to which plot should be saved
+#' @param ntop   number of top genes to include in PCA analysis; default=500
+#' @param labels 
 #' @export
-bic.deseq.plot.pca <- function(cds, file=NULL){
+bic.deseq.plot.pca <- function(cds, file=NULL, ntop = 500, labels = FALSE, clrs = NULL, idMap = NULL,
+                               height = 8.5, width = 11){
   cdsBlind <- estimateDispersions(cds,method="blind")
   vst <- varianceStabilizingTransformation(cdsBlind)
-  if(!is.null(file)){
-    pdf(file)
+
+  grps <- tibble(Sample = rownames(phenoData(vst)@data), 
+                 Group = phenoData(vst)@data[,2]) %>%
+          mutate(Group = factor(Group, levels = unique(Group)))
+
+  if(is.null(clrs)){
+    clrs <- bic.get.colors(length(unique(grps$Group)))
+    names(clrs) <- sort(unique(grps$Group))
   }
-  plt <- DESeq::plotPCA(vst)
-  print(plt)
-  if(!is.null(file)){
-    dev.off()
+
+  rv = rowVars(exprs(vst))
+  select = order(rv, decreasing=TRUE)[seq_len(ntop)]
+  pca = prcomp(t(exprs(vst)[select,]))
+
+  smps <- rownames(pca$x)
+  plotDat <- pca$x %>%
+             as_tibble() %>%
+             mutate(Sample = smps) %>%
+             left_join(grps, by = "Sample")
+
+  xtitle <- paste0("PC1: ", round(summary(pca)$importance[2,"PC1"]*100, 1), "% variance")
+  ytitle <- paste0("PC2: ", round(summary(pca)$importance[2,"PC2"]*100, 1), "% variance")
+
+  marg <- unit(c(0.75, 1.5, 0.75, 1.5), "in")
+  if(length(levels(plotDat$Group)) > 5){
+      marg <- unit(c(0.25, 1.5, 0.25, 1.5), "in")
   }
+  fontPts <- getFontSizeInPoints(height, marg, nrow(plotDat) * 0.5)
+  lgndRows <- ceiling(length(levels(plotDat$Group))/5)
+  lgndFS <- min(14, getFontSizeInPoints(((unit(height, "in") - (marg[1] + marg[3]))/20) * lgndRows, unit(c(0,0,0,0),"in"), lgndRows ))
+  pointSz <- min(6, ptToMM(fontPts))
+
+  plt <- ggplot(data = plotDat, aes(x = PC1, y = PC2, fill = Group, label = Sample), color = "black") +
+           geom_point(size = pointSz, shape=21, alpha = 0.7) +
+           #geom_point(size = 4, shape = 1, color = "black") +
+           xlab(xtitle) +
+           ylab(ytitle) +
+           labs(title = "PCA", subtitle = "") +
+           scale_fill_manual(values = clrs) +
+           theme_minimal() +
+           bicTheme +
+           theme(text = element_text(fontPts, color = "black"),
+                 axis.text.x = element_text(color = "black"),
+                 axis.text.y = element_text(color = "black"),
+                 axis.title.y = element_blank(),
+                 axis.title.x = element_blank(),
+                 plot.margin = marg,
+                 legend.key.size = unit(lgndFS, "pt"),
+                 legend.title = element_blank(),
+                 legend.position = "bottom",
+                 legend.text = element_text(size = lgndFS, hjust = 0, margin = margin(l = -0.25, unit = "in")),
+                 legend.spacing.x = unit(0.25, "in"))
+
+  if(labels){
+      plt <- plt + 
+             geom_text_repel(color = "black", size = 4, point.padding = 0.5)
+  }
+
+  if(!is.null(file)){ 
+      pdf(file, width = 11, height = 8.5) 
+      print(plt)
+      dev.off() 
+  }
+  return(plt)
 }
+
+bic.plot.pc.loading <- function(cds, plotPCs = c("PC1", "PC2"), ntop = 500, file = NULL,
+                                 idMap = NULL, extraTheme = NULL){
+
+  cdsBlind <- estimateDispersions(cds,method="blind")
+  vst <- varianceStabilizingTransformation(cdsBlind)
+
+  grps <- tibble(Sample = rownames(phenoData(vst)@data),
+                 Group = phenoData(vst)@data[,2])
+
+  rv = rowVars(exprs(vst))
+  select = order(rv, decreasing=TRUE)[seq_len(ntop)]
+  pca = prcomp(t(exprs(vst)[select,]))
+
+  margins <- list(unit(c(1, 0.25, 1.5, 1.5), unit = "in"),
+                  unit(c(1, 1.5, 1.5, 0.25), unit = "in"),
+                  unit(c(1, 0.25, 1.5, 0.25), unit = "in"))
+
+  plotList <- list()
+  widths <- c(1)
+  arrowX <- 0.1
+
+  breaks <- list()
+
+  for(x in seq(plotPCs)){
+    pc <- plotPCs[x]
+    loadDat <- sort(pca$rotation[,pc])
+    plotDat <- c(loadDat[1:10], loadDat[(length(loadDat)-9):length(loadDat)])
+  
+    plotDat <- tibble(ID = factor(names(plotDat), levels = names(plotDat)), 
+                      Value = plotDat) %>%
+               mutate(Color = ifelse(Value < 0, "blue", "red"))
+
+    ### since arrowX is not in plotDat, when using it to build the plot, only
+    ### a reference is stored in the ggplot object until it is added to a list
+    ### so even if arrowX is updated, to fit data in second plot, the new value
+    ### will still apply to the first plot, helping match plot widths
+    arrowX <- max(arrowX, max(plotDat$Value) * 1.01)
+
+    if(!is.null(idMap)){
+      plotDat <- plotDat %>% 
+                 left_join(idMap, by = "ID")
+      lvls <- plotDat$GeneSymbol
+      plotDat <- plotDat %>%
+                 mutate(ID = factor(GeneSymbol, levels = lvls))
+    }
+
+    widths[x] <- sapply(as.vector(plotDat$ID), function(x) { nchar(x) }) %>% max 
+
+    clrs <- c(red = "red3", blue = "blue3")
+
+    breaks[[x]] <- seq(-round(max(abs(plotDat$Value)), 1) - 0.05, round(max(abs(plotDat$Value)), 1) + 0.05, 0.05)
+
+    plt <- NULL
+    plt <- ggplot(plotDat, aes(x = Value, y = ID, fill = Color)) +
+           geom_bar(stat = "identity", color = "black") +
+           geom_segment(aes(x = arrowX, y = nrow(plotDat) * 0.15, xend = arrowX, yend = nrow(plotDat) * 0.85), 
+                        color = "black", linetype = "dashed") +
+           geom_segment(aes(x = arrowX, xend = arrowX, y = nrow(plotDat) * 0.84, yend = nrow(plotDat) * 0.85), 
+                        color = "black", lineend = "butt", linejoin = "mitre", arrow = arrow(length = unit(0.2, "in"))) +
+           annotate("text", x = arrowX * 1.2, y = nrow(plotDat)/2, 
+                    label = paste("Top/bottom loadings", pc), angle = 270, size = 4.5) +
+           scale_fill_manual(values = clrs) +
+           scale_x_continuous(breaks = breaks[[x]], position = "top") +
+           geom_segment(aes(x = breaks[[x]][1], y = nrow(plotDat) + 0.7,  
+                            xend = breaks[[x]][length(breaks[[x]])], yend = nrow(plotDat) + 0.7), 
+                        size = 0.5, color="black") +
+           bicTheme +
+           theme(text = element_text(family = font, size = 16),
+                 legend.position = "none",
+                 panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 axis.line.x = element_blank(),
+                 axis.line.y = element_blank(),
+                 axis.title.x = element_blank(),
+                 axis.title.y = element_blank(),
+                 axis.text.x = element_text(color = "black", size = 10),
+                 axis.text.y = element_text(color = "black", size = 12),
+                 plot.margin = margins[[x]]) 
+
+    if(x == 1){
+        plt <- plt + labs(title = "PC Loading")
+    }
+
+    if(!is.null(extraTheme)){
+        plt <- plt + extraTheme
+    }
+    plotList[[pc]] <- plt
+  }
+
+  pg <- list()
+  for(x in 1:length(plotList)){
+      gt <- ggplot_gtable(ggplot_build(plotList[[x]]))
+      gt$layout$clip[gt$layout$name == "panel"] <- "off"
+      pg[[x]] <- gt
+  }
+
+  pg <- plot_grid(plotlist = pg, align = 'h', axis = 'bt', rel_widths = widths/sum(widths) + 2)  
+
+  if(!is.null(file)){ 
+      pdf(file, height = 8.5, width = 5.5 * length(plotPCs))
+      grid.draw(pg)
+      dev.off() 
+  }
+
+  return(pg)
+}
+
+## check if data is sorted by a given column
+data.sorted.by <- function(dat, sortCol){
+  groups <- seq(length(unique(dat[[sortCol]])))
+  names(groups) <- unique(dat[[sortCol]])
+  tmp <- dat %>% 
+         mutate(GroupNum = groups[Group], row = row_number())
+
+  for(g in names(groups)){
+      tmp2 <- tmp %>% filter(!!as.name(sortCol) == g) %>% pull(row)
+      if(!identical(seq(tmp2[1], tmp2[length(tmp2)]), tmp2)){
+          return(FALSE)
+      }
+  }
+  TRUE
+}
+
+bic.plot.cibersort <- function(cbs, file = NULL, annotate = FALSE, sortByGroup = FALSE, extraTheme = NULL, width = 11, height = 8.5){
+
+  clrs <- c('B cells naive' = 'gold', 'B cells memory' = 'lightyellow2', ## yellows
+            'Plasma cells' = '#c4c2c3', # gray
+            'T cells CD8' = 'snow2', 'T cells CD4 naive' = '#7e8c76', 'T cells CD4 memory resting' = 'turquoise4',
+            'T cells CD4 memory activated' = 'darkseagreen3', 'T cells follicular helper' = 'yellowgreen',
+            'T cells regulatory (Tregs)' = '#e5f5e0', 'T cells gamma delta' = '#4D6B50', # greens
+            'NK cells resting' = 'lightpink1', 'NK cells activated' = 'violetred3', # pinks
+            'Monocytes' = 'royalblue4', 'Macrophages M0' = 'royalblue3', 'Macrophages M1' = 'steelblue3', 'Macrophages M2' = 'slategray1', # blues
+            'Dendritic cells resting' = 'orange2', 'Dendritic cells activated' = 'lightsalmon', # oranges 
+            'Mast cells resting' = 'orchid4', 'Mast cells activated' = '#a1788d', 'Eosinophils' = 'plum', 'Neutrophils' = '#fae8fc' # purples
+           )
+
+  plotDat <- cbs %>%
+             gather(names(clrs), key="CellType", value="PCT") %>%
+             mutate(CellType = factor(CellType, levels = unique(CellType))) %>%
+             separate(Sample, c("Sample", "Group"), sep="__") 
+
+  sortedByGroup <- data.sorted.by(plotDat %>% select(Sample, Group) %>% unique, "Group")
+  if(!sortedByGroup && sortByGroup){
+    log_debug("Sorting data by sample group")
+    plotDat <- plotDat %>% 
+               arrange(Group) %>%
+               mutate(Group = factor(Group, levels = unique(Group)))
+  }
+
+  marg   <- unit(c(0.5,0.5,0.25,0.5), "in")
+  pWidth <- getPlotWidthInPoints(width, marg)
+  numSmps <- length(unique(plotDat$Sample))
+  xtext  <- min(14, (pWidth - inchToPt(3))/(numSmps + 2))  # subtract 3in (estimated) for legend, which will not change
+
+  plt <- ggplot(plotDat, aes(Sample, PCT, fill = CellType)) +
+         geom_bar(stat = "identity", position = "stack", color = "black", width=0.85) +
+         scale_fill_manual(values = clrs) +
+         scale_y_continuous(labels = scales::percent, limits = c(0,1.01), expand = c(0,0)) +
+         scale_x_discrete(labels = gsub("s_", "", gsub("__.*", "", plotDat$Sample))) +
+         xlab("") +
+         ylab("Relative Percent") +
+         labs(title = "CIBERSORT") +
+         bicTheme +
+         theme(axis.text.x = element_text(angle = 90, size = xtext, vjust = 0.5, hjust = 1.1, color = "black"),
+               axis.line.x = element_blank(),
+               axis.line.y = element_blank(),
+               axis.ticks.y = element_line(size = 0.5),
+               axis.text.y = element_text(color = "black"),
+               panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(),
+               legend.title = element_blank(),
+               legend.text = element_text(size = ifelse(numSmps > 30, 12, 14)),
+               legend.key.size = unit(0.2, 'in'),
+               legend.position = "right",
+               plot.margin = marg) +
+         guides(fill=guide_legend(ncol=1))
+
+  if(!is.null(extraTheme)){
+      plt <- plt + extraTheme
+  }
+
+  pg <- plt
+
+  if(annotate) {
+    if(!sortedByGroup && !sortByGroup){
+      log_error("Data not sorted by group. Can not annotate CIBERSORT plot.")
+    } else {
+  
+      annDat <- plotDat %>% 
+                select(Sample, Group) %>% unique %>%
+                mutate(Sample = gsub("s_", "", Sample), Group = gsub("_", "\n", Group), 
+                       x = row_number()) %>%
+                group_by(Group) %>%
+                mutate(first = ifelse(x == min(x), x, NA),
+                       last = ifelse(x == min(x), max(x), NA),
+	     	       mid = ifelse(x == min(x), (last + first)/2, NA),
+                       label = ifelse(x == min(x), Group, NA))
+ 
+      plt2 <- ggplot(annDat, mapping = aes(x = x, y = 1), color = "black", fill = "white") +
+                geom_segment(mapping = aes(x = first - 0.4, y = 1, xend = last + 0.4, yend = 1)) +
+                scale_x_continuous(labels = annDat$Sample, breaks = annDat$x, 
+                                   limits = c(min(annDat$x) - 0.5, max(annDat$x) + 0.5), expand = c(0,0.1)) +
+                scale_y_continuous(limits = c(0, 1.05), expand = c(0,0)) +
+                xlab("") + ylab("") +
+                bicTheme +
+                theme(axis.text.x = element_blank(), 
+                      axis.line.x = element_blank(),
+                      axis.line.y = element_blank(),
+                      axis.ticks.y = element_blank(),
+                      axis.text.y = element_blank(),
+                      panel.grid.major = element_blank(),
+                      panel.grid.minor = element_blank(),
+                      plot.margin = margin(t = -0.75, b = 1.5, unit = "lines"))
+    
+      for(x in which(!is.na(annDat$label))){
+          plt2 <- plt2 +
+                  annotate("text", x = annDat$mid[x], y = 0.5, label = annDat$label[x], hjust = 0.5, 
+                           lineheight = 1, size = 3)
+      }
+      pg <- plot_grid(plt, plt2, align = 'v', axis = 'lr', rel_heights = c(1, 0.15), ncol=1)
+    }
+  }
+  if(!is.null(file)){
+    pdf(file, width = 11, height = 8.5)
+    grid.draw(pg)
+    dev.off()
+  } 
+  return(pg)
+}
+
+prep.for.volcano <- function(res, pvalCol, fcCol, pCut, fcCut, labelCol = NULL){
+    vdat <- res %>%
+            mutate(`-Log10P` = log10(!!as.name(pvalCol)) * -1,
+            passP = ifelse(!!as.name(pvalCol) < pCut, TRUE, FALSE),
+            passFC = ifelse(abs(!!as.name(fcCol)) >= fcCut, TRUE, FALSE),
+            plotLabel = "")
+    if(!is.null(labelCol)){
+        if(!labelCol %in% names(vdat)){
+            stop(paste0("'", labelCol, "' does not exist in data."))
+        }
+        vdat <- vdat %>% mutate(plotLabel = ifelse(passP & passFC, !!as.name(labelCol), NA))
+    }
+    vdat
+}
+
+bic.volcano.plot <- function(dat, fcCol, pvalCol = "pval", labelGenes = T, maxSig = 0.05, fcCut = 1, title = "",
+                              yLabel = "Significance", xLabel = "Fold Change", pointLabelCol = "plotLabel", maxLabels = 50,
+                              showCutoffs = TRUE, file = NULL){
+
+    clrs <- c('#cc0000', '#008000', 'darkgray')
+    lgndFClbl <- gsub("\\[", "\\(", gsub("\\]", "\\)", fcCol))
+    names(clrs) <- c(paste0(lgndFClbl, ' and ', pvalCol), lgndFClbl, "NS") 
+
+    #lgndLabels <- list(bquote(.(xLabel) ~ and ~ .(yLabel)), xLabel, bquote('NS') )
+    lgndLabels <- names(clrs)
+    names(lgndLabels) <- names(clrs) 
+
+    plotDat <- dat %>%
+               mutate(Significance = factor(ifelse(passP & passFC, names(clrs)[1], 
+                                             ifelse(passFC, lgndFClbl, "NS")),
+                                           levels = names(clrs)))
+
+    ### if not showing cutoffs, no colors needed
+    if(!showCutoffs){
+        plotDat$Significance <- "NS"
+        clrs <- c(NS = "black")
+        lgndLabels <- c(NS = "NS")
+    }
+
+    cutoffLineSize <- 0.5
+    fontSize       <- 12
+    pointSize      <- 1.5
+    alpha          <- 0.5
+    xmax           <- max(abs(plotDat[[fcCol]]))
+    ymax           <- max(plotDat[[pvalCol]])
+    legendPos      <- ifelse(showCutoffs, "top", "none")
+    legendDir      <- "horizontal"
+    numPoints <- nrow(plotDat)
+
+    ### make plot
+    p <- ggplot(plotDat, aes(x = !!as.name(fcCol), y = !!as.name(pvalCol), 
+                             color = Significance, label=!!as.name(pointLabelCol))) +
+         geom_point(size = pointSize, alpha = alpha)
+
+    if(showCutoffs){
+        p <- p +
+             geom_vline(xintercept = fcCut * -1, linetype = "dashed", size = cutoffLineSize) +
+             geom_vline(xintercept = fcCut, linetype = "dashed", size = cutoffLineSize) +
+             geom_hline(yintercept = maxSig, linetype = "dashed", size = cutoffLineSize)
+    }
+
+    p <- p +
+         scale_y_continuous(limits = c(0, ymax)) +
+         scale_x_continuous(limits = c(xmax * -1, xmax)) +
+         scale_color_manual(values = clrs, labels = lgndLabels) 
+
+    p <- p + 
+         labs(title = title) +
+         ylab(yLabel) +
+         xlab(xLabel) +
+         bicTheme +
+         theme(legend.position = legendPos,
+               legend.direction = legendDir,
+               legend.justification = c(0, 1),
+               legend.title = element_blank(),
+               legend.spacing.x = unit(0.2, "cm"),
+               legend.text = element_text(margin = margin(l = -7)),
+               plot.margin = unit(c(1.5,0.25,1.5,0.25), "in"))
+
+    if(labelGenes && !is.na(pointLabelCol)){
+        ## take the [maxLabels] genes with the largest abs FC
+        labelDat <- plotDat %>%
+                    arrange(desc(abs(!!as.name(fcCol)))) %>%
+                    filter(!is.na(!!as.name(pointLabelCol))) %>%
+                    mutate(rn = row_number()) %>%
+                    filter(rn <= maxLabels)
+        p <- p +
+             geom_text_repel(data = labelDat,
+                             aes(x = !!as.name(fcCol), y = !!as.name(pvalCol), label=!!as.name(pointLabelCol)),
+                             color = "black",
+                             min.segment.length = unit(2, "mm"))
+    }
+
+    ### annotate with total number of genes (points) included on plot
+    total <- paste0("n=", formatC(numPoints, big.mark=","))
+    p <- p + labs(title = title, caption = total)
+    
+    ### increase size of points in legend slightly
+    p <- p + guides(shape = guide_legend(override.aes = list(size = 6)))
+
+    if(!is.null(file)){ 
+        pdf(file, width = 8.5, height = 8.5) 
+        print(p)
+        dev.off()
+    }
+    return(p)
+}
+
+
+
 
 #' Plot MA
 #'
@@ -366,14 +908,44 @@ bic.deseq.plot.pca <- function(cds, file=NULL){
 #' @param res   object returned from DESeq function nbinomTest
 #' @param file  PDF file to which plot should be saved (optional)
 #' @export
-bic.plot.ma <- function(res, file=NULL){
-  if(!is.null(file)){
-    pdf(file)
-  }
-  DESeq::plotMA(res)
-  if(!is.null(file)){
-    dev.off()
-  }
+bic.plot.ma <- function(res, title = "", file=NULL){
+
+    ## data prep taken directly from DESeq::plotMA
+
+    py <- res %>% filter(baseMean != 0) %>% pull(log2FoldChange)
+    ylim <- c(-1, 1) * quantile(abs(py[is.finite(py)]), probs = 0.99) * 1.1
+    res <- res %>% 
+           mutate(col = ifelse(res$padj >= 0.1, "gray32", "red3"),
+                  shape = ifelse(log2FoldChange < ylim[1], 6, ifelse(log2FoldChange > ylim[2], 2, 16)),
+                  y = pmax(ylim[1], pmin(ylim[2], log2FoldChange))) %>%
+           filter(baseMean != 0)
+
+    clrs <- c("red3", "gray32")
+    names(clrs) <- clrs
+    pointSize <- 0.5
+    p <- ggplot(res, aes(x = baseMean, y = y, color = col, fill = col)) +
+         geom_point(data = res %>% filter(shape == 6), shape = 6, size = pointSize) +
+         geom_point(data = res %>% filter(shape == 16), shape = 16, size = pointSize) +
+         geom_point(data = res %>% filter(shape == 2), shape = 2, size = pointSize) +
+         geom_hline(yintercept = 0, size = 1, color = "red3", alpha = 0.5) +
+         scale_x_continuous(trans = "log", 
+                            labels = scales::scientific, breaks = c(0.1, 10, 1000, 100000)) +
+         ylab(expression(log[2] ~ fold ~ change)) +
+         xlab("mean of normalized counts") +
+         labs(title = title) +
+         scale_color_manual(values = clrs) +
+         bicTheme +
+         theme(legend.position = "none",
+               axis.text.y = element_text(color = "black"),
+               axis.text.x = element_text(color = "black"),
+               plot.margin = margin(t = 0.25, b = 0.25, r = 0.25, l = 0.25, unit = "cm"))
+
+    if(!is.null(file)){
+       pdf(file, height = 8.5, width = 11)
+       print(p)
+       dev.off()
+    }
+    return(p)
 }
 
 #' Histogram of p-values
@@ -381,14 +953,27 @@ bic.plot.ma <- function(res, file=NULL){
 #' @param dat  data frame with at least one column with name 'pvals'
 #' @param file PDF file to which plot should be saved (optional)
 #' @export
-bic.pval.histogram <- function(dat,file=NULL){
+bic.pval.histogram <- function(dat, title = "", file=NULL){
+  
+  p <- ggplot(dat, aes(x = pval)) +
+       geom_histogram(binwidth = 0.01, fill = "royalblue3", color = "darkblue") +
+       scale_x_continuous(breaks = seq(0, 1, 0.2), expand = c(0.01, 0.01)) +
+       scale_y_continuous(expand = c(0.01, 0.01)) +
+       ylab("Frequency") +
+       xlab("p-value") +
+       labs(title = title) +
+       bicTheme +
+       theme(panel.grid.major = element_blank(),
+             panel.grid.minor.x = element_blank(),
+             plot.margin = margin(t = 0.25, b = 0.25, r = 0.25, l = 0.25, unit = "cm")) ## these margins help for thumbnails in report
+
   if(!is.null(file)){
-    pdf(file)
-  }
-  hist(dat$pval, breaks=100, col="blue", border="slateblue", main="",xlab="p-value",ylab="Frequency")
-  if(!is.null(file)){
+    pdf(file, height = 8.5, width = 11)
+    print(p)
     dev.off()
   }
+  return(p)
+
 }
 
 #' Validate data from PICARD CollectRnaSeqMetrics or AlignmentSummaryMetrics
@@ -671,125 +1256,119 @@ bic.plot.alignment.summary <- function(dat,position="stack",pct=FALSE,col.pal="S
   }
 }
 
+#' Size font according to size of device and plot margins
+#'
+#' Calculate font size in pt using device height and plot margin
+#' in inches, and the number of lines needed to fit on plot
+#' 
+#' @param h       device height in inches
+#' @param marg    unit object; plot margins in inches
+#' @param nLines  number of lines needed to fit into plot
+getFontSizeInPoints <- function(h, marg, nLines){
+    inH <- as.numeric(unit(h, 'in') - (marg[1] + marg[3]))
+    inchToPt(inH)/nLines
+}
+
+getFontSizeInMM <- function(h, marg, nLines){
+    inH <- as.numeric(unit(h, 'in') - (marg[1] + marg[3]))
+    inchToMM(inH)/nLines
+}
+
+inchToPt <- function(inches){
+    inches * 72.27
+}
+
+ptToInch <- function(pt){
+    pt / 72.27
+}
+
+inchToMM <- function(inches){
+    inches * 25.4
+}
+
+mmToPt <- function(mm){
+    mm / 0.35
+}
+
+ptToMM <- function(pt){
+    pt * 0.35
+}
+
+getPlotHeightInPoints <- function(h, marg){
+    inH <- as.numeric(unit(h, 'in') - (marg[1] + marg[3]))
+    inchToPt(inH)
+}
+
+getPlotWidthInPoints <- function(w, marg){
+    inW <- as.numeric(unit(w, 'in') - (marg[2] + marg[4]))
+    inchToPt(inW)
+}
 #' Write PDF file containing heierarchical clustering tree
 #'
 #' Quickly plot heirarchical clustering of data with several default
 #' parameters like width, height, font size, etc.
 #' 
-#' @param dat            matrix containing data to plot
-#' @param file.name      file name. Default: "tmp.pdf"
-#' @param title          Title of plot
-#' @param sample.labels  Vector of sample labels. Default: column names in matrix
-#' @param conds          vector of sample conditions, in same order as column names
-#'                       in matrix or sample.labels; if given, nodes will be colored
-#'                       according to conditions; Default: NULL
+#' @param norm.counts    matrix containing data to plot
+#' @param file           file name. Default: NULL
 #' @param width          plot width (see plot docs)
 #' @param height         plot height (see plot docs)
-#' @param lwd            line width
-#' @param cex.main       size of title
-#' @param cex.lab        size of labels
-#' @param cex            font size
-#' @param xlab           label of x axis
-#' @param ylab           label of y axis
-#' @export
-bic.pdf.hclust<-function(dat,conds=NULL,file.name="tmp.pdf",title="",width=20,height=14,lwd=3,
-    cex.main=2.5,cex.lab=3.0,cex=3.0,xlab="",ylab="",sample.labels=NULL)
-{
-  if(!is.null(sample.labels)){
-    colnames(dat) <- sample.labels
-  }
-  h <- hclust(dist(t(dat)))
-  dend <- as.dendrogram(h)
-
-  lab.cex = 2.0
-  max.name = 1
-  ## get longest column name in order to ensure margins are correct
-  for(n in colnames(dat)){
-    if (nchar(n) > max.name){
-      max.name <- nchar(n)
-    }
-  }
-  ## adjust label size if number of samples is 20
-  if(ncol(dat) > 20){
-    lab.cex <- 30/ncol(dat)
-  }
-
-  dend <- dendextend::set(dend,"labels_cex",lab.cex)
-
-  ## if conditions are given, color points on leaves accordingly
-  if(!is.null(conds)){
-    names(conds) <- colnames(dat)
-    conds <- conds[labels(dend)]
-    pch <- c(19)
-    col=as.numeric(as.factor(conds))
-    dend <- dendextend::set(dend,"leaves_pch",pch)
-    dend <- dendextend::set(dend,"leaves_col",col)
-    dend <- dendextend::set(dend,"leaves_cex",lab.cex)
-  }
-
-  if(!is.null(file.name)){
-    pdf(file.name,width=width,height=height)
-  }
-  rmar <- max.name*(lab.cex/2)
-  par(oma=c(3,2,3,1))
-  par(mar=c(3,2,2,rmar))
-  plot(dend, horiz=T,lwd=lwd, main=title, cex.main=cex.main,xlab=xlab,ylab=ylab, cex.lab=lab.cex, cex=cex)
-  if(!is.null(file.name)){
-    dev.off()
-  }
-}
-
-
-#' Plot heirachical clustering of all samples
 #'
-#' Plot clustering of samples using the heierarchical clustering method
-#' 
-#' @param norm.counts  data matrix containing normalized counts, where
-#'                     a column represents a sample and a row represents
-#'                     a gene. may or may not contain "ID" and "GeneSymbol"
-#'                     columns.
-#' @param conds        vector of sample conditions, in same order as column names 
-#'                     in matrix or sample.labels; if given, nodes will be colored
-#'                     according to conditions; Default: NULL
-#' @param title        main title of plot
-#' @param log2         logical indicating whether data is on log2 scale (Default: FALSE)
-#' @param file.name    plot will be saved in this file; Default: 
-#'                     $PWD/counts_scaled_hclust.pdf
 #' @export
-bic.hclust.samples <- function(norm.counts, conds = NULL, log2 = FALSE, 
-                               file.name = NULL, title = ""){
+bic.hclust <- function(norm.counts, clrs, file = NULL, height = 8.5, width = 11){
 
-  if("ID" %in% names(norm.counts) | "GeneSymbol" %in% names(norm.counts)){
-    norm.counts <- norm.counts[,-grep("ID|GeneSymbol",names(norm.counts))]
-  }
-  norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
-log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
-  if(ncol(norm.counts) < 3){
-    log_warn("Less than three samples; can not run cluster analysis\n")
-    return(NULL) 
-  }
+    library(ggdendro)
+    dat <- norm.counts %>% dplyr::select(starts_with("s_")) %>% as.matrix %>% t
+    dat <- log2(dat + 1)
+    hc <- hclust(dist(dat))
 
-  if(is.null(file.name)){
-    file.name <- "counts_scaled_hclust.pdf"
-  }
-  
-  if(log2==FALSE){
-    pseudo <- min(norm.counts[norm.counts > 0])
-    counts2hclust <- log2(norm.counts + pseudo)
-  } else {
-    counts2hclust <- norm.counts
-  }
-  tryCatch({
-   bic.pdf.hclust(counts2hclust, conds = conds, file.name = file.name, title = title)
-     }, error = function(err) {
-        stop(err)
-        traceback()
-     }, warning= function(war){
-        warn(war)
-     }
-  )
+    dendDat <- dendro_data(as.dendrogram(hc))
 
+    grps <- sort(unique(gsub(".*__", "", dendDat$labels$label)))
+    dendDat$labels <- dendDat$labels %>% 
+                      mutate(Group = factor(gsub(".*__", "", label), levels = grps))
+
+    if(is.null(clrs)){
+        clrs <- bic.get.colors(length(grps))
+        names(clrs) <- sort(grps)
+    }
+
+    marg <- unit(c(0.25,1,0.25,1), "in")
+    lblFS <- min(14, getFontSizeInPoints(height, marg, nrow(dendDat$labels) * 1.2))
+    lgndFS <- min(14, getFontSizeInPoints(height*.75, unit(c(0,0,0,0),"in"), length(grps) ))
+    pointSz <- min(4.8, ptToMM(lblFS))
+    p <- ggplot(dendDat$segments) + 
+           geom_segment(aes(x = x, y = y, xend = xend, yend = yend)) +
+           geom_point(data = dendDat$labels, aes(x = x, y = 0, fill = Group), 
+                      size = pointSz, color = "black", shape = 21) +
+           labs(title = "Unsupervised clustering", subtitle = "All counts scaled using DESeq method") +
+           scale_y_reverse() +
+           scale_x_continuous(breaks = dendDat$labels$x, labels = dendDat$labels$label, position = "top") +
+           scale_fill_manual(values = clrs) +
+           theme_minimal() +
+           bicTheme +
+           theme(text = element_text(color = "black"), 
+                 axis.line.y = element_blank(),
+                 panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 axis.text.x = element_text(size = lblFS, angle = 90, hjust = 1, color = "black"),
+                 axis.text.y = element_text(size = lblFS, color = "black"),
+                 axis.title.y = element_blank(),
+                 axis.title.x = element_blank(),
+                 plot.margin = marg,
+                 legend.key.height = unit(lgndFS, "pt"), 
+                 legend.text = element_text(size = lgndFS, color = "black"),
+                 legend.title = element_blank()) +
+           guides(fill = guide_legend(ncol = max(1, ceiling(length(grps)/30)))) +
+           coord_flip()
+
+    if(!is.null(file)){ 
+        pdf(file, height = height, width = width)
+        print(p)
+        dev.off()
+    }
+    return(p)
 }
+
 
 #' Plot MDS clustering of all samples
 #'
@@ -798,35 +1377,28 @@ log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
 #' @param norm.counts  data matrix containing normalized counts, where
 #'                     a column represents a sample and a row represents
 #'                     a gene
-#' @param conds        vector of conditions to be appended to sample IDs
-#'                     for labeling
 #' @param file         PDF file to which plot should be saved (optional)
 #' @param log2         logical indicating whether norm.counts is on log2 scale 
 #'                     Default: FALSE
 #' @param labels       logical indicating whether to include sample labels on plot; 
 #'                     Default: TRUE
 #' @export
-bic.mds.clust.samples <- function(norm.counts, log2 = FALSE, file = NULL, 
-                                  conds = NULL, labels = TRUE){
+bic.mds.clust.samples <- function(norm.counts, clrs = NULL, plotLog2 = FALSE, file = NULL, 
+                                  labels = TRUE, width = 11, height = 8.5){
 
   if("ID" %in% names(norm.counts) |
      "GeneSymbol" %in% names(norm.counts)){
-    norm.counts <- norm.counts[,-grep("ID|GeneSymbol", names(norm.counts))]
+    norm.counts <- norm.counts[,-grep("^ID$|^GeneSymbol$", names(norm.counts))]
   }
 
   norm.counts <- bic.matrix2numeric(as.matrix(norm.counts))
-log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
 
   if(ncol(norm.counts) < 3){
     log_warn("Less than three samples; can not run cluster analysis\n")
     return(NULL) 
   }
 
-  if(is.null(conds)){
-    conds=rep('s',length(names(norm.counts)))
-  }
-
-  if(log2==FALSE){
+  if(plotLog2){
     pseudo <- min(norm.counts[norm.counts > 0])
     counts2hclust <- log2(norm.counts + pseudo)
   } else {
@@ -834,20 +1406,60 @@ log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
   }
 
   md <- cmdscale(dist(t(counts2hclust)),2)
+  plotDat <- as_tibble(md) %>% 
+             mutate(Sample = gsub("__.*", "", rownames(md)), 
+                    Group = gsub(".*__", "", rownames(md)))
+  grps <- unique(plotDat$Group)
+  if(!is.null(clrs)){
+      grps <- names(clrs)
+  }
+  plotDat$Group <- factor(plotDat$Group, levels = grps)
 
-  if(!is.null(file)){
-    pdf(file,width=18,height=12)
+  if(is.null(clrs)){
+    clrs <- bic.get.colors(length(levels(plotDat$Group)))
+    names(clrs) <- sort(levels(plotDat$Group))
   }
 
-  grps = as.factor(gsub(".*__", "", rownames(md)))
-  plot(md, col=grps, lwd=2.5, cex=1.5, main="Multidimensional Scaling (MDS)")
-  legend("topleft", levels(grps), col=factor(levels(grps)),pch=1,cex=1.3)
+  marg <- unit(c(0.75, 1.5, 0.75, 1.5), "in")
+  if(length(levels(plotDat$Group)) > 5){
+      marg <- unit(c(0.25, 1.5, 0.25, 1.5), "in")
+  }
+  fontPts <- getFontSizeInPoints(height, marg, nrow(plotDat))
+  lgndRows <- ceiling(length(levels(plotDat$Group))/5)
+  lgndFS <- min(14, getFontSizeInPoints(((unit(height, "in") - (marg[1] + marg[3]))/20) * lgndRows, unit(c(0,0,0,0),"in"), lgndRows ))
+  pointSz <- min(4, ptToMM(fontPts))
+
+  p <- ggplot(plotDat, aes(x = V1, y = V2, fill = Group, label = Sample), color = "black") +
+       geom_point(size = pointSz, shape = 21, alpha = 0.7) +
+       scale_fill_manual(values = clrs, labels = names(clrs)) +
+       xlab("mds[,1]") +
+       ylab("mds[,2]") +
+       labs(title = "Multidimensional Scaling (MDS)", subtitle = "All counts scaled using DESeq method") +
+       theme_minimal() +
+       bicTheme +
+       theme(text = element_text(fontPts, color = "black"),
+             axis.text.x = element_text(angle = 90, hjust = 1, color = "black"),
+             axis.text.y = element_text(color = "black"),
+             axis.title.y = element_blank(),
+             axis.title.x = element_blank(),
+             plot.margin = marg,
+             legend.key.size = unit(lgndFS, "pt"), 
+             legend.title = element_blank(),
+             legend.position = "bottom",
+             legend.text = element_text(size = lgndFS, hjust = 0, margin = margin(l = -0.25, unit = "in")),
+             legend.spacing.x = unit(0.25, "in")) 
+       
   if(labels){
-    text(md, rownames(md), pos = 1, offset = 1, cex=0.9)
+      p <- p +
+           geom_text_repel(color = "black", size = 4, point.padding = 0.5)
   }
-  if(!is.null(file)){
-    dev.off()
-  }
+
+  if(!is.null(file)){ 
+     pdf(file, width = width, height = height) 
+     print(p)
+     dev.off()
+  } 
+  return(p)
 }
 
 #' Create PDF of generic red/green/black heatmap showing relative
@@ -873,61 +1485,370 @@ log_debug(paste0("ncol(norm.counts): ", ncol(norm.counts)))
 #' @param file                name of PDF file to which heatmap should be written. (optional) 
 #' 
 #' @export
-bic.standard.heatmap <- function(norm.counts, condA, condB, genes = NULL, file = NULL){
+bic.standard.heatmap <- function(norm.counts, condA, condB, genes, file = NULL, 
+                                  key = NULL, annClrs = NULL, height = 8.5, width = 11, fillFun = NULL,
+                                  colorFun = NULL){
 
-  dat <- norm.counts
+    dat <- norm.counts
 
-  tryCatch({ 
+    gnCol <- "GeneSymbol"
+    if(!gnCol %in% names(dat) || !any(genes %in% dat[[gnCol]])){
+        gnCol <- "ID"
+    }
+
     htmp.dat <- dat %>%
-                filter(ID %in% genes, complete.cases(.)) %>%
-                filter(row_number() < 101) %>%
-                select(ID, dplyr::matches("Gene"), grep(paste(c(condA, condB), collapse = "|"), names(.)))
-                
-    gns <- htmp.dat$ID
-    if("GeneSymbol" %in% names(htmp.dat)){
-        htmp.dat <- htmp.dat %>%
-                    filter(!duplicated(GeneSymbol))
-        gns <- htmp.dat$GeneSymbol
+                filter_at(vars(all_of(gnCol)), all_vars(. %in% genes)) %>%
+                dplyr::select(all_of(gnCol), grep(paste(paste0("__", c(condA, condB), "$"), collapse = "|"), names(.))) %>%
+                gather(2:ncol(.), key = "Sample", value = "Count") %>%
+                group_by_at(c("Sample", gnCol)) %>%
+                summarize(Count = mean(Count)) %>%  ## for multiple transcripts, take average count
+                separate(Sample, c("Sample", "Group"), sep="__") %>%
+                mutate(logCount = log2(Count + 1)) %>%
+                group_by_at(gnCol) %>% 
+                mutate(MN = mean(logCount)) %>%
+                ungroup() %>% 
+                mutate(Val = logCount - MN) %>%
+                select_at(c(all_of(gnCol), "Sample", "Val"))
+
+    if(is.null(fillFun)){
+        fillFun <- scale_fill_gradient2(low = "green", mid = "black", high = "red")
     }
-
-    htmp.dat <- htmp.dat %>%
-                select_if(is.numeric) %>%
-                as.matrix()
-    rownames(htmp.dat) <- gns
-
-    ## replace any zeros with ones before taking log2
-    htmp.dat[htmp.dat==0] <- 1
-    htmp.dat <- as.matrix(log2(htmp.dat))
-
-    if(dim(htmp.dat)[1] > 1 && dim(htmp.dat)[2] > 1){
-
-      if(!is.null(file)){ pdf(file,width=16,height=16) }
-
-      par(cex.main=1.4)
-      heatmap.2(htmp.dat - apply(htmp.dat, 1, mean), 
-                trace='none', 
-                col=colorpanel(16,"green","black","red"),
-                cexRow=0.9,
-                dendrogram="both",
-                main=paste("Top Differentially Expressed Genes ",condA," vs ",condB,sep=""), 
-                symbreaks=TRUE, 
-                keysize=0.5, 
-                margin=c(20,10))
-
-      if(!is.null(file)){ dev.off() }
+    if(is.null(colorFun)){
+        colorFun <- scale_color_gradient2(low = "green", mid = "black", high = "red")
     }
-   }, error = function(e) {
-      print(e)
-      warning(paste0("Can not generate heatmap for ",condA," vs ",condB,". Need at least 2 rows and 2 columns to plot."))
-  })
- 
+    if(is.null(annClrs) && !is.null(key)){
+        annClrs <- bic.get.colors(length(unique(key$Group)))
+        names(annClrs) <- unique(key$Group)
+    }
+    htmp <- bic.rnaseq.heatmap(htmp.dat, "Sample", gnCol, 
+                               fillFun = fillFun, colorFun = colorFun, annClrs = annClrs,
+                               colAnnot = key %>% filter(Sample %in% htmp.dat$Sample), 
+                               title = paste(condB, "vs", condA), 
+                               width = width, height = height, file = file)
+                 
+    return(htmp)
 }
 
 
-bic.deseq.qc <- function(cds, clustering.dir){
+bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterRows = TRUE, colAnnot = NULL, 
+                                rowAnnot = NULL, title = "", subtitle = "", width = 11, height = 8.5,
+                                fillFun = NULL, colorFun = NULL, annClrs = NULL, file = NULL,
+                                maxLabels = 100, labelRows = TRUE, labelCols = TRUE){
+
+    smryDat  <- NULL
+    cDat     <- NULL
+    cDendDat <- NULL
+    rDendDat <- NULL
+    cAnnLbls <- NULL
+    cAnnP    <- NULL
+    rAnnp    <- NULL
+
+    bot_row <- NULL
+    right_col <- NULL
+
+    dat <- htmpDat
+
+    cOrder   <- sort(unique(dat[[cols]]))
+    rOrder   <- sort(unique(dat[[rows]]))
+  
+    if(length(rOrder) > maxLabels){
+        labelRows <- FALSE
+    } else if(length(rOrder) < 3){
+        clusterRows <- FALSE
+    }
+    if(length(cOrder) > maxLabels){
+        labelCols <- FALSE
+    } else if(length(unique(dat[[cols]])) < 3){
+        clusterCols <- FALSE
+    }
+
+    if(clusterRows){
+        rDat <- dat %>% spread(cols, Val)
+        rDendDat <- rDat %>% dist %>% hclust %>% as.dendrogram %>% dendro_data
+        rOrder <- rDat[[rows]][as.numeric(rDendDat$labels$label)]
+    }
+
+    if(clusterCols){
+        cDat     <- dat %>% spread(rows, Val) 
+        cDendDat <- cDat %>% dist %>% hclust %>% as.dendrogram %>% dendro_data
+        cOrder   <- cDat[[cols]][as.numeric(cDendDat$labels$label)]
+    }
+
+    dat[[cols]] <- factor(dat[[cols]], levels = cOrder)
+    dat[[rows]] <- factor(dat[[rows]], levels = rOrder)
+
+
+    smryDat <- dat %>%
+               mutate(bin = cut(Val, seq(min(0, min(Val)), round_any(max(Val) + 1, 0.1), 1), include.lowest = T)) %>%
+               group_by(bin) %>%
+               summarize(Val = n()) %>%
+               mutate(x = as.numeric(gsub("\\(|\\[", "", gsub(",.*", "", bin))))
+
+    bgDat <- tibble(x = seq(min(dat$Val), round(max(dat$Val)), 0.1))
+
+
+    ##########################
+    #  Calculate dimensions  #
+    ##########################
+
+    ## semi-fixed dimensions first
+    rAnnot   <- ifelse(is.null(rowAnnot), 0, ncol(rowAnnot) - 1)
+    cAnnot   <- ifelse(is.null(colAnnot), 0, ncol(colAnnot) - 1)
+
+    nRows    <- length(rOrder) + cAnnot
+    nCols    <- length(cOrder) + rAnnot
+    wPts     <- inchToPt(width)
+    hPts     <- inchToPt(height)
+    rDendW   <- min(wPts, hPts) * 0.15
+    cDendH   <- rDendW * 1.5  ## need to leave room for plot title
+    lgndW    <- ifelse(sum(rAnnot, cAnnot) > 0, wPts * 0.15, 0.01)
+    smryW    <- rDendW 
+    smryH    <- cDendH * 0.5 
+    minMargW <- min(inchToPt(0.5), wPts * 0.1)
+    minMargH <- min(inchToPt(0.5), hPts * 0.1) 
+
+    maxHtmpW <- wPts - rDendW - lgndW - smryW - (minMargH*2) ### total space width available for heatmap and annotations
+    maxHtmpH <- hPts - cDendH - (minMargH * 2)
+
+    boxH     <- min(maxHtmpH/nRows, hPts/50)
+    boxW     <- min(maxHtmpW/nCols, wPts/65) 
+    maxRlbl  <- ifelse(labelRows, max(nchar(rOrder)), 0)
+    maxClbl  <- ifelse(labelCols, max(nchar(cOrder)), 0)
+ 
+    htmpWpts <- max(140, boxW * nCols + maxRlbl)
+    htmpHpts <- boxH * nRows + maxClbl
+
+    ### determine final margins 
+    lrMarg <- (wPts - (rDendW + htmpWpts + lgndW))/2
+    tbMarg <- (hPts - (cDendH + htmpHpts))/2
+    tMarg  <- tbMarg * 0.75
+    bMarg  <- tbMarg * 0.25
+    smryLR <- (lrMarg + rDendW - smryW)/2 
+    smryT  <- tMarg + cDendH - smryH
+
+    top <- tMarg + cDendH
+
+    ## label font sizes
+    cFS <- min(14, htmpWpts/(nCols + 2))
+    rFS <- min(14, (htmpHpts/(nRows + 2)) * 0.8)
+    if(cFS > rFS){
+        cFS <- cFS * 0.75
+        rFS <- rFS * 1.25
+    }
+    lgndKeys <- c()
+
+
+    if(is.null(fillFun)){
+        fillFun <- scale_fill_distiller(type = "seq", palette = "GnBu", trans = "reverse")
+    }
+    if(is.null(colorFun)){
+        colorFun <- scale_color_distiller(type = "seq", palette = "GnBu", trans = "reverse")
+    }
+
+    blank <- ggplot(data.frame(1)) + theme_void()
+    rDend <- cDend <- cAnnP <- rAnnP <- cAnnLbls <- rAnnLbls <- blank 
+    legend <- NULL
+
+    ## plots
+    smry <- ggplot() +
+            geom_vline(data = bgDat,  aes(xintercept = x, color = x), size = 1) +
+            geom_line(data = smryDat, aes(x = x, y = Val, group = 1), color = "cyan") +
+            scale_x_continuous(expand = c(0,0)) +
+            colorFun +
+            xlab("Value") +
+            ylab("Count") +
+            bicTheme +
+            theme(text = element_text(size = top * 0.045, color = "black", family = font),
+                  axis.text.x = element_text(size = top * 0.045, color = "black", family = font),
+                  axis.text.y = element_text(size = top * 0.045, color = "black", family = font),
+                  legend.position = "none",
+                  panel.border = element_rect(fill = NA, color = "black", size = 0.25),
+                  plot.margin = unit(c(smryT, smryLR, 0, smryLR), "pt"))
+
+    htmp <- ggplot(dat, aes_string(x = cols, y = rows)) +
+            geom_tile(aes(fill = Val)) +
+            scale_y_discrete(position = "right", expand = c(0,0)) +
+            scale_x_discrete(expand = c(0,0)) +
+            fillFun +
+            bicTheme +
+            theme(axis.line.x = element_blank(),
+                  axis.line.y = element_blank(),
+                  axis.text.x = element_text(size = cFS, color = "black", angle = 90, hjust = 1, vjust = 0.5),
+                  axis.text.y = element_text(size = rFS, color = "black"),
+                  axis.title.x = element_blank(),
+                  axis.title.y = element_blank(),
+                  legend.position = "none",
+                  legend.direction = "vertical",
+                  legend.title = element_blank(),
+                  plot.margin = unit(c(0, lrMarg, bMarg, 0), "pt"),
+                  panel.border = element_rect(size = 1, color = "black", fill = NA))
+    if(!labelRows){
+        htmp <- htmp + theme(axis.text.y = element_blank())
+    }
+    if(!labelCols){
+        htmp <- htmp + theme(axis.text.x = element_blank())
+    }
+
+    ### this is a hacky way of keeping the title on the plot even if not clustering columns
+    cDend <- ggplot(cDendDat$segments) +
+             labs(title = title, subtitle = subtitle) +
+             theme_void() +
+             theme(plot.margin = unit(c(tMarg, lrMarg, 0, 0), "pt"),
+                   plot.title = element_text(size = hPts * 20/inchToPt(8.5)),
+                   plot.subtitle = element_text(face = "italic",
+                                                size = hPts * 14/inchToPt(8.5)))
+    if(clusterCols){
+        cDend <- cDend + 
+                 geom_segment(aes(x = x, y = y, xend = xend, yend = yend)) +
+                 scale_x_continuous(expand = expansion(add = 0.5)) 
+    } 
+
+    if(clusterRows){
+        rDend <- ggplot(rDendDat$segments) +
+                 geom_segment(aes(x = -y, y = x, xend = -yend, yend = xend)) +
+                 scale_y_continuous(expand = expansion(add = 0.5)) +
+                 theme_void() +
+                 theme(plot.margin = unit(c(0, 0, bMarg, lrMarg), "pt"))
+    } 
+
+    lgndDat <- tibble()  ## legend dat will consist of row AND col annotation
+
+    if(!is.null(colAnnot)){
+        allAnn <- setdiff(names(colAnnot), cols)
+
+        ann <- colAnnot %>% 
+               gather(all_of(allAnn), key = "Annotation", value = "Val") %>%
+               mutate(Val = factor(Val, levels = unique(Val)),
+                      !!as.name(cols) := factor(!!as.name(cols), levels = cOrder))
+        lgndDat <- lgndDat %>% bind_rows(ann)
+
+        lvls <- levels(ann$Val)
+        if(is.null(annClrs)){
+            annClrs <- bic.get.colors(length(lvls))
+            names(annClrs) <- lvls
+        }
+
+        legendCols <- 1 #ifelse(lrMarg > inchToPt(2) & length(annClrs) > 4, 2, 1)
+        legendFS <- ifelse(legendCols == 1, rFS, rFS * 0.75)
+
+        cAnnP <- ggplot(ann, aes(x = !!as.name(cols), y = Annotation)) +
+                 geom_tile(aes(fill = Val), width = 0.95, height = 0.95) + 
+                 scale_fill_manual(values = annClrs) +
+                 scale_y_discrete(expand = c(0,0)) +
+                 scale_x_discrete(expand = c(0,0)) +
+                 theme_void() +
+                 theme(panel.background = element_rect(fill = "gray"),
+                       panel.border = element_rect(size = 0.75, color = "black", fill = NA),
+                       legend.position = "none",
+                       plot.margin = unit(c(0,lrMarg,0,0), unit = "pt"))
+
+        if(length(allAnn) > 1){
+            ## replace blank plot with labels
+            cLblDat <- tibble(x = 1, Annotation = allAnn)
+            cAnnLbls <- ggplot(cLblDat, aes(x = x, y = Annotation, label = Annotation)) + 
+                        scale_x_continuous(expand = c(0,0), limits = c(0.5, 1.01)) +
+                        geom_text(size = ptToMM(rFS), hjust = 1, color = "black") + 
+                        theme_void() +
+                        theme(plot.margin = unit(c(0,0,0,lrMarg), "pt"))
+        } 
+    }
+
+    if(!is.null(rowAnnot)){
+        allRann <- setdiff(names(rowAnnot), rows)
+
+        rAnn <- rowAnnot %>%
+                gather(all_of(allRann), key = "Annotation", value = "Val") %>%
+                mutate(Val = factor(Val, levels = unique(Val)),
+                       !!as.name(rows) := factor(!!as.name(rows), levels = rOrder))
+        lgndDat <- lgndDat %>% bind_rows(rAnn)               
+        
+        lvls <- levels(rAnn$Val)
+        if(is.null(annClrs)){
+            annClrs <- bic.get.colors(length(lvls))  ### TODO: CHECK FOR THE NEED OF DIFFERENT COLORS THAN COL ANNOTATION
+            names(annClrs) <- lvls
+        }
+        legendCols <- ifelse(lrMarg > inchToPt(2) & length(annClrs) > 4, 2, 1) 
+
+        rAnnP <- ggplot(rAnn, aes(x = Annotation, y = !!as.name(rows))) +
+                   geom_tile(aes(fill = Val), width = 0.95, height = 0.95) +
+                   scale_fill_manual(values = annClrs) +
+                   scale_y_discrete(expand = c(0,0)) +
+                   scale_x_discrete(expand = c(0,0)) +
+                   theme_void() +
+                   theme(panel.background = element_rect(fill = "gray"),
+                         panel.border = element_rect(size = 0.75, color = "black", fill = NA),
+                         axis.text.x = element_blank(), 
+                         legend.position = "none", # c(1.01,1.01),
+                         plot.margin = unit(c(0,0,0,0), unit = "pt")) 
+
+        if(length(allRann) > 1){
+            rAnnP <- rAnnP + 
+                     theme(axis.text.x = element_text(size = cFS, color = "black", angle = 90, hjust = 1))
+        }
+    }
+
+    if(nrow(lgndDat) > 0){
+        lgndDat <- lgndDat %>% select(Val) %>% unique %>% mutate(x = 1, y = rev(row_number()))
+        numKeys <- length(levels(lgndDat$Val))
+        lFS     <- min(14, (htmpHpts - bMarg)/(numKeys + 2))
+        numRows <- (htmpHpts - bMarg)/lFS
+        lgndDat <- lgndDat %>% mutate(y = y + (numRows - numKeys))
+
+        lgnd <- ggplot(lgndDat, aes(x = 0, y = y, fill = Val, label = Val)) +
+                geom_point(shape = 22, size = lFS * 0.3) +
+                geom_text(aes(x = 0.05, label = Val), hjust = 0, size = ptToMM(lFS)) +
+                scale_fill_manual(values = annClrs) +
+                scale_x_continuous(limits = c(0, 0.5), expand = c(0.1, 0)) +
+                scale_y_continuous(limits = c(0, numRows + 0.5), expand = c(0,0)) +
+                theme_void() +
+                theme(legend.position = "none",
+                      plot.margin = margin(0, lrMarg * 0.9, bMarg, lrMarg * 0.1, "pt"))
+
+        ### adjust margins on other plots and apply right margin to legend instead
+        htmp <- htmp + theme(plot.margin = unit(c(0,0,bMarg,0), "pt"))
+        if(!is.null(cDend)){
+            cDend <- cDend + theme(plot.margin = unit(c(tMarg, 0, 0, 0), "pt"))
+        }
+        if(!is.null(cAnnP)){
+            cAnnP <- cAnnP + theme(plot.margin = unit(c(0,0,0,0), "pt"))
+        }
+    }
+
+    ###### assemble the parts!
+    rowAnnW <- ifelse(rAnnot > 0, rAnnot * boxW, 0.01)
+    colAnnH <- ifelse(cAnnot > 0, cAnnot * max(boxH,boxW), 0.01)
+
+    rel_widths  <- c(lrMarg + rDendW, rowAnnW, htmpWpts, lgndW + lrMarg)
+    rel_heights <- c(tMarg + cDendH, colAnnH, htmpHpts + bMarg)
+
+    ### align bottom row and right column 
+    ## important to start alignment with the column including main heatmap
+    mainCol <- align_plots(plotlist = list(cDend, cAnnP, htmp), axis = 'lr', align = 'v') 
+    btr <- align_plots(plotlist = list(rDend, rAnnP, mainCol[[3]], blank), axis = 'bt', align = 'h')
+    tpr <- align_plots(plotlist = list(smry, blank, mainCol[[1]], blank), axis = 't', align = 'h')
+
+    plotlist = list(tpr[[1]],  tpr[[2]], tpr[[3]], tpr[[4]],
+                    blank, cAnnLbls, mainCol[[2]], blank,
+                    btr[[1]], btr[[2]], mainCol[[3]], lgnd)
+
+    pg <- plot_grid(plotlist = plotlist, rel_widths = rel_widths, rel_heights = rel_heights, ncol = 4, nrow = 3) 
+                           
+    if(!is.null(file)){
+        pdf(file, height = height, width = width)
+        grid.draw(pg)
+        dev.off()
+    }
+    return(pg)
+
+}
+
+
+
+
+bic.deseq.qc <- function(cds, conds, clustering.dir, idMap = NULL){
     tmp <- tryCatch({
              capture.output(
-               bic.deseq.heatmap(cds,
+               bic.high.expression.heatmap(cds,
                                  file = file.path(clustering.dir,
                                                   paste0(pre,"_heatmap_50_most_highly_expressed_genes.pdf")),
                                 transform=TRUE,
@@ -954,6 +1875,16 @@ bic.deseq.qc <- function(cds, clustering.dir){
              ))
             }, error = function(e){
                print("WARNING: There was an error while creating PCA plot.")
+          })
+
+    tmp <- tryCatch({
+             capture.output(
+               bic.plot.pc.loading(cds, 
+                                  file = file.path(clustering.dir,paste0(pre,"_PC_loadings.pdf")), 
+                                  idMap = idMap)
+             )
+           }, error = function(e){
+               log_error("There was an error while plotting PC loadings.")
           })
 
     tmp <- tryCatch({

@@ -16,16 +16,17 @@ usage <- function(){
 
 }
 
+## quick check for Rlibs dir 
 tmpargs <- commandArgs(trailingOnly = TRUE)
-
 if(any(grepl("Rlibs", tmpargs))){
     Rlibs = tmpargs[grep("Rlibs$", tmpargs) + 1]
     .libPaths(Rlibs)
-    suppressPackageStartupMessages(library(R.utils))
-    suppressPackageStartupMessages(library(logger))
-    suppressPackageStartupMessages(library(tidyverse))
-    log_threshold(DEBUG)
 }
+
+suppressPackageStartupMessages(library(R.utils))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(logger))
+log_threshold(DEBUG)
 
 #
 ## after loading R.utils, get command args again in list format
@@ -39,7 +40,6 @@ if(length(args) == 0 || !all(c("pre", "bin") %in% names(args))){
     q("no", 1, FALSE)
 }
 for(i in 1:length(args)){
-    #print(paste0(names(args)[i], " = ", args[[i]]))
     assign(names(args)[i], args[[i]])
 }
 if(!exists("pdir") || is.null(pdir)){ pdir <- "." }

@@ -1,19 +1,136 @@
-bic.setup.directories <- function(counts.dir, clustering.dir, all.gene.dir = NULL, 
-                                  diff.exp.dir = NULL, gsa.dir = NULL, 
+bic.log.params <- function(pre, forceRerun, cibersort, diff.exp, GSA, GSEA, report, counts.file, cibersortR,
+                       cibersortSigFile, gmt.dir, species, gsea.sh, request, svnrev,
+                       counts.dir, clustering.dir, cibersort.dir, all.gene.dir, diff.exp.dir, gsa.dir,
+                       gsea.dir, qc.dir, max.p, lfc, min.abs.fc, min.count, percentile, fitType,
+                       orderPvalQ, method, sharingMode, zeroaddQ, libsizeQ, no.replicates, heatmaps,
+                       comps.only, comp.file, sample.key){
+    log_debug(paste0("LD_LIBRARY_PATH  ", Sys.getenv("LD_LIBRARY_PATH")))
+    log_debug(paste0("PATH             ", Sys.getenv("PATH")))
+
+    log_debug("Modules to run/not run:")
+    log_debug("  clustering: TRUE")
+    log_debug("  CIBERSORT:  ", cibersort)
+    log_debug("  diff.exp:   ", diff.exp)
+    log_debug("  GSA:        ", GSA)
+    log_debug("  GSEA:       ", GSEA)
+    log_debug("  PDF report: ", report)
+    log_debug("  forceRerun: ", forceRerun)
+    cat("\n")
+    log_debug("Required arguments:")
+    log_debug("  counts.file: ", counts.file)
+    cat("\n")
+    log_debug("Required arguments (by module):") 
+    if(cibersort){
+        log_debug("CIBERSORT")
+        log_debug("  cibersortR:       ", cibersortR)
+        log_debug("  cibersortSigFile: ", cibersortSigFile)
+    }
+    if(GSA){
+        log_debug("GSA")
+        log_debug("  gmt.dir: ", gmt.dir)
+        log_debug("  species: ", species)
+    }
+    if(GSEA){
+        log_debug("GSEA")
+        log_debug("  gsea.sh: ", gsea.sh)
+        log_debug("  gmt.dir: ", gmt.dir)
+    }
+    if(report){
+        log_debug("PDF report")
+        log_debug("  request: ", request)
+        log_debug("  svnrev:  ", svnrev)
+    }
+    cat("\n")
+    log_debug("Output directories: ")
+    log_debug("  counts.dir:     ", counts.dir)
+    log_debug("  clustering.dir: ", clustering.dir)
+    log_debug("  all.gene.dir:   ", all.gene.dir)
+    log_debug("  cibersort.dir:  ", cibersort.dir)
+    log_debug("  diff.exp.dir:   ", diff.exp.dir)
+    log_debug("  gsa.dir:        ", gsa.dir)
+    log_debug("  gsea.dir:       ", gsea.dir)
+    log_debug("  qc.dir:         ", qc.dir)
+    log_debug("  gmt.dir:        ", gmt.dir)
+    cat("\n")
+    log_debug("Optional args: ")
+    log_debug("  max.p:         ", max.p)
+    log_debug("  lfc:           ", lfc)
+    log_debug("  min.abs.fc:    ", min.abs.fc)
+    log_debug("  min.count:     ", min.count)
+    log_debug("  percentile:    ", percentile)
+    log_debug("  fitType:       ", fitType)
+    log_debug("  orderPvalQ:    ", orderPvalQ)
+    log_debug("  method:        ", method)
+    log_debug("  sharingMode:   ", sharingMode)
+    log_debug("  zeroaddQ:      ", zeroaddQ)
+    log_debug("  libsizeQ:      ", libsizeQ)
+    log_debug("  no.replicates: ", no.replicates)
+    log_debug("  heatmaps:      ", heatmaps)
+    if(!is.null(sample.key)){ log_debug("  sample.key:   ", sample.key) }
+    if(!is.null(comps.only)){ log_debug("  comps.only:   ", comps.only) }
+    if(!is.null(comp.file)){ log_debug("  comp.file:   ", comp.file) }
+}
+
+bic.report.runnable <- function(report, request, svnrev){
+    if(report && (is.null(request) | is.null(svnrev))){
+        log_error("PDF report requires params --request and --svnrev. Turning 'report' OFF.\n")            
+        errorsThrown <- TRUE
+        return(FALSE)
+    }
+    report 
+}
+
+bic.gsa.runnable <- function(GSA, species){
+    if(GSA && (is.null(bic.gsa.species(species)))){
+        log_warn("Invalid or missing species (GSA only supported for human and mouse). Turning off GSA.\n")
+        return(FALSE)
+    }
+    GSA
+}
+
+bic.gsa.species <- function(species){
+    if(grepl("human|hg19|b37|hybrid", species)){
+        return("human")
+    } else if(grepl("mouse|mm10|mm9", species)) {
+        return("mouse")
+    }
+    return(NULL)
+}
+
+bic.gsea.runnable <- function(GSEA, gsea.sh, gmt.dir){
+    if(GSEA && (is.null(gsea.sh) | is.null(gmt.dir))){
+        log_warn("GSEA requires params --gsea.sh and --gmt.dir. Turning GSEA OFF.\n")
+        return(FALSE)
+    }
+    GSEA
+}
+
+bic.cibersort.runnable <- function(cibersort, cibersortR, cibersortSigFile){
+    if(cibersort && (is.null(cibersortR) | is.null(cibersortSigFile))){
+        log_warn("CIBERSORT requires params --cibersortR and --cibersortSigFile. Turning 'cibersort' OFF.\n")
+        return(FALSE)
+    }
+    cibersort
+}
+
+
+
+bic.setup.directories <- function(counts.dir, clustering.dir, all.gene.dir = NULL,
+                                  cibersort.dir = NULL, 
+                                  diff.exp.dir = NULL, gsa.dir = NULL, gsea.dir = NULL, 
+                                  qc.dir = NULL,
                                   multi.comps = FALSE, comp.set.nums = NULL){
     
     outDirs <- list()
-    all.gene <- all.gene.dir 
-    de       <- diff.exp.dir
-    gsa      <- gsa.dir
-    counts   <- counts.dir
-    clusters <- clustering.dir
     
     outDirs[[1]] <- list(countsDir  = counts.dir,
                          allGeneDir = all.gene.dir, 
-                         DEdir      = diff.exp.dir,
-                         GSAdir     = gsa.dir, 
-                         clusterDir = clustering.dir)
+                         cellCompDir = cibersort.dir,
+                         DEdir       = diff.exp.dir,
+                         GSAdir      = gsa.dir, 
+                         GSEAdir     = gsea.dir,
+                         QCdir       = qc.dir,
+                         clusterDir  = clustering.dir)
 
     if(!is.null(diff.exp.dir)){
         outDirs[[1]]$DEfigDir   <- file.path(outDirs[[1]]$DEdir, "figures")
@@ -23,16 +140,21 @@ bic.setup.directories <- function(counts.dir, clustering.dir, all.gene.dir = NUL
         for(i in comp.set.nums){
             sfx <- paste0("_", i)
             setName <- paste0("comparisons_", i)
-            dirs <- list(countsDir = file.path(dirname(counts), setName, paste0(basename(counts), sfx)),
-                         clusterDir = file.path(dirname(clusters), setName, paste0(basename(clusters), sfx)))
+            dirs <- list(countsDir = file.path(dirname(counts.dir), setName, paste0(basename(counts.dir), sfx)),
+                         clusterDir = file.path(dirname(clustering.dir), setName, paste0(basename(clustering.dir), sfx)),
+                         cellCompDir = file.path(dirname(cibersort.dir), setName, paste0(basename(cibersort.dir), sfx)),
+                         qcDir = file.path(dirname(qc.dir), setName, paste0(basename(qc.dir), sfx)))
 
             if(!is.null(diff.exp.dir)){
-                dirs$allGeneDir <- file.path(dirname(all.gene), setName, paste0(basename(all.gene), sfx))
-                dirs$DEdir      <- file.path(dirname(de), setName, paste0(basename(de), sfx))
+                dirs$allGeneDir <- file.path(dirname(all.gene.dir), setName, paste0(basename(all.gene.dir), sfx))
+                dirs$DEdir      <- file.path(dirname(diff.exp.dir), setName, paste0(basename(diff.exp.dir), sfx))
                 dirs$DEfigDir   <- file.path(dirs$DEdir, "figures")
             }
             if(!is.null(gsa.dir)){
-                dirs$GSAdir <- file.path(dirname(gsa), setName, paste0(basename(gsa), sfx))
+                dirs$GSAdir <- file.path(dirname(gsa.dir), setName, paste0(basename(gsa.dir), sfx))
+            }
+            if(!is.null(gsea.dir)){
+                dirs$GSEAdir <- file.path(dirname(gsea.dir), setName, paste0(basename(gsea.dir), sfx))
             }
             outDirs[[i]] <- dirs
         }
@@ -40,10 +162,10 @@ bic.setup.directories <- function(counts.dir, clustering.dir, all.gene.dir = NUL
     
     for(dr in unlist(outDirs)){
         if(!file.exists(dr)){
-            cat(paste0("Creating directory: ", dr, "\n"))
+            log_info(paste0("Creating directory: ", dr, "\n"))
             dir.create(dr, recursive = T, mode = "0755")
         } else {
-            cat(paste0("Directory already exists: ", dr, "\n"))
+            log_warn(paste0("Directory already exists: ", dr, "\n"))
         }
     }
 
@@ -131,7 +253,8 @@ bic.setup.comparisons.from.standard.files <- function(keyFile, compFile){
     key   <- read.csv(keyFile, header = F, sep = "\t", check.names = F) %>%
              as_tibble() %>%
              select_if(~!all(is.na(.))) %>%
-             rename(Sample = V1, Group = V2) 
+             rename(Sample = V1, Group = V2)
+    key <- key[complete.cases(key),] 
     if(any(grepl("EXCLUDE", key$Group))){
         log_warn(paste0("Excluding samples: ", 
                         paste0(key %>% filter(grepl("EXCLUDE", Group)) %>% pull(Sample), collapse = ", ")))
@@ -139,6 +262,7 @@ bic.setup.comparisons.from.standard.files <- function(keyFile, compFile){
                filter(!grepl("EXCLUDE", Group))
     }
     comps <- read.csv(compFile, header = F, sep = "\t", check.names = F)
+    comps <- comps[complete.cases(comps),]
     comps <- paste(comps[,1], comps[,2], sep = " - ")
 
     bic.qc.comparison.set(key, comps)
@@ -153,10 +277,12 @@ bic.setup.comparisons.from.multi.column.files <- function(keyFile, compFile){
     allComps <- list()
     
     keys <- read.csv(keyFile, header = T, sep = "\t", check.names = F)   ## Sample Comp_1 Comp_2
+    keys <- keys[complete.cases(keys),]
     comps <- read.csv(compFile, header = T, sep = "\t", check.names = F) ## CompSet  Group1   Group2
                                                         ## Comp_1   GroupA   GroupB
                                                         ## Comp_1   GroupD   GroupB 
                                                         ## Comp_2   GroupX   GroupY
+    comps <- comps[complete.cases(comps),]
     for(i in 2:ncol(keys)){
         key <- keys[,c(1,i)]
         if(any(grepl("EXCLUDE", key[,2]))){

@@ -1,4 +1,4 @@
-SINGULARITY             /opt/local/singularity/2.6.0/bin/
+SINGULARITY             /opt/local/singularity/2.6.0/bin
 BOWTIE2			/opt/common/CentOS_6/bowtie2/bowtie2-2.2.4
 BOWTIE			/opt/common/CentOS_6/bowtie/bowtie-1.1.1
 CHIMERASCAN		/opt/common/CentOS_6/chimerascan/chimerascan-0.4.5/chimerascan
@@ -15,9 +15,10 @@ MAPSPLICE		/opt/common/CentOS_6/mapsplice/MapSplice-v2.1.8
 PERL			/opt/common/CentOS_6/perl/perl-5.22.0/bin
 PICARD			/opt/common/CentOS_6/picard/picard-tools-1.124
 PYTHON			/opt/common/CentOS_6/python/python-2.7.8/bin
-R			/opt/common/CentOS_6/R/R-4.0.0/bin
+SINGULARITY_R		/opt/common/CentOS_6/R/R-4.0.0/bin
+R			/juno/opt/common/bic/R/R-4.0.2/bin
 RSEM			/opt/common/bic/rsem/RSEM-1.3.3
-SAMTOOLS                /opt/common/CentOS_6/samtools/samtools-0.1.19
+SAMTOOLS		/opt/common/CentOS_6/samtools/samtools-0.1.19
 STAR			/opt/common/CentOS_6/star/STAR-STAR_2.5.0a/bin/Linux_x86_64
 STAR_FUSION		/opt/common/CentOS_6/STAR-Fusion/STAR-Fusion_v0.5.4/STAR-Fusion-master
 TOPHAT			/opt/common/CentOS_6/tophat/tophat-2.0.14.Linux_x86_64

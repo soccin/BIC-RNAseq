@@ -1,4 +1,4 @@
-#! /opt/common/CentOS_6/R/R-4.0.0/bin/R
+#! /juno/opt/common/bic/R/R-4.0.2/bin/R 
 
 usage <- function(){
     usage.str = "\nUsage: Rscript plotMetrics.R

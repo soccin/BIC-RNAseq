@@ -1,3 +1,45 @@
+#' Run CIBERSORT
+#'
+#' Run CIBERSORT to get cell type proportions in each sample
+#'
+#' @param counts  table of counts for each sample
+#' @param outFile path to output file
+#' @param javeExe java executable
+#' @param jar     CIBERSORT jar file
+#' @param sigFile signatures file (downloaded from cibersort site)
+#' @export
+bic.run.cibersort <- function(counts, outFile, cibersortR, sigFile = NULL, plot = TRUE){
+    # format table
+    if(!"GeneSymbol" %in% names(counts)){
+        log_error("No 'GeneSymbol' column found in normalized counts file. Can not run CIBERSORT.")
+        stop("No 'GeneSymbol' column found in normalized counts file. Can not run CIBERSORT.")
+    } 
+    if("ID" %in% names(counts)){
+        counts <- counts %>% select(-ID)
+    }
+    dat <- counts %>% select(GeneSymbol, everything())
+
+    # save table to tmp file
+    of <- tempfile(pattern = "tmp", fileext = ".txt")
+    bic.write.dat(dat, file = of)
+
+    source(cibersortR)
+    results <- CIBERSORT(sigFile, of)
+    smps <- rownames(results)
+    results <- results %>%
+               as_tibble() %>% 
+               mutate(Sample = smps)
+    rm(of)
+    bic.write.dat(results, file = outFile)
+
+    if(plot){
+        bic.plot.cibersort(results, file = gsub(".txt", ".pdf", outFile), annotate = FALSE)
+        #bic.plot.cibersort(results, file = gsub(".txt", "_annotated.pdf", outFile), 
+        #                   annotate = TRUE, sortByGroup = TRUE)
+    }
+    return(results)
+}
+
 #' Run and save results of a single GSA comparison
 #'
 #' Run and save results of a single GSA comparison
@@ -51,10 +93,12 @@ bic.complete.gsa.analysis <- function(de.res, comp.name, species, gmt.dir, gsa.d
 #'
 #' @return list of all DESeq results
 #' @export
-bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.dir, diff.exp.fig.dir, 
-                                     condA = NULL, condB = NULL, geneSymbols = NULL, 
+bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.dir,
+                                     diff.exp.fig.dir = NULL, qc.dir = NULL,
+                                     condA = NULL, condB = NULL, geneSymbols = NULL, key = NULL, 
                                      max.p = 0.05, min.abs.fc = 2, min.count = 10,
-                                     zeroaddQ = TRUE, orderPvalQ = TRUE, heatmaps = TRUE){
+                                     zeroaddQ = TRUE, orderPvalQ = TRUE, heatmaps = TRUE,
+                                     maxPlotLabels = 25, annClrs = NULL){
     ## run DESeq comparison
     de.res <- bic.run.deseq.comparison(cds, conds, condA, condB,
                                        max.p = max.p,
@@ -62,7 +106,6 @@ bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.
                                        min.count = min.count,
                                        zeroaddQ = zeroaddQ,
                                        genes = geneSymbols)
-    cat("Done.\n")
 
     ##
     ## write All DE results to file
@@ -83,36 +126,83 @@ bic.complete.de.analysis <- function(cds, counts, conds, all.gene.dir, diff.exp.
     ##
     ## DESeq visualization
     ##
-    log_debug("    Drawing DESeq plots...")
-    bic.plot.ma(de.res$DESeq,
-                file=file.path(diff.exp.fig.dir,
-                               paste0(pre, "_MAplot_", condA, "_vs_", condB, ".pdf")
-                     ))
-    bic.pval.histogram(de.res$DESeq,
-                       file=file.path(diff.exp.fig.dir,
-                                      paste0(pre, "_pval_histogram_", condA, "_vs_", condB, ".pdf")
-                       ))
-    log_debug("Done.\n")
+    fcCol <- names(de.res$all.res)[grepl("log2", names(de.res$all.res))]
+    comp  <- gsub("log2\\[", "", gsub("\\]", "", fcCol))
+    title <- gsub("/", " vs ", comp)
 
-    ##
-    ## heatmap of top DE genes
-    ##
-    if(heatmaps & !is.null(de.res$filtered) & length(rownames(de.res$filtered)) > 0){
+    if(!is.null(qc.dir) | !is.null(diff.exp.fig.dir)){
+        log_debug("    Drawing DESeq plots...")
+    }
+
+    if(!is.null(qc.dir)){
+log_debug("Writing QC plots to ", qc.dir)
+        bic.plot.ma(de.res$DESeq,
+                    file=file.path(qc.dir,
+                                   paste0(pre, "_MAplot_", gsub(" ", "_", title), ".pdf")
+                         ))
+        bic.pval.histogram(de.res$DESeq,
+                           title = title,
+                           file = file.path(qc.dir,
+                                            paste0(pre, "_pval_histogram_", gsub(" ", "_", title), ".pdf")
+                           ))
+        bic.plot.dispersion.estimates(cds, out.dir = "", 
+                                      file.prefix = file.path(qc.dir, paste0(pre, "_dispersion_estimates")))
+    }
+
+    if(!is.null(diff.exp.fig.dir)){
+log_debug("Writing DE plots to ", diff.exp.fig.dir)
+        pCut  <- 10e-11
         file.name <- file.path(diff.exp.fig.dir,
-                               paste0(pre,"_heatmap_",condA,"_vs_",condB,".pdf"))
-        tryCatch({
-            bic.standard.heatmap(counts, condA, condB,
-                                 genes = de.res$DEgenes,
-                                 file = file.name)
-          }, error = function(e){
-              warning(paste0("Could not generate heatmap for ",condA," vs ",condB))
-        })
+                               paste0(pre, "_volcano_raw_p_", gsub("/", "_vs_", comp), ".pdf"))
+        prep.for.volcano(de.res$all.res, "pval", fcCol, pCut, log2(min.abs.fc)) %>%
+        bic.volcano.plot(fcCol,
+                         pvalCol = "-Log10P",
+                         maxSig = log10(pCut)*-1,
+                         fcCut = log2(min.abs.fc),
+                         title = title,
+                         yLabel = bquote('-log'[10]~italic('P')),
+                         xLabel = bquote('log'[2](.(comp))),
+                         pointLabelCol = "plotLabel",
+                         labelGenes = F,
+                         maxLabels = maxPlotLabels,
+                         file = file.name)
+
+        file.name <- file.path(diff.exp.fig.dir, 
+                               paste0(pre, "_volcano_adj_p_", gsub("/", "_vs_", comp), ".pdf"))
+        prep.for.volcano(de.res$all.res, "P.adj", fcCol, max.p, log2(min.abs.fc)) %>%
+        bic.volcano.plot(fcCol,
+                         showCutoffs = FALSE,
+                         pvalCol = "-Log10P",
+                         maxSig = log10(max.p)*-1,
+                         fcCut = log2(min.abs.fc),
+                         title = title,
+                         yLabel = expression('-log'[10]('adjusted'~italic('P'))),
+                         xLabel = bquote('log'[2](.(comp))),
+                         labelGenes = FALSE,
+                         pointLabelCol = "plotLabel",
+                         maxLabels = maxPlotLabels,
+                         file = file.name)
+
+        ##
+        ## heatmap of top DE genes
+        ##
+        if(heatmaps & !is.null(de.res$filtered) & length(rownames(de.res$filtered)) > 0){
+            file.name <- file.path(diff.exp.fig.dir,
+                                   paste0(pre,"_DE_heatmap_",condB,"_vs_",condA,".pdf"))
+            tryCatch({
+                bic.standard.heatmap(counts, condA, condB,
+                                     genes = de.res$DEgenes,
+                                     key = key, 
+                                     file = file.name, 
+                                     annClrs = annClrs)
+              }, error = function(e){
+                  warning(paste0("Could not generate heatmap for ",condB," vs ",condA))
+            })
+        }
     }
 
     return(de.res) 
 }
-
-
 
 
 #' Read in raw HTSeq count file and format for analysis
@@ -380,27 +470,35 @@ bic.get.deseq.cds <- function(raw.counts, conds,
 }
 
 
-bic.standard.clustering <- function(scaled.counts, out.dir, conds, mds.labels = NULL, pre = "TEMP"){
+bic.standard.clustering <- function(cds, scaled.counts, out.dir, idMap = idMap, pre = "TEMP", annColors = NULL){
 
     file.name <- file.path(out.dir, paste0(pre,"_counts_scaled_hclust.pdf"))
     tryCatch({
-        bic.hclust.samples(scaled.counts,
-                           file.name = file.name,
-                           conds = conds,
-                           title = "All counts scaled using DESeq method")
-      }, error = function(err){
-          log_error(err)
+        tmp <- bic.hclust(scaled.counts, annColors, file = file.name)
+      }, error = function(){
+          log_error("Error running hclust")
       })
 
-    file.name <- file.path(out.dir, paste0(pre,"_counts_scaled_MDS.pdf"))
+    file.name <- file.path(out.dir, paste0(pre,"_MDS.pdf"))
+    file.name2 <- gsub("MDS", "MDS_labeled", file.name)
     tryCatch({
-        bic.mds.clust.samples(scaled.counts,
-                              file = file.name,
-                              conds=conds,
-                              labels = mds.labels)
-      }, error = function(err){
-          log_error(err) 
+        tmp <- bic.mds.clust.samples(scaled.counts, file = file.name, labels = FALSE, clrs = annColors)
+        tmp <- bic.mds.clust.samples(scaled.counts, file = file.name2, labels = TRUE, clrs = annColors)
+      }, error = function(){
+          log_error("Error running MDS clustering") 
       })
+
+    file.name <- file.path(out.dir, paste0(pre, "_PCA.pdf"))
+    file.name2 <- gsub("PCA", "PCA_labeled", file.name)
+    file.name3 <- gsub("PCA", "PC_loadings", file.name)
+    tryCatch({
+        tmp <- bic.deseq.plot.pca(cds, file = file.name, labels = FALSE, clrs = annColors)
+        tmp <- bic.deseq.plot.pca(cds, file = file.name2, labels = TRUE, clrs = annColors)
+        tmp <- bic.plot.pc.loading(cds, idMap = idMap, file = file.name3) 
+    }, error = function(err){
+        log_error("Error running PCA")
+    })
+
 }
 
 
