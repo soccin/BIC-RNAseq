@@ -143,7 +143,7 @@ bic.setup.directories <- function(counts.dir, clustering.dir, all.gene.dir = NUL
             dirs <- list(countsDir = file.path(dirname(counts.dir), setName, paste0(basename(counts.dir), sfx)),
                          clusterDir = file.path(dirname(clustering.dir), setName, paste0(basename(clustering.dir), sfx)),
                          cellCompDir = file.path(dirname(cibersort.dir), setName, paste0(basename(cibersort.dir), sfx)),
-                         qcDir = file.path(dirname(qc.dir), setName, paste0(basename(qc.dir), sfx)))
+                         QCdir = file.path(dirname(qc.dir), setName, paste0(basename(qc.dir), sfx)))
 
             if(!is.null(diff.exp.dir)){
                 dirs$allGeneDir <- file.path(dirname(all.gene.dir), setName, paste0(basename(all.gene.dir), sfx))

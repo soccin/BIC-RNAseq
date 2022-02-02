@@ -215,44 +215,6 @@ parLapply(cl, compSetNums, function(compSet){
     }
 
 
-#### TEMPORARY
-#        log_info("Clustering all samples...")
-#        bic.standard.clustering(cds, norm.counts,
-#                                out.dirs[[compSet]]$clusterDir,
-#                                idMap = idMap,
-#                                pre = pre,
-#                                annColors = sColors)
-#        log_info("Done.\n")
-
-#        log_info("Running CIBERSORT...")
-#        file.name <- file.path(out.dirs[[compSet]]$cellCompDir, "cibersort.txt")
-#        tryCatch({
-#            cbsDat <- bic.run.cibersort(norm.counts,
-#                                        file.name,
-#                                        cibersortR,
-#                                        sigFile = cibersortSigFile)
-#          }, error = function(e){
-#            log_error(e)
-#            log_error("CIBERSORT failed.")
-#            return(NULL)
-#        })
-#        log_info("Done.\n")
-
-#        log_info("Plotting high expression heatmap...")
-#        file.name <- file.path(out.dirs[[compSet]]$clusterDir, paste0(pre, "_top_50_genes.pdf"))
-#        tmp <- bic.high.expression.heatmap(cds, transform = TRUE,
-#                                           num.gns = 50, idMap = idMap,
-#                                           key = key, clrs = sColors, 
-#                                           file = file.name)
-
-#        log_debug("Plotting sample to sample distances...")
-#        file.name <- file.path(out.dirs[[compSet]]$clusterDir, paste0(pre, "_sample_to_sample.pdf"))
-#        tmp <- bic.sample.to.sample.distances(cds, 
-#                                              key = key,
-#                                              clrs = sColors, file = file.name)
-
-################
-
     if(is.null(all_results$cds)){    
         ## format counts
         formatted.counts <- bic.format.htseq.counts(counts.file, key=key) ## this function can handle null key
@@ -359,7 +321,7 @@ parLapply(cl, compSetNums, function(compSet){
                                                   out.dirs[[compSet]]$allGeneDir,
                                                   out.dirs[[compSet]]$DEdir,
                                                   diff.exp.fig.dir = out.dirs[[compSet]]$DEfigDir, 
-                                                  qc.dir      = out.dirs[[compSet]]$qcDir,
+                                                  qc.dir      = out.dirs[[compSet]]$QCdir,
                                                   condA       = gsub(".*_vs_", "", compName), 
                                                   condB       = gsub("_vs_.*", "", compName),
                                                   max.p       = max.p,
@@ -461,7 +423,7 @@ parLapply(cl, compSetNums, function(compSet){
                                         maxPlots = 9, idMap = idMap, key = key,
                                         clusterDir = out.dirs[[compSet]]$clusterDir, 
                                         deFigDir = out.dirs[[compSet]]$DEfigDir,
-                                        qcDir = out.dirs[[compSet]]$qcDir,
+                                        qcDir = out.dirs[[compSet]]$QCdir,
                                         annColors = sColors)
                 log_info("Done.\n")
               }, error = function(e){
