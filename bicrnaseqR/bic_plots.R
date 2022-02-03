@@ -1487,7 +1487,7 @@ bic.mds.clust.samples <- function(norm.counts, clrs = NULL, plotLog2 = FALSE, fi
 #' @export
 bic.standard.heatmap <- function(norm.counts, condA, condB, genes, file = NULL, 
                                   key = NULL, annClrs = NULL, height = 8.5, width = 11, fillFun = NULL,
-                                  colorFun = NULL){
+                                  colorFun = NULL, maxLabels = 100, title = NULL){
 
     dat <- norm.counts
 
@@ -1516,15 +1516,19 @@ bic.standard.heatmap <- function(norm.counts, condA, condB, genes, file = NULL,
     if(is.null(colorFun)){
         colorFun <- scale_color_gradient2(low = "green", mid = "black", high = "red")
     }
+
+    colAnnot = NULL
     if(is.null(annClrs) && !is.null(key)){
         annClrs <- bic.get.colors(length(unique(key$Group)))
         names(annClrs) <- unique(key$Group)
+        colAnnot <- key %>% filter(Sample %in% htmp.dat$Sample)
     }
     htmp <- bic.rnaseq.heatmap(htmp.dat, "Sample", gnCol, 
                                fillFun = fillFun, colorFun = colorFun, annClrs = annClrs,
-                               colAnnot = key %>% filter(Sample %in% htmp.dat$Sample), 
-                               title = paste(condB, "vs", condA), 
-                               width = width, height = height, file = file)
+                               colAnnot = colAnnot, 
+                               title = ifelse(is.null(title), paste(condB, "vs", condA), title), 
+                               width = width, height = height, file = file,
+                               maxLabels = maxLabels)
                  
     return(htmp)
 }
@@ -1607,7 +1611,7 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
     minMargW <- min(inchToPt(0.5), wPts * 0.1)
     minMargH <- min(inchToPt(0.5), hPts * 0.1) 
 
-    maxHtmpW <- wPts - rDendW - lgndW - smryW - (minMargH*2) ### total space width available for heatmap and annotations
+    maxHtmpW <- wPts - rDendW - lgndW - smryW - (minMargW*2) ### total space width available for heatmap and annotations
     maxHtmpH <- hPts - cDendH - (minMargH * 2)
 
     boxH     <- min(maxHtmpH/nRows, hPts/50)
@@ -1615,7 +1619,7 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
     maxRlbl  <- ifelse(labelRows, max(nchar(rOrder)), 0)
     maxClbl  <- ifelse(labelCols, max(nchar(cOrder)), 0)
  
-    htmpWpts <- max(140, boxW * nCols + maxRlbl)
+    htmpWpts <- max(wPts * 0.18, boxW * nCols + maxRlbl)
     htmpHpts <- boxH * nRows + maxClbl
 
     ### determine final margins 
@@ -1637,7 +1641,6 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
     }
     lgndKeys <- c()
 
-
     if(is.null(fillFun)){
         fillFun <- scale_fill_distiller(type = "seq", palette = "GnBu", trans = "reverse")
     }
@@ -1646,8 +1649,7 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
     }
 
     blank <- ggplot(data.frame(1)) + theme_void()
-    rDend <- cDend <- cAnnP <- rAnnP <- cAnnLbls <- rAnnLbls <- blank 
-    legend <- NULL
+    rDend <- cDend <- cAnnP <- rAnnP <- cAnnLbls <- rAnnLbls <- lgnd <- blank 
 
     ## plots
     smry <- ggplot() +
@@ -1680,7 +1682,7 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
                   legend.position = "none",
                   legend.direction = "vertical",
                   legend.title = element_blank(),
-                  plot.margin = unit(c(0, lrMarg, bMarg, 0), "pt"),
+                  plot.margin = unit(c(0, 0, bMarg, 0), "pt"),
                   panel.border = element_rect(size = 1, color = "black", fill = NA))
     if(!labelRows){
         htmp <- htmp + theme(axis.text.y = element_blank())
@@ -1693,10 +1695,10 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
     cDend <- ggplot(cDendDat$segments) +
              labs(title = title, subtitle = subtitle) +
              theme_void() +
-             theme(plot.margin = unit(c(tMarg, lrMarg, 0, 0), "pt"),
-                   plot.title = element_text(size = hPts * 20/inchToPt(8.5)),
+             theme(plot.margin = unit(c(tMarg, 0, 0, 0), "pt"),
+                   plot.title = element_text(size = hPts * 0.032),
                    plot.subtitle = element_text(face = "italic",
-                                                size = hPts * 14/inchToPt(8.5)))
+                                                size = hPts * 0.023)) 
     if(clusterCols){
         cDend <- cDend + 
                  geom_segment(aes(x = x, y = y, xend = xend, yend = yend)) +
@@ -1821,14 +1823,17 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
     rel_widths  <- c(lrMarg + rDendW, rowAnnW, htmpWpts, lgndW + lrMarg)
     rel_heights <- c(tMarg + cDendH, colAnnH, htmpHpts + bMarg)
 
+    log_debug("rel_widths = ", paste(rel_widths, collapse = ","))
+    log_debug("rel_heights = ", paste(rel_heights, collapse = ","))
+
     ### align bottom row and right column 
     ## important to start alignment with the column including main heatmap
     mainCol <- align_plots(plotlist = list(cDend, cAnnP, htmp), axis = 'lr', align = 'v') 
     btr <- align_plots(plotlist = list(rDend, rAnnP, mainCol[[3]], blank), axis = 'bt', align = 'h')
     tpr <- align_plots(plotlist = list(smry, blank, mainCol[[1]], blank), axis = 't', align = 'h')
 
-    plotlist = list(tpr[[1]],  tpr[[2]], tpr[[3]], tpr[[4]],
-                    blank, cAnnLbls, mainCol[[2]], blank,
+    plotlist = list(tpr[[1]], tpr[[2]], tpr[[3]],     tpr[[4]],
+                    blank,    cAnnLbls, mainCol[[2]], blank,
                     btr[[1]], btr[[2]], mainCol[[3]], lgnd)
 
     pg <- plot_grid(plotlist = plotlist, rel_widths = rel_widths, rel_heights = rel_heights, ncol = 4, nrow = 3) 

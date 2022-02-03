@@ -186,19 +186,28 @@ log_debug("Writing DE plots to ", diff.exp.fig.dir)
         ##
         ## heatmap of top DE genes
         ##
-        if(heatmaps & !is.null(de.res$filtered) & length(rownames(de.res$filtered)) > 0){
+print(paste0("heatmaps = ", heatmaps))
+print(paste0("!is.null(de.res$DEgenes) = ", !is.null(de.res$DEgenes)))
+print(paste0("length(de.res$DEgenes) > 0) = ", length(de.res$DEgenes) > 0)) 
+        if(heatmaps & !is.null(de.res$DEgenes) & length(de.res$DEgenes) > 0){ 
             file.name <- file.path(diff.exp.fig.dir,
                                    paste0(pre,"_DE_heatmap_",condB,"_vs_",condA,".pdf"))
+print(file.name)
             tryCatch({
+                genes <- de.res$filtered %>% pull(GeneSymbol)
+                genes <- genes[1:min(50, length(genes))]
+print(paste0("genes = ", paste(genes, collapse = ",")))
                 bic.standard.heatmap(counts, condA, condB,
-                                     genes = de.res$DEgenes,
-                                     key = key, 
+                                     genes = genes, 
+                                     key = key %>% filter(Group %in% conds),
                                      file = file.name, 
                                      annClrs = annClrs)
               }, error = function(e){
+traceback()
                   warning(paste0("Could not generate heatmap for ",condB," vs ",condA))
             })
         }
+
     }
 
     return(de.res) 
