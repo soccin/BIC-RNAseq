@@ -101,7 +101,7 @@ $ENV{'SINGULARITY_BINDPATH'} = $singularityBind;
 $ENV{'LD_LIBRARY_PATH'} = "/opt/common/CentOS_6/gcc/gcc-4.9.3/lib64:$ENV{'LD_LIBRARY_PATH'}";
 close CONFIG;
 
-my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
+my %addParams = (scheduler => "$scheduler", runtime => "30000", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "1", iounits => "1");
 my $additionalParams = Schedule::additionalParams(%addParams);
 
 my $ran_bs = 0;
@@ -122,17 +122,6 @@ my $ran_cp = 0;
 my @rseqc_jids = ();
 my $file_pre = "rseqc_$sample";
 
-#my $curDir = `pwd`;
-#chomp $curDir;
-#my $cd = $curDir;
-#$cd =~ s/\//_/g;
-#open(LOG, ">$cd\_$sample\_rseqc.log") or die "can't write to output log";
-#my $alignments_found = `grep $sample Alignment_counts.txt | cut -f 5`;
-#if($alignments_found == 0){
-#    my @currentTime = &getTime();
-#    print LOG "$currentTime[2]:$currentTime[1]:$currentTime[0], $currentTime[5]\/$currentTime[4]\/$currentTime[3]\tNO ALIGNMENTS FOUND FOR SAMPLE $sample. NO RSEQC STATS.\n"; 
-#    exit(0);
-#}
 
 ### bam stats
 if(!-e "$progdir/$pre\_$uID\_RSEQC_BS_$sample.done" || $forceall){
@@ -224,8 +213,8 @@ if(!-e "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.done" || $forceall){
     print "Running read_quality.py\n";
     my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RSEQC_RQ_$sample", cpu => "1", mem => "320", cluster_out => "$progdir/$pre\_$uID\_RSEQC_RQ_$sample.log");
     my $standardParams = Schedule::queuing(%stdParams);
-    #`$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
-    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} -W 30000 $singularityParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
+    
+    `$standardParams->{submit} $standardParams->{job_name} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $PYTHON/read_quality.py -i $bam -o "$intdir/$file_pre"`;
     `/bin/touch $progdir/$pre\_$uID\_RSEQC_RQ_$sample.done`;
     $ran_rq = 1;
 
