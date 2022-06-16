@@ -1666,7 +1666,7 @@ my $standardParams = Schedule::queuing(%stdParams);
             if(!-e "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.done" || $ran_merge_fusion){
                 my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_RANK_FUSION_$sample", job_hold => "$merge_fusionj", cpu => "1", mem => "10", cluster_out => "$output/progress/$pre\_$uID\_RANK_FUSION_$sample.log");
                 my $standardParams = Schedule::queuing(%stdParams);
-                `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $R/Rscript $Bin/FusionMetaCaller.R $output/fusion/$pre\_merged_fusions_$sample\.txt $output/fusion/$pre\_merged_fusions_$sample\_ranked\.txt`;
+                `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/FusionMetaCaller.R $output/fusion/$pre\_merged_fusions_$sample\.txt $output/fusion/$pre\_merged_fusions_$sample\_ranked\.txt`;
                 `/bin/touch $output/progress/$pre\_$uID\_RANK_FUSION_$sample.done`;
 		push @syncJobs, "$pre\_$uID\_RANK_FUSION_$sample";
             }
@@ -2286,7 +2286,7 @@ if($clustering_only){
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_SAMPLE_CLUSTERING_KALLISTO", job_hold => "$shmatrixj", cpu => "6", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_SAMPLE_CLUSTERING_KALLISTO.log");
             my $standardParams = Schedule::queuing(%stdParams);
 
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt --pre $pre --counts.dir $output/transcript/counts_trans/kallisto --clustering.dir $output/transcript/kallisto --diff.exp FALSE --GSA FALSE --cibersort FALSE --GSEA FALSE --forceRerun TRUE`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt --pre $pre --counts.dir $output/transcript/counts_trans/kallisto --clustering.dir $output/transcript/kallisto --diff.exp FALSE --GSA FALSE --cibersort FALSE --GSEA FALSE --forceRerun TRUE`;
 
             `/bin/touch $output/progress/$pre\_$uID\_SAMPLE_CLUSTERING_KALLISTO.done`;
             push @syncJobs, "$pre\_$uID\_SAMPLE_CLUSTERING_KALLISTO";
@@ -2300,7 +2300,7 @@ if($clustering_only){
             my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_SAMPLE_CLUSTERING_RSEM", job_hold => "$shmatrixj", cpu => "6", mem => "30", cluster_out => "$output/progress/$pre\_$uID\_SAMPLE_CLUSTERING_RSEM.log");
             my $standardParams = Schedule::queuing(%stdParams);
 
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt --pre $pre --counts.dir $output/transcript/counts_trans/rsem --clustering.dir $output/transcript/rsem --diff.exp FALSE --GSA FALSE --cibersort FALSE --GSEA FALSE --forceRerun TRUE`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt --pre $pre --counts.dir $output/transcript/counts_trans/rsem --clustering.dir $output/transcript/rsem --diff.exp FALSE --GSA FALSE --cibersort FALSE --GSEA FALSE --forceRerun TRUE`;
 
             `/bin/touch $output/progress/$pre\_$uID\_SAMPLE_CLUSTERING_RSEM.done`;
             push @syncJobs, "$pre\_$uID\_SAMPLE_CLUSTERING_RSEM";
@@ -2329,7 +2329,7 @@ if($clustering_only){
             my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "0", iounits => "1", mail => "$email");
             my $additionalParams = Schedule::additionalParams(%addParams);
 
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/gene/counts_gene/$pre\_htseq_all_samples.txt --species $deseq_species --gmt.dir $GMT_DIR --pre $pre --diff.exp.dir $output/gene/differentialExpression_gene --all.gene.dir $output/gene/all_gene --counts.dir $output/gene/counts_gene --clustering.dir $output/gene/clustering --gsa.dir $output/gene/gsa --gsea.dir $output/gene/gsea --gsea.sh $Bin/gsea-cli.sh --request $request --svnrev $svnRev --cibersortR $Bin/bicrnaseqR/CIBERSORT.R --cibersortSigFile $Bin/data/$deseq_species/$deseq_species\_CIBERSORT_signatures.txt --cibersort.dir $output/gene/cell_composition --qc.dir $output/gene/QC --forceRerun $forceRerun`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/gene/counts_gene/$pre\_htseq_all_samples.txt --species $deseq_species --gmt.dir $GMT_DIR --pre $pre --diff.exp.dir $output/gene/differentialExpression_gene --all.gene.dir $output/gene/all_gene --counts.dir $output/gene/counts_gene --clustering.dir $output/gene/clustering --gsa.dir $output/gene/gsa --gsea.dir $output/gene/gsea --gsea.sh $Bin/gsea-cli.sh --request $request --svnrev $svnRev --cibersortR $Bin/bicrnaseqR/CIBERSORT.R --cibersortSigFile $Bin/data/$deseq_species/$deseq_species\_CIBERSORT_signatures.txt --cibersort.dir $output/gene/cell_composition --qc.dir $output/gene/QC --cibersort FALSE --forceRerun $forceRerun`;
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_STAR.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_STAR";
             $ran_deseq = 1;
@@ -2346,7 +2346,7 @@ if($clustering_only){
             my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "0", iounits => "1", mail => "$email");
             my $additionalParams = Schedule::additionalParams(%addParams);
             
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster__out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt --species $deseq_species --gmt.dir $GMT_DIR --pre $pre --diff.exp.dir $output/gene/differentialExpression_gene/tophat2 --all.gene.dir $output/gene/all_gene/tophat2 --counts.dir $output/gene/counts_gene/tophat2 --clustering.dir $output/gene/clustering/tophat2 --gsa.dir $output/gene/gsa/tophat2 --gsea.dir $output/gene/gsea/tophat2 --request $request --svnrev $svnRev --cibersortR $Bin/bicrnaseqR/CIBERSORT.R --cibersortSigFile $Bin/data/$deseq_species/$deseq_species\_CIBERSORT_signatures.txt --cibersort.dir $output/gene/cell_composition --qc.dir $output/gene/QC --forceRerun $forceRerun`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster__out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/gene/counts_gene/tophat2/$pre\_htseq_all_samples.txt --species $deseq_species --gmt.dir $GMT_DIR --pre $pre --diff.exp.dir $output/gene/differentialExpression_gene/tophat2 --all.gene.dir $output/gene/all_gene/tophat2 --counts.dir $output/gene/counts_gene/tophat2 --clustering.dir $output/gene/clustering/tophat2 --gsa.dir $output/gene/gsa/tophat2 --gsea.dir $output/gene/gsea/tophat2 --request $request --svnrev $svnRev --cibersortR $Bin/bicrnaseqR/CIBERSORT.R --cibersortSigFile $Bin/data/$deseq_species/$deseq_species\_CIBERSORT_signatures.txt --cibersort.dir $output/gene/cell_composition --qc.dir $output/gene/QC --cibersort FALSE --forceRerun $forceRerun`;
  
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_TOPHAT.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_TOPHAT";
@@ -2355,9 +2355,6 @@ if($clustering_only){
 
 
     if($kallisto){
-	`/bin/mkdir -m 775 -p $output/transcript/kallisto/differentialExpression_trans`;
-	`/bin/mkdir -m 775 -p $output/transcript/kallisto/clustering`;
-	
 	if(!-e "$output/progress/$pre\_$uID\_DESeq_KALLISTO.done" || $ran_kmatrix){
 	    sleep(3);
 	    my %stdParams = (scheduler => "$scheduler", job_name => "$pre\_$uID\_DESeq_KALLISTO", job_hold => "$kmatrixj", cpu => "1", mem => "1", cluster_out => "$output/progress/$pre\_$uID\_DESeq_KALLISTO.log");
@@ -2367,7 +2364,7 @@ if($clustering_only){
             my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "0", iounits => "1", mail => "$email");
             my $additionalParams = Schedule::additionalParams(%addParams);
 
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt --species $deseq_species --pre $pre --diff.exp.dir $output/transcript/kallisto/differentialExpression_trans --all.gene.dir $output/transcript/kallisto/all_trans --counts.dir $output/transcript/kallisto/counts_trans --clustering.dir $output/transcript/kallisto --request $request --svnrev $svnRev --GSA FALSE --GSEA FALSE --cibersort FALSE --forceRerun $forceRerun`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/kallisto/counts_trans/$pre\_kallisto_all_samples.txt --species $deseq_species --pre $pre --diff.exp.dir $output/transcript/kallisto/differentialExpression_trans --all.gene.dir $output/transcript/kallisto/all_trans --counts.dir $output/transcript/kallisto/counts_trans --clustering.dir $output/transcript/kallisto --request $request --svnrev $svnRev --GSA FALSE --GSEA FALSE --cibersort FALSE --forceRerun $forceRerun`;
 
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_KALLISTO.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_KALLISTO";
@@ -2386,7 +2383,7 @@ if($clustering_only){
             my %addParams = (scheduler => "$scheduler", runtime => "500", priority_project=> "$priority_project", priority_group=> "$priority_group", queues => "lau.q,lcg.q,nce.q", rerun => "0", iounits => "1", mail => "$email");
             my $additionalParams = Schedule::additionalParams(%addParams);
 
-            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $singularityParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt --species $deseq_species --pre $pre --diff.exp.dir $output/transcript/rsem/differentialExpression_trans --all.gene.dir $output/transcript/rsem/all_trans --counts.dir $output/transcript/rsem/counts_trans --clustering.dir $output/transcript/rsem/clustering --GSA FALSE --GSEA FALSE --cibersort FALSE --request $request --svnrev $svnRev --cibersort FALSE --forceRerun $forceRerun`;
+            `$standardParams->{submit} $standardParams->{job_name} $standardParams->{job_hold} $standardParams->{cpu} $standardParams->{mem} $standardParams->{cluster_out} $additionalParams $R/Rscript $Bin/RunDE.R --Rlibs $Rlibs --bin $Bin --counts.file $output/transcript/rsem/counts_trans/$pre\_rsem_all_samples.txt --species $deseq_species --pre $pre --diff.exp.dir $output/transcript/rsem/differentialExpression_trans --all.gene.dir $output/transcript/rsem/all_trans --counts.dir $output/transcript/rsem/counts_trans --clustering.dir $output/transcript/rsem/clustering --GSA FALSE --GSEA FALSE --cibersort FALSE --request $request --svnrev $svnRev --cibersort FALSE --forceRerun $forceRerun`;
 
 	    `/bin/touch $output/progress/$pre\_$uID\_DESeq_RSEM.done`;
 	    push @syncJobs, "$pre\_$uID\_DESeq_RSEM";
@@ -2639,7 +2636,7 @@ sub verifyConfig{
     $ENV{'SINGULARITYENV_PREPEND_PATH'} = $singularityenv_prepend_path;
     $ENV{'SINGULARITY_BINDPATH'} = $singularityBind;
     $ENV{'SINGULARITYENV_LD_LIBRARY_PATH'} = "/opt/common/CentOS_6/gcc/gcc-4.9.3/lib64:$ENV{'LD_LIBRARY_PATH'}";
-    $ENV{'SINGULARITYENV_LD_LIBRARY_PATH'} = $ENV{'LD_LIBRARY_PATH'};
+    #$ENV{'SINGULARITYENV_LD_LIBRARY_PATH'} = $ENV{'LD_LIBRARY_PATH'};
 
 
     print LOG "SINGULARITYENV_PREPEND_PATH...\n  $ENV{'SINGULARITYENV_PREPEND_PATH'}\n\n";
