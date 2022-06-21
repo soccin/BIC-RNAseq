@@ -805,8 +805,8 @@ prep.for.volcano <- function(res, pvalCol, fcCol, pCut, fcCut, labelCol = NULL){
 }
 
 bic.volcano.plot <- function(dat, fcCol, pvalCol = "pval", labelGenes = T, maxSig = 0.05, fcCut = 1, title = "",
-                              yLabel = "Significance", xLabel = "Fold Change", pointLabelCol = "plotLabel", maxLabels = 50,
-                              showCutoffs = TRUE, file = NULL){
+                              yLabel = "Significance", xLabel = "Fold Change", pointLabelCol = "plotLabel", 
+                              maxUpLabels = 25, maxDnLabels = 25, showCutoffs = TRUE, file = NULL){
 
     clrs <- c('#cc0000', '#008000', 'darkgray')
     lgndFClbl <- gsub("\\[", "\\(", gsub("\\]", "\\)", fcCol))
@@ -869,12 +869,27 @@ bic.volcano.plot <- function(dat, fcCol, pvalCol = "pval", labelGenes = T, maxSi
                plot.margin = unit(c(1.5,0.25,1.5,0.25), "in"))
 
     if(labelGenes && !is.na(pointLabelCol)){
-        ## take the [maxLabels] genes with the largest abs FC
-        labelDat <- plotDat %>%
-                    arrange(desc(abs(!!as.name(fcCol)))) %>%
-                    filter(!is.na(!!as.name(pointLabelCol))) %>%
-                    mutate(rn = row_number()) %>%
-                    filter(rn <= maxLabels)
+        upLabelDat <- plotDat %>% 
+                      filter(!is.na(!!as.name(pointLabelCol)), !!sym(fcCol) > 0) %>%
+                      arrange(desc(!!sym(fcCol))) %>%
+                      mutate(fcRank = row_number()) %>%
+                      arrange(desc(!!sym(pvalCol))) %>%
+                      mutate(pRank = row_number()) %>%
+                      mutate(min = ifelse(fcRank <= pRank, fcRank, pRank)) %>%
+                      arrange(min) %>%
+                      filter(row_number() <= maxUpLabels)
+
+        dnLabelDat <- plotDat %>% 
+                      filter(!is.na(!!as.name(pointLabelCol)), !!sym(fcCol) < 0) %>%
+                      arrange(!!sym(fcCol)) %>%
+                      mutate(fcRank = row_number()) %>%
+                      arrange(desc(!!sym(pvalCol))) %>%
+                      mutate(pRank = row_number()) %>%
+                      mutate(min = ifelse(fcRank <= pRank, fcRank, pRank)) %>%
+                      arrange(min) %>%
+                      filter(row_number() <= maxDnLabels)
+
+        labelDat <- bind_rows(upLabelDat, dnLabelDat)
         p <- p +
              geom_text_repel(data = labelDat,
                              aes(x = !!as.name(fcCol), y = !!as.name(pvalCol), label=!!as.name(pointLabelCol)),
@@ -1475,9 +1490,7 @@ bic.mds.clust.samples <- function(norm.counts, clrs = NULL, plotLog2 = FALSE, fi
 #'                            and a column is a sample. May contain "ID" and/or
 #'                            "GeneSymbol" column. If GeneSymbol column is present, 
 #'                            it will be used for heatmap labeling. If not, ID 
-#'                            column will be used.
-#' @param condA               the first condition named in the bic.deseq.file name
-#' @param condB               the second condition named in the bic.deseq.file name
+#'                            column will be used. All data will be included in heatmap.
 #' @param genes               a vector of genes to be included in the heatmap;
 #'                            if normalized counts matrix includes "GeneSymbol" column,
 #'                            genes must be from that column. Otherwise, they must
@@ -1485,9 +1498,9 @@ bic.mds.clust.samples <- function(norm.counts, clrs = NULL, plotLog2 = FALSE, fi
 #' @param file                name of PDF file to which heatmap should be written. (optional) 
 #' 
 #' @export
-bic.standard.heatmap <- function(norm.counts, condA, condB, genes, file = NULL, 
+bic.expression.heatmap <- function(norm.counts, genes, file = NULL,
                                   key = NULL, annClrs = NULL, height = 8.5, width = 11, fillFun = NULL,
-                                  colorFun = NULL, maxLabels = 100, title = NULL){
+                                  colorFun = NULL, maxLabels = 100, title = ""){
 
     dat <- norm.counts
 
@@ -1497,8 +1510,8 @@ bic.standard.heatmap <- function(norm.counts, condA, condB, genes, file = NULL,
     }
 
     htmp.dat <- dat %>%
+                select(all_of(gnCol), dplyr::matches("^s_")) %>%
                 filter_at(vars(all_of(gnCol)), all_vars(. %in% genes)) %>%
-                dplyr::select(all_of(gnCol), grep(paste(paste0("__", c(condA, condB), "$"), collapse = "|"), names(.))) %>%
                 gather(2:ncol(.), key = "Sample", value = "Count") %>%
                 group_by_at(c("Sample", gnCol)) %>%
                 summarize(Count = mean(Count)) %>%  ## for multiple transcripts, take average count
@@ -1513,6 +1526,7 @@ bic.standard.heatmap <- function(norm.counts, condA, condB, genes, file = NULL,
     if(is.null(fillFun)){
         fillFun <- scale_fill_gradient2(low = "green", mid = "black", high = "red")
     }
+
     if(is.null(colorFun)){
         colorFun <- scale_color_gradient2(low = "green", mid = "black", high = "red")
     }
@@ -1523,13 +1537,14 @@ bic.standard.heatmap <- function(norm.counts, condA, condB, genes, file = NULL,
         names(annClrs) <- unique(key$Group)
         colAnnot <- key %>% filter(Sample %in% htmp.dat$Sample)
     }
+
     htmp <- bic.rnaseq.heatmap(htmp.dat, "Sample", gnCol, 
                                fillFun = fillFun, colorFun = colorFun, annClrs = annClrs,
                                colAnnot = colAnnot, 
-                               title = ifelse(is.null(title), paste(condB, "vs", condA), title), 
+                               title = title, 
                                width = width, height = height, file = file,
                                maxLabels = maxLabels)
-                 
+
     return(htmp)
 }
 
@@ -1580,7 +1595,6 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
 
     dat[[cols]] <- factor(dat[[cols]], levels = cOrder)
     dat[[rows]] <- factor(dat[[rows]], levels = rOrder)
-
 
     smryDat <- dat %>%
                mutate(bin = cut(Val, seq(min(0, min(Val)), round_any(max(Val) + 1, 0.1), 1), include.lowest = T)) %>%
@@ -1823,8 +1837,8 @@ bic.rnaseq.heatmap <- function(htmpDat, cols, rows, clusterCols = TRUE, clusterR
     rel_widths  <- c(lrMarg + rDendW, rowAnnW, htmpWpts, lgndW + lrMarg)
     rel_heights <- c(tMarg + cDendH, colAnnH, htmpHpts + bMarg)
 
-    log_debug("rel_widths = ", paste(rel_widths, collapse = ","))
-    log_debug("rel_heights = ", paste(rel_heights, collapse = ","))
+    #log_debug("rel_widths = ", paste(rel_widths, collapse = ","))
+    #log_debug("rel_heights = ", paste(rel_heights, collapse = ","))
 
     ### align bottom row and right column 
     ## important to start alignment with the column including main heatmap

@@ -1,5 +1,17 @@
 library(gtable)
 
+REPORT_CONTENTS <- list(study = c('Hierarchical clustering', 
+                                  'MDS', 
+                                  'MDS (samples labeled)',
+                                  'PCA', 
+                                  'PCA (samples labeled)',  
+                                  'PC loadings',
+                                  'Expression of top 50 genes',  
+                                  'Sample to sample distances',
+                                  'Cell composition'),
+                         comparisons = c('Volcano plots', 'DE heatmap'),
+                         comparisons_qc = c('Dispersion Estimates', 'P-value histograms', 'MA plots'))
+
 ## some calculations of cell sizes
 row_heights <- function(m){
     do.call(unit.c, apply(m, 1, function(l)
@@ -167,40 +179,6 @@ get.deseq.plots <- function(compSetRes, request, svnrev, pre = "TEMP", idMap = N
                              key = NULL, annColors = NULL, clusterDir = NULL, deFigDir = NULL, qcDir = NULL,
                              cellCompDir = NULL, height = 8.5, width = 11){
 
-    clusterFigNames <- list("Hierarchical clustering"     = NULL,
-                             "MDS"                        = NULL, 
-                             "MDS (samples labeled)"      = NULL,
-                             "Dispersion Estimates"       = NULL,
-                             "Expression of top 50 genes" = NULL,
-                             "Sample to sample distances" = NULL,
-                             "PCA"                        = NULL,
-                             "PCA (samples labeled)"      = NULL, 
-                             "PC loadings"                = NULL, 
-                             "Cell composition"           = NULL)
-    deFigNames <- list("Volcano plots"     = NULL, 
-                       "P-value histogram" = NULL,
-                       "MA plot"           = NULL,
-                       "DE heatmap"        = NULL)                   
-
-    if(!is.null(clusterDir)){
-        clusterFigNames <- list("Hierarchical clustering"    = file.path(clusterDir, paste0(pre, "_counts_scaled_hclust.pdf")),
-                                "MDS"                        = file.path(clusterDir, paste0(pre, "_MDS.pdf")),
-                                "MDS (samples labeled)"      = file.path(clusterDir, paste0(pre, "_MDS_labeled.pdf")),
-                                "Dispersion Estimates"       = file.path(qcDir, paste0(pre, "_dispersion_estimates_")), ## prefix
-                                "Expression of top 50 genes" = file.path(clusterDir, paste0(pre, "_top_50_genes.pdf")),
-                                "Sample to sample distances" = file.path(clusterDir, paste0(pre, "_sample_to_sample.pdf")),
-                                "PCA"                        = file.path(clusterDir, paste0(pre, "_PCA.pdf")),
-                                "PCA (samples labeled)"      = file.path(clusterDir, paste0(pre, "_PCA_labeled.pdf")),
-                                "PC loadings"                = file.path(clusterDir, paste0(pre, "_PC_loadings.pdf")),
-                                "Cell composition"           = file.path(cellCompDir, paste0(pre, "_cell_composition.pdf")))
-    }
-    if(!is.null(deFigDir)){
-        deFigNames <- list("Volcano plots"     = file.path(deFigDir, paste0(pre, "_volcano_")),              ## prefix
-                           "P-value histogram" = file.path(qcDir, paste0(pre, "_pval_histogram_")),       ## prefix
-                           "MA plot"           = file.path(qcDir, paste0(pre, "_MA_plot_")),              ## prefix
-                           "DE heatmap"        = file.path(deFigDir, paste0("_DE_heatmap_")))           ## prefix
-    }
-
     cds <- compSetRes$cds
     nc  <- compSetRes$norm.counts
     labelPlots <- ifelse(ncol(nc) - 2 <= maxLabels, TRUE, FALSE)
@@ -227,64 +205,46 @@ get.deseq.plots <- function(compSetRes, request, svnrev, pre = "TEMP", idMap = N
 
     ## hclustering     
     log_debug("hierarchical clustering")
-    report$`Hierarchical clustering` <- bic.hclust(nc, clrs = annColors) #, file = clusterFigNames$`Hierarchical clustering`)
+    report$`Hierarchical clustering` <- bic.hclust(nc, clrs = annColors) 
 
     ## MDS            
     log_debug("MDS without labels")
-    report$`MDS` <- bic.mds.clust.samples(nc, clrs = annColors, plotLog2 = FALSE, labels = FALSE) + #, 
-                                                      #file = clusterFigNames$`MDS`) + 
-                                xtheme 
+    report$`MDS` <- bic.mds.clust.samples(nc, clrs = annColors, plotLog2 = FALSE, labels = FALSE) +  
+                    xtheme 
     if(labelPlots){
         log_debug("MDS with labels")
-        report$`MDS (samples labeled)` <- bic.mds.clust.samples(nc, clrs = annColors, plotLog2 = FALSE, labels = TRUE) + # , 
-                                                                #file = clusterFigNames$`MDS (samples labeled)`) + 
+        report$`MDS (samples labeled)` <- bic.mds.clust.samples(nc, clrs = annColors, plotLog2 = FALSE, labels = TRUE) +  
                                           xtheme 
     }
 
-    ## dispersion estimates 
-    log_debug("dispersion estimates")  ## TO DO: move this to complete.de.analysis
-    report <- c(report,
-                   lapply(bic.plot.dispersion.estimates(cds), #, out.dir = "") #, 
-                                                        #file.prefix = clusterFigNames$`Dispersion Estimates`), 
-                          function(x){
-                              x + multiplotTheme
-                          }
-                   ) %>% 
-                   combinePlots(maxPlots = maxPlots, xTitle = "mean of normalized counts", 
-                                yTitle = "dispersion", pageTitle = "Dispersion Estimates",
-                                name = "Dispersion Estimates"))
+    ## PCA & loadings    
+    log_debug("PCA")
+    report$`PCA`       <- bic.deseq.plot.pca(cds, labels = FALSE, clrs = annColors) +
+                          xtheme
+    if(labelPlots){
+        report$`PCA (samples labeled)` <- bic.deseq.plot.pca(cds, labels = TRUE, clrs = annColors) +
+                                          xtheme
+    }
+
+    log_debug("PC loadings")
+    report$`PC loadings` <- bic.plot.pc.loading(cds, idMap = idMap)
+
     ## top 50 heatmap      
     log_debug("top 50 heatmap")
     report$`Expression of top 50 genes` <- bic.high.expression.heatmap(cds, transform = TRUE, 
                                                                        num.gns = 50, idMap = idMap, 
-                                                                       key = key, clrs = annColors) #, 
-                                                                       #file = clusterFigNames$`Expression of top 50 genes`)
+                                                                       key = key, clrs = annColors) 
 
     ## sample to sample   
     log_debug("sample to sample distances")
-    report$`Sample to sample distances` <- bic.sample.to.sample.distances(cds, key = key, clrs = annColors) #, 
-                                                                          #file = clusterFigNames$`Sample to sample distances`) 
-
-    ## PCA & loadings    
-    log_debug("PCA")
-    report$`PCA`       <- bic.deseq.plot.pca(cds, labels = FALSE, clrs = annColors) #,
-                                                         #file = clusterFigNames$`PCA`) + 
-                                      xtheme 
-    if(labelPlots){
-        report$`PCA (samples labeled)` <- bic.deseq.plot.pca(cds, labels = TRUE, clrs = annColors) #,
-                                                             #file = clusterFigNames$`PCA (samples labeled)`) + 
-                                          xtheme 
-    }
-
-    log_debug("PC loadings")
-    report$`PC loadings`           <- bic.plot.pc.loading(cds, idMap = idMap) #, file = clusterFigNames$`PC loadings`) 
+    report$`Sample to sample distances` <- bic.sample.to.sample.distances(cds, key = key, clrs = annColors) 
 
     ## cibersort        
     if(is.null(compSetRes$cibersort.res)){
         log_warn("No CIBERSORT results to plot.")
     } else {
         log_debug("CIBERSORT")
-        report$`Cell composition` <- bic.plot.cibersort(compSetRes$cibersort.res) #, file = clusterFigNames$`Cell composition`)
+        report$`Cell composition` <- bic.plot.cibersort(compSetRes$cibersort.res) 
     }
 
     ## per-comparison plots
@@ -292,12 +252,13 @@ get.deseq.plots <- function(compSetRes, request, svnrev, pre = "TEMP", idMap = N
     for(comp in comps){
         log_debug(comp)
 
-        dat <- tryCatch({ compSetRes[[comp]]$DE$all.res },
-                        error = function(x){ 
-                            print(x) 
-                            log_error("No DE results for comparison [", gsub("_vs_", " vs ", comp), "].") 
-                            NULL
-                       })
+        dat <- tryCatch({ 
+                   compSetRes[[comp]]$DE$all.res 
+                 }, error = function(x){ 
+                     print(x) 
+                     log_error("No DE results for comparison [", gsub("_vs_", " vs ", comp), "].") 
+                     NULL
+               })
         if(is.null(dat)){ next }
 
 
@@ -319,9 +280,7 @@ get.deseq.plots <- function(compSetRes, request, svnrev, pre = "TEMP", idMap = N
                                labelGenes = F,
                                yLabel = bquote('-log'[10]~italic('P')),
                                xLabel = bquote('log'[2](.(title))),
-                               pointLabelCol = "plotLabel",
-                               maxLabels = 25)#, 
-                               #file = paste0(deFigNames$`Volcano plots`, comp, "_pval.pdf")) +
+                               pointLabelCol = "plotLabel") +
               theme(legend.position = c(-0.05, 1.15),
                     legend.text = element_text(margin = unit(c(0,0.15, 0, 0), "in")),
                     legend.spacing.x = unit(0, "in"),
@@ -340,8 +299,8 @@ get.deseq.plots <- function(compSetRes, request, svnrev, pre = "TEMP", idMap = N
                                yLabel = expression('-log'[10]('adjusted'~italic('P'))),
                                xLabel = bquote('log'[2](.(title))),
                                pointLabelCol = "plotLabel",
-                               maxLabels = 25) + #, 
-                               #file = paste0(deFigNames$`Volcano plots`, comp, "_adj_pval.pdf")) +
+                               maxUpLabels = 25,
+                               maxDnLabels = 25) + 
               labs(title = "") +
               theme(plot.margin = margin(b = 1.5, t = 1, l = 0, r = 0.5, unit = "in"))
 
@@ -349,32 +308,44 @@ get.deseq.plots <- function(compSetRes, request, svnrev, pre = "TEMP", idMap = N
 
         ## pval hist             
         log_debug("  pval histograms")
-        report[[comp]]$`P-value histogram` <- bic.pval.histogram(dat, title = title) #, 
-                                                                 #file = paste0(deFigNames$`P-value histogram`, comp, ".pdf")) 
+        report[[comp]]$`P-value histogram` <- bic.pval.histogram(dat, title = title) 
 
         ## MA plots 
         if(is.null(compSetRes[[comp]]$DE$DESeq)){
             log_warn(paste0("No DESeq results for comparison ", gsub("_vs_", " vs ", comp)))
         } else {
             log_debug("  MA plots")
-            report[[comp]]$`MA plot` <- bic.plot.ma(compSetRes[[comp]]$DE$DESeq, title = title) #,
-                                                                 #file = paste0(deFigNames$`MA plot`, comp, ".pdf"))
+            report[[comp]]$`MA plot` <- bic.plot.ma(compSetRes[[comp]]$DE$DESeq, title = title)
         }
 
         ## DE heatmaps      
-        if(is.null(compSetRes[[comp]]$DE$filtered) || nrow(compSetRes[[comp]]$DE$filtered) < 1 ){
-            log_warn(paste0("No filtered DESeq results for comparison ", gsub("_vs_", " vs ", comp)))
+        if(is.null(compSetRes[[comp]]$DE$filtered) || nrow(compSetRes[[comp]]$DE$filtered) < 3 ){
+            log_warn(paste0("Less than three filtered DESeq results for comparison ", gsub("_vs_", " vs ", comp), 
+                            ". Can not make heatmap."))
         } else {
             log_debug("  DE heatmap")
             conds <- unlist(strsplit(title, " vs "))
             compKey <- key %>% filter(Group %in% conds)
             genes <- compSetRes[[comp]]$DE$filtered %>% pull(GeneSymbol)
             genes <- genes[1:min(50, length(genes))]
-            report[[comp]]$`DE heatmap` <- bic.standard.heatmap(compSetRes$norm.counts, conds[2], conds[1], genes, 
-                                                                key = compKey, annClrs = annColors[names(annColors) %in% compKey$Group]) #, 
-                                                                #file = paste0(deFigNames$`DE heatmap`, comp, ".pdf") )
+            report[[comp]]$`DE heatmap` <- bic.expression.heatmap(compSetRes$norm.counts, genes, 
+                                                                  key = compKey, 
+                                                                  annClrs = annColors[names(annColors) %in% compKey$Group],
+                                                                  title = title)  
         }
     }
+
+    ## dispersion estimates 
+    log_debug("dispersion estimates")  ## TO DO: move this to complete.de.analysis
+    report <- c(report,
+                   lapply(bic.plot.dispersion.estimates(cds),
+                          function(x){
+                              x + multiplotTheme
+                          }
+                   ) %>%
+                   combinePlots(maxPlots = maxPlots, xTitle = "mean of normalized counts",
+                                yTitle = "dispersion", pageTitle = "Dispersion Estimates",
+                                name = "Dispersion Estimates"))
 
     ## gather pval histograms from all comparisons
     report <- c(report,
@@ -417,17 +388,24 @@ addPageNumber <- function(plt, pageNum, fontSize = 10){
 getReportContents <- function(report){
 
     report <- report[!names(report) == "cover"]
+print(names(report))
+    ##
+    ## print overall study plots first
+    ##
+    #contents <- c('Hierarchical clustering', 'MDS', 'MDS (samples labeled)',
+    #              'PCA', 'PCA (samples labeled)', 'PC loadings',
+    #              'Expression of top 50 genes', 'Sample to sample distances', 
+    #              'Cell composition') 
 
-    contents <- c('Hierarchical clustering', 'MDS', 'MDS (samples labeled)',
-                  'PCA', 'PCA (samples labeled)', 'PC loadings',
-                  'Expression of top 50 genes', 'Sample to sample distances', 
-                  'Cell composition') #, 'Dispersion Estimates', 'P-value histograms', 'MA plots')
+    contents <- REPORT_CONTENTS$study
 
-    ### comparison set level plots
     tbl <- tibble()
     nxtPg <- 1
     for(pt in contents){
-        idxs <- grep(gsub("\\(", "\\\\(", gsub("\\)", "\\\\)", pt)), names(report))
+        #ptrn <- gsub("\\(", "\\\\(", gsub("\\)", "\\\\)", pt))
+        #idxs <- grep(ptrn, names(report))
+        # these should be exact matches
+        idxs <- names(report)[names(report) == pt]
         if(!is.null(idxs) && length(idxs) > 0){
             tbl <- tbl %>%
                    bind_rows(tibble(Name = pt, Page = nxtPg, listName = names(report)[idxs[1]]))
@@ -435,8 +413,11 @@ getReportContents <- function(report){
         }
     } 
     
-    ### comparison level plots
-    contents <- c('Volcano plots', 'DE heatmap')
+    ##
+    ## comparison level plots
+    ##
+    #contents <- c('Volcano plots', 'DE heatmap')
+    contents <- REPORT_CONTENTS$comparisons
 
     comps <- names(report)[grep("_vs_", names(report))]
     for(comp in comps){
@@ -447,9 +428,16 @@ getReportContents <- function(report){
         nxtPg <- nxtPg + length(plts)
     }
 
-    contents <- c('Dispersion Estimates', 'P-value histograms', 'MA plots')
+    ##
+    ## QC plots
+    ##
+    #contents <- c('Dispersion Estimates', 'P-value histograms', 'MA plots')
+    contents <- REPORT_CONTENTS$comparisons_qc
     for(pt in contents){
-        idxs <- grep(gsub("\\(", "\\\\(", gsub("\\)", "\\\\)", pt)), names(report))
+        ## these report names will NOT be an exact match like the overall study plots
+        ## because there are multiple plots with names that each start with pt
+        ## e.g., 'Dispersion Estimates_1', 'Dispersion_estimates_2'
+        idxs <- grep(paste0("^", pt, "_"), names(report)) 
         if(!is.null(idxs) && length(idxs) > 0){
             tbl <- tbl %>%
                    bind_rows(tibble(Name = pt, Page = nxtPg, listName = names(report)[idxs[1]]))
@@ -518,8 +506,9 @@ bic.deseq.report <- function(compSetRes, request, svnrev, pdfFile, pre = "TEMP",
     pgNum <- 1
     for(i in 1:nrow(toc)){
         pltInfo <- toc[i,]
-        ptrn <- gsub("\\(", "\\\\(", gsub("\\)", "\\\\)", pltInfo$Name))
+        ptrn <- paste0("^", gsub("\\(", "\\\\(", gsub("\\)", "\\\\)", pltInfo$Name)), "(_\\d+|$)")
         plts <- report[grep(ptrn, names(report))]
+
         if(length(plts) == 0 && grepl("_vs_", pltInfo$Name)){
             comp <- gsub(" .*", "", pltInfo$Name)
             ptrn <- gsub(".* ", "", pltInfo$Name)

@@ -150,7 +150,7 @@ log_debug("Writing QC plots to ", qc.dir)
     }
 
     if(!is.null(diff.exp.fig.dir)){
-log_debug("Writing DE plots to ", diff.exp.fig.dir)
+
         pCut  <- 10e-11
         file.name <- file.path(diff.exp.fig.dir,
                                paste0(pre, "_volcano_raw_p_", gsub("/", "_vs_", comp), ".pdf"))
@@ -164,7 +164,8 @@ log_debug("Writing DE plots to ", diff.exp.fig.dir)
                          xLabel = bquote('log'[2](.(comp))),
                          pointLabelCol = "plotLabel",
                          labelGenes = F,
-                         maxLabels = maxPlotLabels,
+                         maxUpLabels = maxPlotLabels,
+                         maxDnLabels = maxPlotLabels,
                          file = file.name)
 
         file.name <- file.path(diff.exp.fig.dir, 
@@ -180,30 +181,30 @@ log_debug("Writing DE plots to ", diff.exp.fig.dir)
                          xLabel = bquote('log'[2](.(comp))),
                          labelGenes = FALSE,
                          pointLabelCol = "plotLabel",
-                         maxLabels = maxPlotLabels,
+                         maxUpLabels = maxPlotLabels,
+                         maxDnLabels = maxPlotLabels,
                          file = file.name)
 
         ##
         ## heatmap of top DE genes
         ##
-print(paste0("heatmaps = ", heatmaps))
-print(paste0("!is.null(de.res$DEgenes) = ", !is.null(de.res$DEgenes)))
-print(paste0("length(de.res$DEgenes) > 0) = ", length(de.res$DEgenes) > 0)) 
         if(heatmaps & !is.null(de.res$DEgenes) & length(de.res$DEgenes) > 0){ 
             file.name <- file.path(diff.exp.fig.dir,
                                    paste0(pre,"_DE_heatmap_",condB,"_vs_",condA,".pdf"))
-print(file.name)
             tryCatch({
                 genes <- de.res$filtered %>% pull(GeneSymbol)
                 genes <- genes[1:min(50, length(genes))]
-print(paste0("genes = ", paste(genes, collapse = ",")))
-                bic.standard.heatmap(counts, condA, condB,
-                                     genes = genes, 
-                                     key = key %>% filter(Group %in% conds),
-                                     file = file.name, 
-                                     annClrs = annClrs)
+                htmpDat <- counts %>% 
+                           select(GeneSymbol, 
+                                  grep(paste(paste0("__", c(condA, condB), "$"), collapse = "|"), names(.)))
+                bic.expression.heatmap(htmpDat,
+                                       genes = genes, 
+                                       key = key %>% filter(Group %in% conds),
+                                       title = paste0(condB, "_vs_", condA),
+                                       file = file.name, 
+                                       annClrs = annClrs)
               }, error = function(e){
-traceback()
+                  traceback()
                   warning(paste0("Could not generate heatmap for ",condB," vs ",condA))
             })
         }

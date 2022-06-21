@@ -23,7 +23,7 @@ libsizeQ          <- F
 no.replicates     <- F
 key               <- NULL
 conds             <- NULL
-GSA               <- T
+GSA               <- F
 GSEA              <- T
 gsea.sh           <- NULL
 diff.exp          <- T

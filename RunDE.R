@@ -94,7 +94,7 @@ suppressPackageStartupMessages(library(R.utils))
 suppressPackageStartupMessages(library(logger))
 log_threshold(DEBUG)
 
-log_info(c("\n++++++++++++++++ BIC RNA-Seq Counts Analysis ++++++++++++++++\n\n"))
+log_info(c("\n++++++++++++++++ BIC RNA-Seq Differential Expression & Pathway Analysis ++++++++++++++++\n\n"))
 
 args <- commandArgs(trailingOnly = TRUE, asValue = TRUE, adhoc = TRUE)
 tmp <- lapply(1:length(args), function(x){
@@ -250,15 +250,15 @@ parLapply(cl, compSetNums, function(compSet){
         idMap <- all_results$norm.counts %>% select(!dplyr::matches("^s_"))
 
         file.name <- file.path(out.dirs[[compSet]]$countsDir, paste0(pre, "_counts_scaled_DESeq.xlsx"))
-        bic.write.normalized.counts.file(norm.counts$scaled, file.name)
+        bic.write.normalized.counts.file(all_results$norm.counts, file.name)
         log_info("Done.\n")
 
-        if(is.null(norm.counts$scaled)){
+        if(is.null(all_results$norm.counts)){
             log_error("Can not find normalized counts matrix. Can not cluster samples or run DESeq.\n")
             return
         }
         log_info("Clustering all samples...")
-        bic.standard.clustering(cds, norm.counts$scaled, 
+        bic.standard.clustering(cds, all_results$norm.counts, 
                                 out.dirs[[compSet]]$clusterDir,
                                 idMap = idMap, 
                                 pre = pre,
@@ -283,7 +283,7 @@ parLapply(cl, compSetNums, function(compSet){
             log_info("Running CIBERSORT...")
             file.name <- file.path(out.dirs[[compSet]]$cellCompDir, "cibersort.txt")
             tryCatch({
-                cbsDat <- bic.run.cibersort(norm.counts$scaled,
+                cbsDat <- bic.run.cibersort(all_results$norm.counts,
                                             file.name,
                                             cibersortR,
                                             sigFile = cibersortSigFile)
@@ -316,7 +316,7 @@ parLapply(cl, compSetNums, function(compSet){
                 all_results[[compName]]$DE <- 
                      tryCatch({
                          bic.complete.de.analysis(cds,
-                                                  norm.counts, 
+                                                  all_results$norm.counts, 
                                                   conds, 
                                                   out.dirs[[compSet]]$allGeneDir,
                                                   out.dirs[[compSet]]$DEdir,
@@ -339,7 +339,7 @@ parLapply(cl, compSetNums, function(compSet){
                            ec <<- 1
                            return(NULL) ## need this or else ec returned 
                       })
-                if(is.null(all_results[[compName]]$DE)){ return }
+                if(is.null(all_results[[compName]]$DE)){ return } ## if no de results, can't go any further
                 results_updated <- TRUE
             } else {
                 log_warn("Found existing DE results for ", compName, ". Will NOT rerun DESeq for this comparison.")
@@ -351,15 +351,16 @@ parLapply(cl, compSetNums, function(compSet){
                     log_info("Running GSEA...\n")
                     all_results[[compName]]$GSEA <- 
                         tryCatch({
-                            fcCol <- paste0("log2[", gsub("_vs_", "/", compName), "]")
-                            bic.run.gsea.preranked(all_results[[compName]]$DE$all.res,
-                                                   fcCol,
-                                                   gsea.sh,
-                                                   compName,
-                                                   out.dirs[[compSet]]$GSEAdir,
-                                                   gmt.dir = gmt.dir)
-                            ## GSEA doesn't return a value, so just save a message pointing to the results
-                            paste0("GSEA output: ", out.dirs[[compSet]]$GSEAdir)
+                            success <- bic.run.gsea(all_results$norm.counts,
+                                                    key,
+                                                    compName,
+                                                    gsea.sh,
+                                                    compName, ## report label
+                                                    out.dirs[[compSet]]$GSEAdir,
+                                                    gmt.files = dir(gmt.dir, full.names = T))
+
+                            ## no data returned, so just store path to results to indicate it's been run 
+                            paste0("GSEA output: ", file.path(out.dirs[[compSet]]$GSEAdir, paste0(compName, ".html")))
                         }, error = function(e){
                             print(str(e))
                             log_error("\nERROR running GSEA\n")
@@ -374,7 +375,7 @@ parLapply(cl, compSetNums, function(compSet){
                 log_info("GSEA is turned OFF.")
             }
   
-            ## Gene Set Analysis (R package 'piano')   TO BE REMOVED?
+            ## Gene Set Analysis (R package 'piano')
             if(GSA){
                 if(is.null(all_results[[compName]]$GSA) || forceRerun){
                     log_info("Running GSA...\n")
